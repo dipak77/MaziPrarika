@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.env
+.env.local
+.env*.local
+.DS_Store
+/tmp/
+apps/web/data/*.db
+apps/web/data/*.db-shm
+apps/web/data/*.db-wal
+!apps/web/data/.gitkeep
+apps/web/.next-dev/

@@ -1,0 +1,35 @@
+{
+  "name": "mazi-patrika",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mazi Patrika - AI-powered event operating & commerce platform. Create, Plan, Discover, Book, Print, Manage and Celebrate events from one connected workspace.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @mazi/web",
+    "build": "npm run build -w @mazi/web",
+    "start": "npm run start -w @mazi/web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "npm run typecheck -w @mazi/web && tsc -p tsconfig.packages.json --noEmit",
+    "db:migrate": "node --experimental-sqlite --import ./scripts/register-ts.mjs scripts/db.mjs migrate",
+    "db:seed": "node --experimental-sqlite --import ./scripts/register-ts.mjs scripts/db.mjs seed",
+    "db:reset": "node --experimental-sqlite --import ./scripts/register-ts.mjs scripts/db.mjs reset",
+    "bootstrap": "npm install && npm run db:reset && npm run test",
+    "db:stats": "node --experimental-sqlite --import ./scripts/register-ts.mjs scripts/db.mjs stats",
+    "lint": "tsc -p tsconfig.packages.json --noEmit",
+    "test:e2e": "node --experimental-sqlite --import ./scripts/register-ts.mjs tests/vendor-flow.e2e.mjs",
+    "icons": "node scripts/generate-icons.mjs",
+    "measure": "node --experimental-sqlite --import ./scripts/register-ts.mjs scripts/measure.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "3.2.4"
+  }
+}
