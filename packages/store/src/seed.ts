@@ -824,7 +824,7 @@ export function seedStore(store: Store, options: { today?: Date } = {}): SeedRep
         id: bookingId, eventId: quote.leadId === 'lead_11' ? 'evt_advait_birthday' : 'evt_patil_vivah',
         vendorId: quote.vendorId, leadId: quote.leadId, quoteId: quote.id, state,
         eventDate: dayOffset(today, quote.leadId === 'lead_11' ? EVENT_OFFSETS.birthday : EVENT_OFFSETS.wedding),
-        totalPaise: totals.customerTotalPaise, advancePaise: Math.round(totals.customerTotalPaise * 0.3),
+        totalPaise: totals.customerTotalPaise, advancePaise: Math.round(totals.customerTotalPaise * 0.2),
         commissionPaise: totals.commissionPaise, history,
         createdAt: atOffset(today, quote.created, 11, 30),
         ...(journey.some(([to]) => to === 'BOOKING_CONFIRMED') ? { confirmedAt: atOffset(today, quote.created + 1, 12, 0) } : {}),
@@ -847,9 +847,9 @@ export function seedStore(store: Store, options: { today?: Date } = {}): SeedRep
       ]);
 
       store.bookings.recordPayment({
-        bookingId, kind: 'advance', provider: 'simulated', amountPaise: Math.round(totals.customerTotalPaise * 0.3),
+        bookingId, kind: 'advance', provider: 'simulated', amountPaise: Math.round(totals.customerTotalPaise * 0.2),
         status: 'captured', idempotencyKey: `${bookingId}:pay:advance`,
-        raw: { method: 'upi', note: '३०% अॅडव्हान्स' }, createdAt: atOffset(today, quote.created + 1, 12, 5),
+        raw: { method: 'upi', note: '२०% अॅडव्हान्स' }, createdAt: atOffset(today, quote.created + 1, 12, 5),
       });
 
       if (['SETTLEMENT', 'REVIEWED'].includes(state)) {

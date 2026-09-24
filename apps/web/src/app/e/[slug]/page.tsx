@@ -16,6 +16,25 @@ import { agendaFor } from './actions';
 
 export const dynamic = 'force-dynamic';
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  try {
+    const { agendaFor } = await import('./actions');
+    const data = await agendaFor(slug);
+    if (!data) return { title: 'पत्रिका सापडली नाही' };
+    const title = `${data.event.title} • डिजिटल पत्रिका`;
+    const description = `${data.event.title} — ${data.event.city} • ${data.event.eventDate ?? ''} • RSVP, शुभेच्छा व मुहूर्त एकाच पानावर.`;
+    return {
+      title,
+      description,
+      openGraph: { title, description, locale: 'mr_IN', type: 'website' },
+      twitter: { card: 'summary_large_image', title, description },
+    };
+  } catch {
+    return { title: 'डिजिटल पत्रिका • माझी पत्रिका' };
+  }
+}
+
 /**
  * The public digital page behind every QR code on every printed card.
  *
@@ -186,7 +205,7 @@ export default async function PublicEventPage({
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${event.venueName ?? event.city}, ${event.city}, Maharashtra`)}`}
               target="_blank"
               rel="noreferrer"
-              className="mt-3 inline-block rounded-full bg-maroon px-4 py-2 text-sm font-semibold text-ivory"
+              className="btn-base btn-maroon mt-3 px-4 py-2 text-sm"
             >
               नकाशात उघडा →
             </a>

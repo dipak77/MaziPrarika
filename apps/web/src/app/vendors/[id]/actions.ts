@@ -1,8 +1,18 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 
 import { getStore } from '@/lib/store';
+
+const vendorQuoteHits = new Map<string, number[]>();
+async function vendorQuoteRateLimited(): Promise<boolean> {
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || 'anon';
+  const now = Date.now();
+  const recent = (vendorQuoteHits.get(ip) ?? []).filter((at) => now - at < 60_000);
+  if (recent.length >= 10) { vendorQuoteHits.set(ip, recent); return true; }
+  recent.push(now); vendorQuoteHits.set(ip, recent); return false;
+}
 
 /**
  * Enquiry action for a vendor profile.
@@ -13,10 +23,12 @@ import { getStore } from '@/lib/store';
  * because a wedding vendor's calendar is not a hotel's inventory.
  */
 export async function requestVendorQuoteAction(formData: FormData): Promise<void> {
-  const vendorId = String(formData.get('vendorId') ?? '').slice(0, 80);
-  const eventSlug = String(formData.get('eventSlug') ?? '').slice(0, 120);
+  if (await vendorQuoteRateLimited()) throw new Error('खूप विनंत्या — एका मिनिटाने पुन्हा प्रयत्न करा.');
+  const vendorId = String(formData.get('vendorId') ?? '').trim().slice(0, 80);
+  const eventSlug = String(formData.get('eventSlug') ?? '').trim().slice(0, 120);
   const message = String(formData.get('message') ?? '').trim().slice(0, 600);
-  const budget = Number(formData.get('budgetPaise') ?? 0);
+  const rawBudget = Number(formData.get('budgetPaise') ?? 0);
+  const budget = Number.isFinite(rawBudget) ? Math.min(Math.max(Math.round(rawBudget), 0), 10_000_000_00) : 0;
 
   const store = getStore();
   const vendor = store.vendors.byId(vendorId);

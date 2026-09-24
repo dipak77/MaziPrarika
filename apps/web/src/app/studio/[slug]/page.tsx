@@ -14,6 +14,16 @@ import { readinessFor } from './actions';
 
 export const dynamic = 'force-dynamic';
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const event = getStore().events.bySlug(slug);
+  if (!event) return { title: 'वर्कस्पेस' };
+  return {
+    title: `${event.title} — वर्कस्पेस`,
+    description: `माझी पत्रिका वर्कस्पेस — कार्यसूची, अर्थसंकल्प, पाहुणे व विक्रेता एका ठिकाणी. ${event.city}.`,
+  };
+}
+
 export default async function StudioPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const data = await readinessFor(slug);
@@ -62,13 +72,13 @@ export default async function StudioPage({ params }: { params: Promise<{ slug: s
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link href={`/studio/${slug}/invitation`} className="rounded-full bg-maroon px-5 py-2.5 text-sm font-semibold text-ivory shadow-soft">
+          <Link href={`/studio/${slug}/invitation`} className="btn-base btn-maroon px-5 text-sm">
             पत्रिका स्टुडिओ
           </Link>
-          <Link href={`/studio/${slug}/print`} className="rounded-full border border-maroon/30 px-5 py-2.5 text-sm font-semibold text-maroon">
+          <Link href={`/studio/${slug}/print`} className="btn-base border border-maroon/30 px-5 text-sm font-semibold text-maroon hover:bg-maroon/5">
             छपाई ऑर्डर
           </Link>
-          <Link href={`/e/${slug}`} className="rounded-full border border-gold/50 px-5 py-2.5 text-sm font-semibold text-charcoal">
+          <Link href={`/e/${slug}`} className="btn-base btn-outline px-5 text-sm">
             डिजिटल पान
           </Link>
         </div>
@@ -101,28 +111,31 @@ export default async function StudioPage({ params }: { params: Promise<{ slug: s
             प्लॅटफॉर्म मध्यस्थी: {devRupees(commissions)} (केलेल्या बुकिंगवर)
           </p>
 
-          <table className="mt-5 w-full text-sm">
+          <div className="table-wrap mt-5">
+          <table className="data-table">
+            <caption className="sr-only">अंदाजपत्रक — श्रेणीनिहाय अंदाज, कमिटेड व देय रक्कम</caption>
             <thead>
-              <tr className="border-b border-gold/30 text-left font-ui text-xs uppercase tracking-wider text-charcoal-soft">
-                <th className="py-2">श्रेणी</th>
-                <th className="py-2 text-right">अंदाज</th>
-                <th className="py-2 text-right">कमिटेड</th>
-                <th className="py-2 text-right">देय</th>
-                <th className="py-2">स्थिती</th>
+              <tr>
+                <th scope="col">श्रेणी</th>
+                <th scope="col" className="text-right">अंदाज</th>
+                <th scope="col" className="text-right">कमिटेड</th>
+                <th scope="col" className="text-right">देय</th>
+                <th scope="col">स्थिती</th>
               </tr>
             </thead>
             <tbody>
               {budget.slice(0, 10).map((item) => (
-                <tr key={item.id} className="border-b border-gold/15">
-                  <td className="py-2 text-charcoal">{item.label}</td>
-                  <td className="py-2 text-right text-charcoal-soft">{devRupees(item.estimatedPaise)}</td>
-                  <td className="py-2 text-right text-charcoal">{devRupees(item.committedPaise)}</td>
-                  <td className="py-2 text-right text-charcoal-soft">{devRupees(item.paidPaise)}</td>
-                  <td className="py-2 text-xs text-charcoal-soft">{item.status}</td>
+                <tr key={item.id}>
+                  <td className="text-charcoal">{item.label}</td>
+                  <td className="text-right text-charcoal-soft">{devRupees(item.estimatedPaise)}</td>
+                  <td className="text-right text-charcoal">{devRupees(item.committedPaise)}</td>
+                  <td className="text-right text-charcoal-soft">{devRupees(item.paidPaise)}</td>
+                  <td className="text-xs text-charcoal-soft">{item.status}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         </section>
       </div>
 
@@ -162,7 +175,7 @@ export default async function StudioPage({ params }: { params: Promise<{ slug: s
             )}
             <Link
               href={`/studio/${slug}/invitation`}
-              className="mt-4 inline-block rounded-full bg-maroon px-4 py-2 text-xs font-semibold text-ivory"
+              className="btn-base btn-maroon mt-4 px-4 text-xs"
             >
               नवीन पत्रिका तयार करा
             </Link>

@@ -21,7 +21,9 @@ export function toLatinDigits(value: string | number): string {
 
 /** Indian digit grouping: 12345678 -> 1,23,45,678 */
 export function groupIndian(value: number | string): string {
-  const n = Math.trunc(Number(value));
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return String(value);
+  const n = Math.trunc(parsed);
   const sign = n < 0 ? '-' : '';
   const s = Math.abs(n).toString();
   if (s.length <= 3) return sign + s;

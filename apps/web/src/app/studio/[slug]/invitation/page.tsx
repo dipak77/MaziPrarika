@@ -14,6 +14,16 @@ import { designForEvent, printQuote, STUDIO_SCHEMES } from './studio';
 
 export const dynamic = 'force-dynamic';
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const event = getStore().events.bySlug(slug);
+  if (!event) return { title: 'पत्रिका स्टुडिओ' };
+  return {
+    title: `पत्रिका स्टुडिओ — ${event.title}`,
+    description: 'Design JSON → SVG प्रीव्ह्यू, प्रिंट प्रूफ आणि छपाई ऑर्डर — मराठी पत्रिका स्टुडिओ.',
+  };
+}
+
 const PANELS = [
   { paper: 'matte-300gsm', label: 'मॅट ३०० जीएसएम' },
   { paper: 'silk-350gsm', label: 'सिल्क ३५० जीएसएम' },
@@ -98,7 +108,7 @@ export default async function InvitationStudioPage({
         <div className="flex flex-wrap gap-3">
           <a
             href={`/api/designs/${design.id}/svg?print=1`}
-            className="rounded-full border border-maroon/30 px-4 py-2 text-sm font-semibold text-maroon"
+            className="btn-base border border-maroon/30 px-4 text-sm font-semibold text-maroon hover:bg-maroon/5"
           >
             प्रिंट SVG
           </a>
@@ -106,7 +116,7 @@ export default async function InvitationStudioPage({
             href={`/api/designs/${design.id}/print`}
             target="_blank"
             rel="noreferrer"
-            className="rounded-full border border-gold/50 px-4 py-2 text-sm font-semibold text-charcoal"
+            className="btn-base btn-outline px-4 text-sm"
           >
             प्रूफ उघडा
           </a>
@@ -171,10 +181,10 @@ export default async function InvitationStudioPage({
                     aria-hidden
                     className={
                       check.status === 'pass'
-                        ? 'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-paithani text-[11px] text-ivory'
+                        ? 'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-paithani text-xs text-ivory'
                         : check.status === 'warn'
-                          ? 'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-gold text-[11px] text-ivory'
-                          : 'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-maroon text-[11px] text-ivory'
+                          ? 'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-gold-deep text-xs text-ivory'
+                          : 'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-maroon text-xs text-ivory'
                     }
                   >
                     {check.status === 'pass' ? '✓' : '!'}

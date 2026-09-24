@@ -7,16 +7,24 @@ import { toDevanagariDigits } from '@/lib/format';
  * तिथी → नक्षत्र → सूर्योदय/सूर्यास्त → राहुकाळ → चौघडिया.
  * No good/bad verdicts — only named windows with their traditional quality.
  */
-export function PanchangStrip({ panchang, city }: { panchang: PanchangResult; city: string }) {
+export function PanchangStrip({
+  panchang,
+  city,
+  headingId,
+}: {
+  panchang: PanchangResult;
+  city: string;
+  headingId?: string;
+}) {
   const dayWindows = panchang.choghadiyaDay.slice(0, 8);
 
   return (
-    <section aria-labelledby="panchang-heading" className="surface overflow-hidden">
+    <section aria-labelledby={headingId} className="surface overflow-hidden">
       <div className="paithani-edge h-1.5" />
       <div className="grid gap-6 p-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
           <p className="font-ui text-xs uppercase tracking-[0.16em] text-gold">आजचे पंचांग</p>
-          <h2 id="panchang-heading" className="mt-2 font-display text-2xl font-bold text-maroon">
+          <h2 id={headingId} className="mt-2 font-display text-2xl font-bold text-maroon">
             {panchang.weekdayName}, {toDevanagariDigits(panchang.date.split('-')[2] ?? '')}
           </h2>
           <p className="mt-1 text-sm text-charcoal-soft">
@@ -33,7 +41,7 @@ export function PanchangStrip({ panchang, city }: { panchang: PanchangResult; ci
               { label: 'दिवस मान', value: panchang.dayLength },
             ].map((row) => (
               <div key={row.label} className="rounded-xl border border-gold/25 bg-ivory-deep/60 px-3 py-2">
-                <dt className="font-ui text-[0.66rem] uppercase tracking-wider text-charcoal-soft">{row.label}</dt>
+                <dt className="font-ui text-xs uppercase tracking-wider text-charcoal-soft">{row.label}</dt>
                 <dd className="mt-0.5 text-sm font-semibold text-charcoal">{row.value}</dd>
               </div>
             ))}
@@ -42,7 +50,7 @@ export function PanchangStrip({ panchang, city }: { panchang: PanchangResult; ci
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {[panchang.rahuKaal, panchang.abhijitMuhurat, panchang.godhuliMuhurat].map((window) => (
               <div key={window.label} className="rounded-xl border border-maroon/20 bg-maroon/5 px-3 py-2">
-                <p className="font-ui text-[0.66rem] uppercase tracking-wider text-maroon">{window.label}</p>
+                <p className="font-ui text-xs uppercase tracking-wider text-maroon">{window.label}</p>
                 <p className="mt-0.5 text-sm font-semibold text-charcoal">
                   {window.start} – {window.end}
                 </p>
@@ -64,10 +72,10 @@ export function PanchangStrip({ panchang, city }: { panchang: PanchangResult; ci
                 <span
                   className={
                     window.quality === 'शुभ'
-                      ? 'rounded-full bg-paithani/12 px-2 py-0.5 font-ui text-[0.68rem] font-semibold text-paithani'
+                      ? 'rounded-full bg-paithani/12 px-2 py-0.5 font-ui text-xs font-semibold text-paithani'
                       : window.quality === 'अशुभ'
-                        ? 'rounded-full bg-maroon/10 px-2 py-0.5 font-ui text-[0.68rem] font-semibold text-maroon'
-                        : 'rounded-full bg-gold/15 px-2 py-0.5 font-ui text-[0.68rem] font-semibold text-charcoal-soft'
+                        ? 'rounded-full bg-maroon/10 px-2 py-0.5 font-ui text-xs font-semibold text-maroon'
+                        : 'rounded-full bg-gold/15 px-2 py-0.5 font-ui text-xs font-semibold text-charcoal-soft'
                   }
                 >
                   {window.quality}

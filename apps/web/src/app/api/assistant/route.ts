@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { askAssistant, ensureDemoUser } from '@/lib/assistant';
+import { assistantLedger, askAssistant, ensureDemoUser } from '@/lib/assistant';
 import { getStore } from '@/lib/store';
 
 /**
@@ -56,6 +56,20 @@ export async function POST(request: Request) {
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: 'मजकूर आवश्यक आहे (२–१२०० अक्षरे).' }, { status: 400 });
+  }
+
+  const usdCapRaw = process.env.ASSISTANT_MONTHLY_USD_CAP;
+  const inrBudgetRaw = process.env.AI_MONTHLY_BUDGET_INR;
+  const monthlyBudgetUsd =
+    usdCapRaw !== undefined && usdCapRaw !== '' && Number.isFinite(Number(usdCapRaw)) ? Number(usdCapRaw) : undefined;
+  const monthlyBudgetInr =
+    inrBudgetRaw !== undefined && inrBudgetRaw !== '' && Number.isFinite(Number(inrBudgetRaw)) ? Number(inrBudgetRaw) : 25000;
+  const capUsd = monthlyBudgetUsd ?? monthlyBudgetInr / 88;
+  if (assistantLedger().totalUsd() >= capUsd) {
+    return NextResponse.json(
+      { error: 'मासिक AI खर्च मर्यादा पुरी झाली आहे — थोडा वेळ नंतर प्रयत्न करा.' },
+      { status: 429 },
+    );
   }
 
   try {

@@ -20,8 +20,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/?source=pwa',
     scope: '/',
     display: 'standalone',
-    orientation: 'portrait',
-    background_color: '#FBF7EF',
+    orientation: 'any',
+    background_color: '#FDFBF7',
     theme_color: '#6B1D2A',
     categories: ['lifestyle', 'productivity', 'events'],
     icons: [

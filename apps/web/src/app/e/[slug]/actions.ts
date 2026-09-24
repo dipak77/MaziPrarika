@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 
 import { getStore } from '@/lib/store';
 
@@ -19,13 +20,38 @@ export interface RsvpState {
   guestName?: string;
 }
 
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const submissions = new Map<string, number[]>();
+
+async function rateLimited(): Promise<boolean> {
+  const headerStore = await headers();
+  const ip = headerStore.get('x-forwarded-for')?.split(',')[0]?.trim() || 'anon';
+  const now = Date.now();
+  const recent = (submissions.get(ip) ?? []).filter((at) => now - at < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT_MAX) {
+    submissions.set(ip, recent);
+    return true;
+  }
+  recent.push(now);
+  submissions.set(ip, recent);
+  if (submissions.size > 10_000) {
+    for (const [key, times] of submissions) {
+      if (times.every((at) => now - at >= RATE_LIMIT_WINDOW_MS)) submissions.delete(key);
+    }
+  }
+  return false;
+}
+
 export async function rsvpAction(formData: FormData): Promise<RsvpState> {
+  if (await rateLimited()) return { ok: false, message: 'कृपया थोडे वाट पहा.' };
   const slug = String(formData.get('slug') ?? '').slice(0, 120);
   const store = getStore();
   const event = store.events.bySlug(slug);
   if (!event) return { ok: false, message: 'कार्यक्रम सापडला नाही.' };
 
-  const status = String(formData.get('status') ?? 'yes') as 'yes' | 'no' | 'maybe';
+  const rawStatus = String(formData.get('status') ?? 'yes');
+  const status: 'yes' | 'no' | 'maybe' = rawStatus === 'no' ? 'no' : rawStatus === 'maybe' ? 'maybe' : 'yes';
   const name = String(formData.get('name') ?? '').trim().slice(0, 120);
   const phone = String(formData.get('phone') ?? '').trim().slice(0, 15);
   const code = String(formData.get('code') ?? '').trim();
@@ -93,6 +119,7 @@ export async function rsvpAction(formData: FormData): Promise<RsvpState> {
 }
 
 export async function wishAction(formData: FormData): Promise<{ ok: boolean; message: string }> {
+  if (await rateLimited()) return { ok: false, message: 'कृपया थोडे वाट पहा.' };
   const slug = String(formData.get('slug') ?? '').slice(0, 120);
   const body = String(formData.get('body') ?? '').trim().slice(0, 500);
   const name = String(formData.get('name') ?? '').trim().slice(0, 80);

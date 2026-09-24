@@ -73,7 +73,7 @@ const BaseElement = {
   opacity: z.number().min(0).max(1).default(1),
   locked: z.boolean().default(false),
   /** Region roles let the layout engine re-flow content intelligently. */
-  role: z.enum(['invocation', 'headline', 'narrative', 'request', 'detail', 'footer', 'image', 'qr', 'decoration', 'free']).default('free'),
+  role: z.enum(['invocation', 'headline', 'subheadline', 'narrative', 'request', 'detail', 'footer', 'image', 'qr', 'decoration', 'free']).default('free'),
 };
 
 export const TextElementSchema = z.object({
@@ -136,7 +136,7 @@ export type GroupElement = {
   rotation: number;
   opacity: number;
   locked: boolean;
-  role: 'invocation' | 'headline' | 'narrative' | 'request' | 'detail' | 'footer' | 'image' | 'qr' | 'decoration' | 'free';
+  role: 'invocation' | 'headline' | 'subheadline' | 'narrative' | 'request' | 'detail' | 'footer' | 'image' | 'qr' | 'decoration' | 'free';
   type: 'group';
   children: DesignElement[];
 };
@@ -192,6 +192,29 @@ export const PAGE_PRESETS: Record<PagePreset, PageSizeMm> = {
 export const SAFE_MARGIN_MM = 8;
 export const GOLD_FOIL_MIN_STROKE_MM = 0.35;
 
+function collectElementIds(elements: unknown[], into = new Set<string>()): Set<string> {
+  for (const el of elements) {
+    if (el && typeof el === 'object') {
+      const record = el as { id?: unknown; children?: unknown };
+      if (typeof record.id === 'string') into.add(record.id);
+      if (Array.isArray(record.children)) collectElementIds(record.children, into);
+    }
+  }
+  return into;
+}
+
+function countElements(elements: unknown[]): number {
+  let n = 0;
+  for (const el of elements) {
+    if (el && typeof el === 'object') {
+      n += 1;
+      const record = el as { children?: unknown };
+      if (Array.isArray(record.children)) n += countElements(record.children);
+    }
+  }
+  return n;
+}
+
 export const DesignDocumentSchema = z.object({
   version: z.literal(DESIGN_SCHEMA_VERSION).default(DESIGN_SCHEMA_VERSION),
   id: z.string().min(1),
@@ -229,7 +252,10 @@ export const DesignDocumentSchema = z.object({
   }),
   /** Bindings for template variables: `{{bride.name}}` etc. */
   bindings: z.record(z.string(), z.string()).default({}),
-});
+}).refine(
+  (doc) => collectElementIds(doc.elements).size === countElements(doc.elements),
+  { message: 'Element ids must be unique within a design' },
+);
 
 export type DesignDocument = z.infer<typeof DesignDocumentSchema>;
 
@@ -415,15 +441,10 @@ export function preflight(design: DesignDocument): LayoutIssue[] {
   const issues: LayoutIssue[] = [];
   const { page } = design;
   const safe = page.safeMarginMm;
-  const fullW = page.widthMm + page.bleedMm * 2;
-  const fullH = page.heightMm + page.bleedMm * 2;
 
   for (const el of design.elements) {
-    const x = el.x + page.bleedMm;
-    const y = el.y + page.bleedMm;
-
     if (el.role !== 'decoration' && el.role !== 'image') {
-      if (x < safe || y < safe || x + el.width > fullW - safe || y + el.height > fullH - safe) {
+      if (el.x < safe || el.y < safe || el.x + el.width > page.widthMm - safe || el.y + el.height > page.heightMm - safe) {
         issues.push({
           elementId: el.id, severity: 'warning', code: 'out-of-safe-area',
           message: `${el.name ?? el.id}: सुरक्षित क्षेत्राबाहेर — कापताना काही भाग जाऊ शकतो`,
@@ -505,10 +526,9 @@ const CMYK_RISKY = new Set(['#00FFFF', '#FF00FF', '#00FF00', '#0000FF', '#FF0000
 
 export function isCmykSafe(hex: string): boolean {
   const normalised = hex.toUpperCase();
-  if (CMYK_RISKY.has(normalised)) return false;
-  // Very saturated greens/blues are the usual disappointment in CMYK.
-  const match = /^#([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})$/.exec(normalised);
-  if (!match) return true;
+  const match = /^#([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})(?:[0-9A-F]{2})?$/.exec(normalised);
+  if (!match) return !CMYK_RISKY.has(normalised);
+  if (CMYK_RISKY.has(`#${match[1]}${match[2]}${match[3]}`)) return false;
   const [r, g, b] = [match[1]!, match[2]!, match[3]!].map((v) => parseInt(v, 16)) as [number, number, number];
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);

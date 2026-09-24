@@ -54,8 +54,27 @@ export const COMMISSION_RATES: Record<VendorCategory, number> = {
 };
 
 export const GST_RATE = 0.18;
-export const GATEWAY_FEE_RATE = 0.0236; // Razorpay-like: 2% + GST on fee
+export const GATEWAY_FEE_RATE = 0.02; // Razorpay-like: 2% of taxable, GST applied once on the fee
 export const PLATFORM_FEE_RATE = 0;
+
+/** Single source for the category take rate; unknown categories never yield NaN. */
+export function commissionRate(category: string): number {
+  const rate = COMMISSION_RATES[category as VendorCategory];
+  return typeof rate === 'number' && Number.isFinite(rate) ? rate : COMMISSION_RATES.other;
+}
+
+export interface GatewayFeeBreakdown {
+  gatewayFeePaise: Paise;
+  gatewayFeeGstPaise: Paise;
+  /** fee + its GST — the one number the gateway actually charges (≈ 2.36%). */
+  totalPaise: Paise;
+}
+
+export function gatewayFeeBreakdown(taxable: Paise): GatewayFeeBreakdown {
+  const gatewayFeePaise = Math.round(taxable * GATEWAY_FEE_RATE);
+  const gatewayFeeGstPaise = Math.round(gatewayFeePaise * GST_RATE);
+  return { gatewayFeePaise, gatewayFeeGstPaise, totalPaise: gatewayFeePaise + gatewayFeeGstPaise };
+}
 
 /* ------------------------------------------------------------------ */
 /* Availability                                                        */
@@ -101,9 +120,10 @@ export function availabilityState(
 
   const booked = daySlots.filter((s) => s.status === 'booked');
   const capacity = Math.max(...daySlots.map((s) => s.teamCapacity ?? 1));
+  const bookedTeams = booked.reduce((sum, s) => sum + Math.max(1, s.bookedTeamCount ?? 0), 0);
   const needed = query.requiredTeam ?? 1;
-  if (booked.length + needed > capacity) {
-    return { status: 'booked', bookable: false, reason: `या दिवशी ${booked.length}/${capacity} संघ बुक झाले आहेत` };
+  if (bookedTeams + needed > capacity) {
+    return { status: 'booked', bookable: false, reason: `या दिवशी ${bookedTeams}/${capacity} संघ बुक झाले आहेत` };
   }
 
   const activeHold = daySlots.find((s) => s.status === 'hold' && (!s.holdExpiresAt || new Date(s.holdExpiresAt).getTime() > now));
@@ -272,11 +292,10 @@ export function priceQuote(quote: Quote, opts: { commissionRate?: number; discou
   const gst = Math.round(taxable * GST_RATE);
   const customerTotal = taxable + gst;
 
-  const rate = opts.commissionRate ?? COMMISSION_RATES[quote.category];
+  const rate = opts.commissionRate ?? commissionRate(quote.category);
   const commission = Math.round(taxable * rate);
   const platformFee = Math.round(taxable * PLATFORM_FEE_RATE);
-  const gatewayFee = Math.round(customerTotal * GATEWAY_FEE_RATE);
-  const gatewayFeeGst = Math.round(gatewayFee * GST_RATE);
+  const { gatewayFeePaise: gatewayFee, gatewayFeeGstPaise: gatewayFeeGst } = gatewayFeeBreakdown(taxable);
   const vendorPayout = taxable - commission - platformFee;
   const contribution = commission + platformFee - gatewayFee - gatewayFeeGst;
 
@@ -328,9 +347,9 @@ export interface LedgerPosting {
 
 interface PostingLine { account: LedgerAccount; amountPaise: number; memo: string }
 
-function buildPosting(orderId: string, lines: PostingLine[], at: string, idempotencyKey: string): LedgerPosting {
+function buildPosting(orderId: string, kind: string, lines: PostingLine[], at: string, idempotencyKey: string): LedgerPosting {
   const entries: LedgerEntry[] = lines.map((line, i) => ({
-    id: `${orderId}-${i + 1}`,
+    id: `${orderId}:${kind}:${i + 1}`,
     orderId,
     account: line.account,
     amountPaise: line.amountPaise,
@@ -351,7 +370,7 @@ export function postingForPayment(args: {
   const { orderId, breakdown: b } = args;
   const at = args.at ?? new Date().toISOString();
   const key = args.idempotencyKey ?? `${orderId}:payment`;
-  return buildPosting(orderId, [
+  return buildPosting(orderId, 'pay', [
     { account: 'PLATFORM_CASH', amountPaise: b.customerTotalPaise, memo: 'ग्राहकाकडून एकूण पेमेंट प्राप्त' },
     { account: 'GATEWAY_FEES', amountPaise: b.gatewayFeePaise + b.gatewayFeeGstPaise, memo: 'पेमेंट गेटवे शुल्क + GST' },
     { account: 'PLATFORM_CASH', amountPaise: -b.gatewayFeePaise - b.gatewayFeeGstPaise, memo: 'गेटवे शुल्क वजा' },
@@ -367,21 +386,48 @@ export function postingForSettlement(args: {
 }): LedgerPosting {
   const at = args.at ?? new Date().toISOString();
   const b = args.breakdown;
-  return buildPosting(args.orderId, [
+  return buildPosting(args.orderId, 'settle', [
     { account: 'VENDOR_PAYABLE', amountPaise: b.vendorPayoutPaise, memo: 'विक्रेत्याचे दायित्व बंद' },
     { account: 'PLATFORM_CASH', amountPaise: -b.vendorPayoutPaise, memo: 'विक्रेत्यास बँक ट्रान्सफर' },
   ], at, `${args.orderId}:settlement`);
 }
 
-/** Refund with a cancellation policy applied. */
+/**
+ * Refund — reverses the payment posting proportionally: cash out, GST reversed,
+ * vendor payable released, revenue clawed back (gateway fee stays expensed unless
+ * explicitly reversed by the gateway on a refund). Residual lands in PLATFORM_REVENUE.
+ */
 export function postingForRefund(args: {
-  orderId: string; breakdown: PriceBreakdown; refundPaise: Paise; at?: string;
+  orderId: string;
+  breakdown: PriceBreakdown;
+  refundPaise: Paise;
+  refundId?: string;
+  vendorPayoutReversedPaise?: Paise;
+  gstReversedPaise?: Paise;
+  gatewayFeeReversedPaise?: Paise;
+  at?: string;
 }): LedgerPosting {
   const at = args.at ?? new Date().toISOString();
-  return buildPosting(args.orderId, [
-    { account: 'REFUND_PAYABLE', amountPaise: args.refundPaise, memo: 'ग्राहकास परतावा देय' },
-    { account: 'PLATFORM_CASH', amountPaise: -args.refundPaise, memo: 'परतावा अदा' },
-  ], at, `${args.orderId}:refund:${args.refundPaise}`);
+  const b = args.breakdown;
+  const r = args.refundPaise;
+  const share = b.customerTotalPaise > 0 ? r / b.customerTotalPaise : 0;
+  const gstR = args.gstReversedPaise ?? Math.min(b.gstPaise, Math.round(b.gstPaise * share));
+  const vendorR = args.vendorPayoutReversedPaise ?? Math.round(b.vendorPayoutPaise * share);
+  const gatewayR = args.gatewayFeeReversedPaise ?? 0;
+  const revR = r + gatewayR - gstR - vendorR;
+
+  const lines: PostingLine[] = [
+    { account: 'PLATFORM_CASH', amountPaise: -r, memo: 'ग्राहकास परतावा अदा' },
+    { account: 'GST_PAYABLE', amountPaise: gstR, memo: 'परताव्याने GST उलट' },
+    { account: 'VENDOR_PAYABLE', amountPaise: vendorR, memo: 'विक्रेत्याचे दायित्व परतावा' },
+    { account: 'PLATFORM_REVENUE', amountPaise: revR, memo: 'परताव्याने राजस्व उलट' },
+  ];
+  if (gatewayR !== 0) {
+    lines.push({ account: 'GATEWAY_FEES', amountPaise: -gatewayR, memo: 'गेटवे शुल्क परतावा' });
+  }
+
+  const idem = args.refundId ?? at;
+  return buildPosting(args.orderId, 'ref', lines, at, `${args.orderId}:refund:${idem}`);
 }
 
 /** Verify a stream of entries is internally consistent (run in ops dashboards). */
@@ -440,6 +486,7 @@ export function calculateRefund(args: {
 }): RefundCalculation {
   const policy = args.policy ?? DEFAULT_CANCELLATION_POLICY;
   const b = args.breakdown;
+  const gatewayKept = b.gatewayFeePaise + b.gatewayFeeGstPaise;
 
   if (args.fault === 'vendor') {
     return {
@@ -450,12 +497,12 @@ export function calculateRefund(args: {
     };
   }
   if (args.fault === 'force-majeure') {
-    const share = 0.9;
+    const refund = Math.max(0, Math.round(b.taxablePaise * 0.9) - gatewayKept);
     return {
-      refundPaise: Math.round(b.taxablePaise * share),
-      vendorPayoutReversedPaise: Math.round(b.vendorPayoutPaise * share),
+      refundPaise: refund,
+      vendorPayoutReversedPaise: Math.round(b.vendorPayoutPaise * 0.9),
       policyNote: 'अनिवार्य परिस्थिती — ९०% परतावा, गेटवे शुल्क वजा',
-      deductions: [{ label: 'गेटवे शुल्क', amountPaise: b.customerTotalPaise - Math.round(b.taxablePaise * share) }],
+      deductions: refundDeductions(b, refund),
     };
   }
 
@@ -464,17 +511,23 @@ export function calculateRefund(args: {
   const advanceCut = Math.round(b.taxablePaise * policy.nonRefundableAdvanceShare);
   const afterAdvance = Math.max(0, refundable - advanceCut);
   const gstOnRefund = Math.round(afterAdvance * GST_RATE);
-  const refund = afterAdvance + gstOnRefund;
+  const refund = Math.max(0, afterAdvance + gstOnRefund - gatewayKept);
 
   return {
     refundPaise: refund,
     vendorPayoutReversedPaise: Math.round(b.vendorPayoutPaise * (afterAdvance / (b.taxablePaise || 1))),
     policyNote: tier.note ?? 'रद्दीकरण धोरणानुसार',
-    deductions: [
-      { label: 'न परतावणारा अॅडव्हान्स', amountPaise: advanceCut },
-      { label: 'गेटवे शुल्क', amountPaise: b.gatewayFeePaise + b.gatewayFeeGstPaise },
-    ],
+    deductions: refundDeductions(b, refund),
   };
+}
+
+function refundDeductions(b: PriceBreakdown, refund: Paise): RefundCalculation['deductions'] {
+  const gatewayKept = b.gatewayFeePaise + b.gatewayFeeGstPaise;
+  const retained = b.customerTotalPaise - refund - gatewayKept;
+  return [
+    { label: 'गेटवे शुल्क', amountPaise: gatewayKept },
+    { label: 'न परतावणारा भाग', amountPaise: Math.max(0, retained) },
+  ];
 }
 
 /* ------------------------------------------------------------------ */

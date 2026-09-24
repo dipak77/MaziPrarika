@@ -15,3 +15,6 @@ apps/web/data/*.db-shm
 apps/web/data/*.db-wal
 !apps/web/data/.gitkeep
 apps/web/.next-dev/
+.firebase/
+.ref_arch/
+apps/web/out/

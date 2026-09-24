@@ -23,10 +23,24 @@ export const metadata: Metadata = {
     siteName: 'माझी पत्रिका',
     title: 'माझी पत्रिका — Create. Plan. Discover. Book. Print. Manage. Celebrate.',
     description: 'कार्यक्रमाचे संपूर्ण व्यवस्थापन एका जोडलेल्या वर्कस्पेसमध्ये — मराठीत, पहिल्या अक्षरापासून.',
+    images: [
+      { url: '/og.png', width: 1200, height: 630, alt: 'माझी पत्रिका' },
+      { url: '/og.svg', width: 1200, height: 630, alt: 'माझी पत्रिका' },
+    ],
   },
-  twitter: { card: 'summary_large_image' },
+  twitter: { card: 'summary_large_image', images: ['/og.png'] },
   robots: { index: true, follow: true },
   manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/icons/icon.svg', type: 'image/svg+xml', sizes: 'any' },
+      { url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/icons/icon-512.png', type: 'image/png', sizes: '512x512' },
+      { url: '/favicon-192.png', type: 'image/png', sizes: '192x192' },
+    ],
+    shortcut: '/icons/icon-192.png',
+    apple: '/icons/apple-touch-icon.png',
+  },
   appleWebApp: { capable: true, title: 'माझी पत्रिका', statusBarStyle: 'default' },
   formatDetection: { telephone: false },
 };
@@ -39,8 +53,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="mr-IN">
-      <body className="min-h-dvh antialiased">
+    <html lang="mr-IN" suppressHydrationWarning>
+      <body className="min-h-dvh antialiased" suppressHydrationWarning>
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-maroon focus:px-4 focus:py-2 focus:text-ivory"

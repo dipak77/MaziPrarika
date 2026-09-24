@@ -15,6 +15,7 @@ import {
   RENDERER_VERSION,
   applyLayout,
   buildInvitationDesign,
+  collectMissingBindings,
   fitTextToRegion,
   measureTextWidthMm,
   renderSvg,
@@ -162,6 +163,23 @@ describe('renderer/applyLayout', () => {
     expect(entry?.fontSizePt).toBeLessThan(12.5);
     expect(entry?.overflowRatio).toBeGreaterThan(1);
   });
+
+  it('fills the subheadline region when one exists and clears it when absent', () => {
+    const design = buildInvitationDesign({ id: 'sub', name: 'पत्रिका' });
+    design.elements.push(textElement({
+      id: 'subheadline', role: 'subheadline', y: 58, height: 12,
+      text: 'पुराना उपशीर्षक',
+    }));
+    const filled = applyLayout(design, { headline: 'शुभ विवाह', subheadline: 'शुभ मंगल पर्व', narrative: ['ओळ'] });
+    const sub = filled.design.elements.find((e) => e.role === 'subheadline') as TextElement;
+    expect(sub.text).toBe('शुभ मंगल पर्व');
+    expect(filled.report.find((r) => r.role === 'subheadline')?.action).toBe('unchanged');
+
+    const cleared = applyLayout(filled.design, { headline: 'शुभ विवाह', narrative: ['ओळ'] });
+    const emptied = cleared.design.elements.find((e) => e.role === 'subheadline') as TextElement;
+    expect(emptied.text).toBe('');
+    expect(cleared.report.find((r) => r.role === 'subheadline')?.action).toBe('empty');
+  });
 });
 
 describe('renderer/SVG output', () => {
@@ -243,6 +261,20 @@ describe('renderer/SVG output', () => {
     expect(resolveBindings('फोन: {{missing}}', {})).toBe('फोन: ');
   });
 
+  it('reports missing bindings instead of only rendering blanks', () => {
+    const design = createBlankDesign({ id: 'bind', name: 'बाइंडिंग' });
+    design.bindings = { 'groom.father': 'रमेश पाटील' };
+    design.elements = [
+      textElement({ id: 'a', text: 'श्री. {{groom.father}} यांचे' }),
+      textElement({ id: 'b', text: '{{groom.mother}} यांची' }),
+      textElement({ id: 'c', text: 'फोन: {{missing}} व {{groom.mother}}' }),
+    ];
+    expect(collectMissingBindings(design)).toEqual(['groom.mother', 'missing']);
+    expect(collectMissingBindings(design, {
+      'groom.father': 'रमेश पाटील', 'groom.mother': 'सौ. सुनीता', missing: 'x',
+    })).toEqual([]);
+  });
+
   it('carries renderer provenance in metadata for the export audit trail', () => {
     const svg = renderSvg(buildInvitationDesign({ id: 'm', name: 'मेटा' }));
     expect(svg).toContain('<metadata>');
@@ -251,24 +283,34 @@ describe('renderer/SVG output', () => {
 });
 
 describe('renderer/QR codes', () => {
-  /** Derive the QR symbol size from the rendered module pitch. */
-  function qrMatrixSize(svg: string, boxMm: number): number {
+  /** Module pitch and geometry of the rendered QR content box. */
+  function qrGeometry(svg: string): { size: number; boxMm: number; contentMm: number; padMm: number } {
     const qrGroup = /<g id="qr"[\s\S]*?<\/g>/.exec(svg)?.[0] ?? '';
-    const xs = [...qrGroup.matchAll(/<rect x="([-\d.]+)"/g)].map((m) => Number(m[1]));
-    const unique = [...new Set(xs)].sort((a, b) => a - b);
-    const pitches = unique.slice(1).map((x, i) => Number((x - unique[i]!).toFixed(3))).filter((p) => p > 0.05);
+    const rects = [...qrGroup.matchAll(/<rect x="([-\d.]+)" y="[-\d.]+" width="([\d.]+)"/g)]
+      .map((m) => ({ x: Number(m[1]), w: Number(m[2]) }));
+    const bg = rects[0] ?? { x: 0, w: 0 };
+    const moduleXs = [...new Set(rects.slice(1).map((r) => r.x))].sort((a, b) => a - b);
+    const pitches = moduleXs.slice(1).map((x, i) => Number((x - moduleXs[i]!).toFixed(3))).filter((p) => p > 0.05);
     const pitch = Math.min(...pitches);
-    return Math.round(boxMm / pitch);
+    const minX = moduleXs[0]!;
+    const maxX = moduleXs[moduleXs.length - 1]!;
+    const contentMm = maxX + pitch - minX;
+    return {
+      size: Math.round(contentMm / pitch),
+      boxMm: bg.w,
+      contentMm,
+      padMm: minX - bg.x,
+    };
   }
 
   it('encodes a real QR symbol: version 1 for a short payload, bigger for a URL', () => {
     const short = renderSvg(buildInvitationDesign({ id: 'q', name: 'QR', qrPayload: 'MAZI' }), { includeMetadata: false });
-    expect(qrMatrixSize(short, 24)).toBe(21);
+    expect(qrGeometry(short).size).toBe(21);
 
     const long = renderSvg(buildInvitationDesign({
       id: 'q2', name: 'QR2', qrPayload: 'https://mazipatrika.in/e/patil-vivah-2026/rsvp?guest=9822012345&src=print',
     }), { includeMetadata: false });
-    const size = qrMatrixSize(long, 24);
+    const size = qrGeometry(long).size;
     expect(size).toBeGreaterThan(21);
     expect((size - 17) % 4).toBe(0); // every QR version increments by 4 modules
   });
@@ -283,7 +325,7 @@ describe('renderer/QR codes', () => {
     expect(count(long)).toBeGreaterThan(count(short));
   });
 
-  it('renders the QR inside its declared box with a quiet zone', () => {
+  it('renders the QR inside its declared box with a real quiet zone', () => {
     const design = createBlankDesign({ id: 'qr', name: 'QR' });
     design.elements = [{
       id: 'qr', name: 'QR', type: 'qr', role: 'qr',
@@ -293,6 +335,12 @@ describe('renderer/QR codes', () => {
     }];
     const svg = renderSvg(design, { includeMetadata: false });
     expect(svg).toContain('x="40" y="120" width="30" height="30"');
+    const geometry = qrGeometry(svg);
+    expect(geometry.contentMm).toBeGreaterThan(0);
+    expect(geometry.contentMm).toBeLessThan(geometry.boxMm);
+    const pitch = geometry.contentMm / geometry.size;
+    expect(geometry.padMm).toBeGreaterThanOrEqual(pitch * 4 - 0.01);
+    expect(geometry.padMm).toBeGreaterThanOrEqual(2 - 0.01);
     expect(preflight(design).some((i) => i.code === 'qr-too-small')).toBe(false);
   });
 });
@@ -317,6 +365,19 @@ describe('renderer/motif library', () => {
   it('emits no Google Fonts or remote asset references anywhere', () => {
     const svg = renderSvg(designFromTemplate('tpl-paithani-royal', { id: 'p', name: 'पैठणी' }), { print: true });
     expect(svg).not.toMatch(/https?:\/\/(?!www\.w3\.org)/);
+  });
+
+  it('renders schema-valid paisley shapes as real scaled paths', () => {
+    const design = createBlankDesign({ id: 'paisley', name: 'कमळपान' });
+    design.elements = [{
+      id: 'pais', name: 'paisley', type: 'shape', shape: 'paisley', motif: 'none', role: 'decoration',
+      x: 20, y: 40, width: 40, height: 60, rotation: 0, opacity: 1, locked: false,
+      fill: BRAND_PALETTE.gold, stroke: BRAND_PALETTE.maroon, strokeWidthMm: 0.5,
+    }];
+    expect(parseDesign(design).ok).toBe(true);
+    const svg = renderSvg(design, { includeMetadata: false });
+    expect(svg).toMatch(/id="pais"[^>]*d="M [\d.]+ [\d.]+ C /);
+    expect(svg).not.toMatch(/id="pais"[^>]*><\/path>/);
   });
 });
 

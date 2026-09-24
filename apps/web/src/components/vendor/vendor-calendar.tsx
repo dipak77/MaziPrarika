@@ -22,7 +22,7 @@ export function VendorCalendar({
   bookings: Array<{ id: string; eventDate: string; state: string }>;
 }) {
   const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [status, setStatus] = useState<'blocked' | 'available'>('blocked');
 
   return (
@@ -47,12 +47,19 @@ export function VendorCalendar({
 
       <form
         action={(formData) => {
+          setResult(null);
           startTransition(async () => {
             try {
               await setVacationAction(formData);
-              setMessage(status === 'blocked' ? 'तारखा राखीव ठेवल्या.' : 'तारखा उपलब्ध केल्या.');
+              setResult({
+                ok: true,
+                message: status === 'blocked' ? 'तारखा राखीव ठेवल्या.' : 'तारखा उपलब्ध केल्या.',
+              });
             } catch (error) {
-              setMessage(error instanceof Error ? error.message : 'अद्ययावत करता आले नाही.');
+              setResult({
+                ok: false,
+                message: error instanceof Error ? error.message : 'अद्ययावत करता आले नाही.',
+              });
             }
           });
         }}
@@ -63,21 +70,22 @@ export function VendorCalendar({
         <div className="grid grid-cols-2 gap-2">
           <label className="text-xs">
             <span className="font-ui uppercase tracking-wider text-charcoal-soft">पासून</span>
-            <input type="date" name="from" required className="mt-1 w-full rounded-lg border border-gold/40 bg-ivory px-2 py-1.5" />
+            <input type="date" name="from" required className="mt-1 min-h-11 w-full rounded-lg border border-gold/40 bg-ivory px-2 py-2.5" />
           </label>
           <label className="text-xs">
             <span className="font-ui uppercase tracking-wider text-charcoal-soft">पर्यंत</span>
-            <input type="date" name="to" required className="mt-1 w-full rounded-lg border border-gold/40 bg-ivory px-2 py-1.5" />
+            <input type="date" name="to" required className="mt-1 min-h-11 w-full rounded-lg border border-gold/40 bg-ivory px-2 py-2.5" />
           </label>
         </div>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setStatus('blocked')}
+            aria-pressed={status === 'blocked'}
             className={
               status === 'blocked'
-                ? 'flex-1 rounded-lg bg-maroon px-3 py-2 text-xs font-semibold text-ivory'
-                : 'flex-1 rounded-lg border border-gold/40 px-3 py-2 text-xs text-charcoal-soft'
+                ? 'min-h-11 flex-1 rounded-lg bg-maroon px-3 text-xs font-semibold text-ivory'
+                : 'min-h-11 flex-1 rounded-lg border border-gold/40 px-3 text-xs text-charcoal-soft'
             }
           >
             राखीव ठेवा
@@ -85,10 +93,11 @@ export function VendorCalendar({
           <button
             type="button"
             onClick={() => setStatus('available')}
+            aria-pressed={status === 'available'}
             className={
               status === 'available'
-                ? 'flex-1 rounded-lg bg-paithani px-3 py-2 text-xs font-semibold text-ivory'
-                : 'flex-1 rounded-lg border border-gold/40 px-3 py-2 text-xs text-charcoal-soft'
+                ? 'min-h-11 flex-1 rounded-lg bg-paithani px-3 text-xs font-semibold text-ivory'
+                : 'min-h-11 flex-1 rounded-lg border border-gold/40 px-3 text-xs text-charcoal-soft'
             }
           >
             उपलब्ध करा
@@ -97,15 +106,26 @@ export function VendorCalendar({
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-full bg-charcoal px-4 py-2.5 text-xs font-semibold text-ivory disabled:opacity-60"
+          className="btn-base w-full bg-charcoal px-4 text-xs text-ivory hover:bg-maroon disabled:opacity-60"
         >
           {pending ? 'जतन करत आहे…' : 'कॅलेंडर अद्ययावत करा'}
         </button>
-        <p className="text-[11px] text-charcoal-soft">
+        <p className="text-xs text-charcoal-soft">
           अद्ययावत केल्याची नोंद प्रोफाइलवर «कॅलेंडर आज अद्ययावत» अशी दिसते — ताजे कॅलेंडर जास्त विनंत्या मिळवते.
         </p>
       </form>
-      {message ? <p className="mt-2 text-xs text-paithani">{message}</p> : null}
+      {result ? (
+        <p
+          className={`mt-2 rounded-xl border px-3 py-2 text-xs ${
+            result.ok
+              ? 'border-paithani/50 bg-paithani/10 text-paithani'
+              : 'border-maroon/40 bg-maroon/8 text-maroon'
+          }`}
+          role={result.ok ? 'status' : 'alert'}
+        >
+          {result.message}
+        </p>
+      ) : null}
     </section>
   );
 }

@@ -140,12 +140,12 @@ const TERMS: Record<string, TermSpec> = {
 
   /* ---------------- maternal ---------------- */
   'mother.father': T({
-    term: 'आजोबा', variants: ['आजोबा (आईचे वडील)'], english: 'maternal grandfather', gender: 'male',
-    relativeAge: 'elder', side: 'maternal', respect: 5, dative: 'आजोबांना', genitive: 'आजोबांचे', inviteWithFamily: false,
+    term: 'नाना', variants: ['नाना (आईचे वडील)'], english: 'maternal grandfather', gender: 'male',
+    relativeAge: 'elder', side: 'maternal', respect: 5, dative: 'नानांना', genitive: 'नानांचे', inviteWithFamily: false,
   }),
   'mother.mother': T({
-    term: 'आजी', variants: ['आजी (आईची आई)'], english: 'maternal grandmother', gender: 'female',
-    relativeAge: 'elder', side: 'maternal', respect: 5, dative: 'आजीला', genitive: 'आजीचे', inviteWithFamily: false,
+    term: 'नानी', variants: ['नानी (आईची आई)'], english: 'maternal grandmother', gender: 'female',
+    relativeAge: 'elder', side: 'maternal', respect: 5, dative: 'नानीला', genitive: 'नानीचे', inviteWithFamily: false,
   }),
   'mother.brother': T({
     term: 'मामा', variants: ['मामा (आईचा भाऊ)'], english: "mother's brother", gender: 'male',

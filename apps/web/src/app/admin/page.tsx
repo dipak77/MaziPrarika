@@ -1,6 +1,7 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 
-import { adPerformance, COMMISSION_RATES, reconcileLedger, trustBadges, type LedgerEntry } from '@mazi/commerce';
+import { adPerformance, COMMISSION_RATES, gatewayFeeBreakdown, reconcileLedger, trustBadges, type LedgerEntry } from '@mazi/commerce';
 import { formatMarathiDate, formatMarathiDateTime, toDevanagariDigits, vendorCategoryLabel } from '@mazi/marathi';
 
 import { getStore } from '@/lib/store';
@@ -9,7 +10,11 @@ import { devNumber, devRupees, percent } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'प्रशासन — मार्केटप्लेस आरोग्य' };
+export const metadata: Metadata = {
+  title: 'प्रशासन — मार्केटप्लेस आरोग्य',
+  description: 'मार्केटप्लेस आरोग्य, लेजर अखंडता, रूपांतरण व विक्रेते कामगिरीचे अंतर्गत प्रशासकीय डॅशबोर्ड.',
+  robots: { index: false, follow: false },
+};
 
 /**
  * Admin console: the numbers that decide whether this business works.
@@ -56,7 +61,7 @@ export default async function AdminPage() {
 
   const gmv = bookings.reduce((sum, booking) => sum + booking.totalPaise, 0);
   const commission = bookings.reduce((sum, booking) => sum + booking.commissionPaise, 0);
-  const gatewayFees = payments.reduce((sum, payment) => sum + Math.round(payment.amountPaise * 0.0236 * 1.18), 0);
+  const gatewayFees = payments.reduce((sum, payment) => sum + gatewayFeeBreakdown(payment.amountPaise).totalPaise, 0);
   const contribution = commission - gatewayFees;
 
   const aiSpendUsd = assistantLedger().totalUsd();
@@ -112,6 +117,9 @@ export default async function AdminPage() {
   };
   const funnelTop = Math.max(1, funnel[0]?.value ?? 1);
 
+  const chartDays = series.slice(-30);
+  const chartMax = Math.max(1, ...series.map((entry) => Math.max(entry.leads, entry.bookings)));
+
   const integrityChecks = [
     {
       label: 'लेजर शून्य-योग',
@@ -159,7 +167,7 @@ export default async function AdminPage() {
           <Link href="/api/health" className="rounded-full border border-gold/50 px-4 py-2 text-sm font-semibold text-charcoal">
             हेल्थ चेक
           </Link>
-          <Link href="/vendor" className="rounded-full bg-maroon px-4 py-2 text-sm font-semibold text-ivory">
+          <Link href="/vendor" className="btn-base btn-maroon px-4 py-2 text-sm">
             विक्रेता डेस्क
           </Link>
         </div>
@@ -204,12 +212,13 @@ export default async function AdminPage() {
                     aria-hidden
                     className={
                       check.ok
-                        ? 'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-paithani text-[11px] text-ivory'
-                        : 'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-maroon text-[11px] text-ivory'
+                        ? 'mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-paithani text-xs text-ivory'
+                        : 'mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-maroon text-xs text-ivory'
                     }
                   >
                     {check.ok ? '✓' : '!'}
                   </span>
+                  <span className="sr-only">{check.ok ? 'ठीक' : 'तक्रार'}</span>
                   <span>
                     <span className="text-sm font-semibold text-charcoal">{check.label}</span>
                     <span className="block text-xs text-charcoal-soft">{check.detail}</span>
@@ -245,17 +254,33 @@ export default async function AdminPage() {
           <section className="surface p-5">
             <h2 className="font-display text-xl font-bold text-charcoal">३० दिवसांचा ओघ</h2>
             <p className="mt-1 text-xs text-charcoal-soft">दैनंदिन विनंत्या व बुकिंग — आडवा आकार वार-आधारित मागणी दाखवतो.</p>
-            <div className="mt-4 flex h-40 items-end gap-1">
-              {series.slice(-30).map((day) => {
-                const max = Math.max(1, ...series.map((entry) => Math.max(entry.leads, entry.bookings)));
-                return (
-                  <div key={day.date} className="group relative flex-1" title={`${day.date}: ${day.leads} विनंत्या, ${day.bookings} बुकिंग`}>
-                    <div className="w-full rounded-t bg-gold/40" style={{ height: `${(day.leads / max) * 100}%` }} />
-                    <div className="w-full rounded-b bg-maroon" style={{ height: `${(day.bookings / max) * 100}%` }} />
-                  </div>
-                );
-              })}
+            <div className="mt-4 flex h-40 items-end gap-1" role="img" aria-label={`गेल्या ३० दिवसांचा दैनंदिन विनंत्या व बुकिंग ओघ — एकूण ${toDevanagariDigits(chartDays.reduce((sum, day) => sum + day.leads, 0))} विनंत्या, ${toDevanagariDigits(chartDays.reduce((sum, day) => sum + day.bookings, 0))} बुकिंग`}>
+              {chartDays.map((day) => (
+                <div key={day.date} className="group relative flex-1" title={`${day.date}: ${day.leads} विनंत्या, ${day.bookings} बुकिंग`}>
+                  <div className="w-full rounded-t bg-gold/40" style={{ height: `${(day.leads / chartMax) * 100}%` }} />
+                  <div className="w-full rounded-b bg-maroon" style={{ height: `${(day.bookings / chartMax) * 100}%` }} />
+                </div>
+              ))}
             </div>
+            <table className="sr-only">
+              <caption>गेल्या ३० दिवसांचे दैनंदिन आकडे</caption>
+              <thead>
+                <tr>
+                  <th scope="col">तारीख</th>
+                  <th scope="col">विनंत्या</th>
+                  <th scope="col">बुकिंग</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chartDays.map((day) => (
+                  <tr key={day.date}>
+                    <td>{day.date}</td>
+                    <td>{toDevanagariDigits(day.leads)}</td>
+                    <td>{toDevanagariDigits(day.bookings)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
             <p className="mt-2 text-xs text-charcoal-soft">
               <span className="mr-3 inline-flex items-center gap-1"><span className="size-2 rounded-full bg-gold/60" /> विनंत्या</span>
               <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-maroon" /> बुकिंग</span>
@@ -394,7 +419,7 @@ export default async function AdminPage() {
 function Metric({ label, value, tone }: { label: string; value: string; tone?: 'good' | 'bad' }) {
   return (
     <div className="rounded-xl border border-gold/25 bg-ivory-deep/40 px-3 py-2">
-      <p className="font-ui text-[11px] uppercase tracking-wider text-charcoal-soft">{label}</p>
+      <p className="font-ui text-xs uppercase tracking-wider text-charcoal-soft">{label}</p>
       <p
         className={
           tone === 'bad'

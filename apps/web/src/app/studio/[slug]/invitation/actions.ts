@@ -23,8 +23,11 @@ export async function saveDesignAction(formData: FormData): Promise<void> {
   const event = store.events.bySlug(slug);
   if (!event) throw new Error('कार्यक्रम सापडला नाही');
 
-  const templateId = String(formData.get('templateId') ?? TEMPLATE_PRESETS[0]!.id);
-  const schemeId = String(formData.get('schemeId') ?? 'paithani');
+  const rawTemplateId = String(formData.get('templateId') ?? TEMPLATE_PRESETS[0]!.id);
+  const templateId = TEMPLATE_PRESETS.some((p) => p.id === rawTemplateId) ? rawTemplateId : TEMPLATE_PRESETS[0]!.id;
+  const ALLOWED_SCHEMES = new Set(['paithani', 'royal-maroon', 'temple-gold', 'haldi', 'ivory-classic', 'emerald', 'rose-gold', 'midnight']);
+  const rawSchemeId = String(formData.get('schemeId') ?? 'paithani');
+  const schemeId = ALLOWED_SCHEMES.has(rawSchemeId) ? rawSchemeId : 'paithani';
   const { design, composed } = designForEvent({
     slug,
     templateId,
@@ -39,34 +42,35 @@ export async function saveDesignAction(formData: FormData): Promise<void> {
   const owner = event.ownerUserId;
   const existing = store.designs.list({ eventId: event.id, limit: 20 }).find((d) => d.id === design.id);
 
-  if (existing) {
-    store.designs.save(design.id, design, {
-      previewSvg,
-      scheme: schemeId,
-      name: design.name,
-      note: `पुन्हा तयार — ${templateId}`,
+  store.transaction(() => {
+    if (existing) {
+      store.designs.save(design.id, design, {
+        previewSvg,
+        scheme: schemeId,
+        name: design.name,
+        note: `पुन्हा तयार — ${templateId}`,
+      });
+    } else {
+      store.designs.create({
+        id: design.id,
+        eventId: event.id,
+        ownerUserId: owner,
+        name: design.name,
+        templateId,
+        preset: design.preset,
+        scheme: schemeId,
+        doc: design,
+        previewSvg,
+        status: 'draft',
+      });
+    }
+    store.audit.record({
+      actor: owner,
+      action: existing ? 'design.versioned' : 'design.created',
+      entity: 'design',
+      entityId: design.id,
+      after: { templateId, schemeId, quality: composed.quality.score },
     });
-  } else {
-    store.designs.create({
-      id: design.id,
-      eventId: event.id,
-      ownerUserId: owner,
-      name: design.name,
-      templateId,
-      preset: design.preset,
-      scheme: schemeId,
-      doc: design,
-      previewSvg,
-      status: 'draft',
-    });
-  }
-
-  store.audit.record({
-    actor: owner,
-    action: existing ? 'design.versioned' : 'design.created',
-    entity: 'design',
-    entityId: design.id,
-    after: { templateId, schemeId, quality: composed.quality.score },
   });
 
   revalidatePath(`/studio/${slug}/invitation`);
@@ -76,20 +80,25 @@ export async function saveDesignAction(formData: FormData): Promise<void> {
 /** Advance the design through review → approved → printing. */
 export async function setDesignStatusAction(formData: FormData): Promise<void> {
   const store = getStore();
-  const slug = String(formData.get('slug') ?? '');
-  const designId = String(formData.get('designId') ?? '');
-  const status = String(formData.get('status') ?? '') as 'draft' | 'review' | 'approved' | 'printing' | 'archived';
+  const slug = String(formData.get('slug') ?? '').slice(0, 160);
+  const designId = String(formData.get('designId') ?? '').slice(0, 80);
+  const rawStatus = String(formData.get('status') ?? '');
+  const ALLOWED_STATUS = new Set(['draft', 'review', 'approved', 'printing', 'archived']);
+  if (!ALLOWED_STATUS.has(rawStatus)) throw new Error('अवैध स्थिती');
+  const status = rawStatus as 'draft' | 'review' | 'approved' | 'printing' | 'archived';
   const design = store.designs.byId(designId);
   if (!design) throw new Error('पत्रिका सापडली नाही');
 
-  store.designs.save(design.id, design.doc, { status, name: design.name });
-  store.audit.record({
-    actor: design.ownerUserId,
-    action: 'design.status',
-    entity: 'design',
-    entityId: designId,
-    before: { status: design.status },
-    after: { status },
+  store.transaction(() => {
+    store.designs.save(design.id, design.doc, { status, name: design.name });
+    store.audit.record({
+      actor: design.ownerUserId,
+      action: 'design.status',
+      entity: 'design',
+      entityId: designId,
+      before: { status: design.status },
+      after: { status },
+    });
   });
   revalidatePath(`/studio/${slug}/invitation`);
   revalidatePath(`/studio/${slug}`);
@@ -121,41 +130,44 @@ export async function placePrintOrderAction(formData: FormData): Promise<void> {
   const design = store.designs.byId(designId);
   if (!event || !design) throw new Error('ऑर्डरसाठी माहिती अपूर्ण आहे');
 
-  const quantity = Number(formData.get('quantity') ?? 100) || 100;
-  const paper = String(formData.get('paper') ?? 'matte-300gsm');
-  const finishing = formData.getAll('finishing').map((value) => String(value));
+  const rawQty = Number(formData.get('quantity') ?? 100);
+  const quantity = Number.isFinite(rawQty) ? Math.min(Math.max(Math.floor(rawQty), 25), 10000) : 100;
+  const ALLOWED_PAPERS = new Set(['matte-300gsm', 'glossy-250gsm', 'textured-280gsm', 'kraft-250gsm', 'silk-350gsm']);
+  const rawPaper = String(formData.get('paper') ?? 'matte-300gsm');
+  const paper = ALLOWED_PAPERS.has(rawPaper) ? rawPaper : 'matte-300gsm';
+  const ALLOWED_FINISHING = new Set(['gold-foil', 'emboss', 'lamination', 'edge-gilding', 'none']);
+  const finishing = formData.getAll('finishing').map((value) => String(value)).filter((f) => ALLOWED_FINISHING.has(f));
   const express = formData.get('express') === 'on';
   const quote = printQuote({ designId, quantity, paper, finishing, express });
 
   const printer = store.vendors.search({ category: 'printer', limit: 1 })[0];
-  const order = store.designs.createPrintOrder({
-    id: `prt_${Math.random().toString(36).slice(2, 9)}`,
-    eventId: event.id,
-    designId: design.id,
-    ...(printer ? { vendorId: printer.id } : {}),
-    quantity: quote.quantity,
-    paper,
-    finishing,
-    express,
-    status: 'placed',
-    unitPricePaise: quote.unitPricePaise,
-    shippingPaise: quote.shippingPaise + quote.expressPaise,
-    totalPaise: quote.totalPaise,
-    proofUrl: `/api/designs/${design.id}/print?proof=1`,
-  });
-
-  // Same document, next stage — the printer never receives a stale artwork.
-  store.designs.save(design.id, design.doc, { status: 'printing', name: design.name });
-
-  store.audit.record({
-    actor: design.ownerUserId,
-    action: 'print.order_placed',
-    entity: 'print_order',
-    entityId: order.id,
-    after: {
-      designId: design.id, quantity: quote.quantity, paper, finishing,
-      totalPaise: quote.totalPaise, commissionPaise: quote.commissionPaise,
-    },
+  store.transaction(() => {
+    const order = store.designs.createPrintOrder({
+      id: `prt_${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36).padStart(2, '0')}`,
+      eventId: event.id,
+      designId: design.id,
+      ...(printer ? { vendorId: printer.id } : {}),
+      quantity: quote.quantity,
+      paper,
+      finishing,
+      express,
+      status: 'placed',
+      unitPricePaise: quote.unitPricePaise,
+      shippingPaise: quote.shippingPaise + quote.expressPaise,
+      totalPaise: quote.totalPaise,
+      proofUrl: `/api/designs/${design.id}/print?proof=1`,
+    });
+    store.designs.save(design.id, design.doc, { status: 'printing', name: design.name });
+    store.audit.record({
+      actor: design.ownerUserId,
+      action: 'print.order_placed',
+      entity: 'print_order',
+      entityId: order.id,
+      after: {
+        designId: design.id, quantity: quote.quantity, paper, finishing,
+        totalPaise: quote.totalPaise, commissionPaise: quote.commissionPaise,
+      },
+    });
   });
 
   revalidatePath(`/studio/${slug}/invitation`);

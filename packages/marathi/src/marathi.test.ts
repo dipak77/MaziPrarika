@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  budgetFromTemplate, composeBiodata, composeInvitation, describeKinshipPath, formatMarathiCurrency,
+  budgetFromTemplate, buildQualityReport, composeBiodata, composeInvitation, describeKinshipPath, formatMarathiCurrency,
   formatMarathiDate, formatMarathiTime, formatPersonName, groupIndian, kinshipIndex, lintMarathiText,
   marathiOrdinalWord, moneyToMarathiWords, numberToMarathiWords, planFromTemplate, resolveKinship,
   salutationFor, toDevanagariDigits, transliterate,
@@ -17,6 +17,13 @@ describe('marathi/a1 numerals', () => {
     expect(groupIndian(150000)).toBe('1,50,000');
     expect(groupIndian(12345678)).toBe('1,23,45,678');
     expect(groupIndian(999)).toBe('999');
+  });
+
+  it('passes non-numeric input through instead of emitting NaN', () => {
+    expect(groupIndian('abc')).toBe('abc');
+    expect(groupIndian('12abc')).toBe('12abc');
+    expect(groupIndian(NaN)).toBe('NaN');
+    expect(groupIndian(150000)).toBe('1,50,000');
   });
 
   it('writes cardinal words using lakh/crore', () => {
@@ -68,6 +75,22 @@ describe('marathi/kinship', () => {
     expect(resolveKinship(['daughter', 'husband'])?.term).toBe('जावई');
     expect(resolveKinship(['son', 'wife'])?.term).toBe('सून');
     expect(resolveKinship(['father', 'father'])?.term).toBe('आजोबा');
+  });
+
+  it('distinguishes maternal grandparents (नाना/नानी) from paternal (आजोबा/आजी)', () => {
+    expect(resolveKinship('mother.father')?.term).toBe('नाना');
+    expect(resolveKinship('mother.mother')?.term).toBe('नानी');
+    expect(resolveKinship(['mother', 'father'])?.term).toBe('नाना');
+    expect(resolveKinship(['mother', 'mother'])?.term).toBe('नानी');
+    expect(resolveKinship('mother.father')?.dative).toBe('नानांना');
+    expect(resolveKinship('mother.father')?.genitive).toBe('नानांचे');
+    expect(resolveKinship('mother.mother')?.dative).toBe('नानीला');
+    expect(resolveKinship('mother.mother')?.genitive).toBe('नानीचे');
+    expect(resolveKinship('mother.father')?.english).toBe('maternal grandfather');
+    expect(resolveKinship('mother.mother')?.english).toBe('maternal grandmother');
+    expect(resolveKinship('mother.father')?.side).toBe('maternal');
+    expect(resolveKinship(['father', 'father'])?.term).toBe('आजोबा');
+    expect(resolveKinship(['father', 'mother'])?.term).toBe('आजी');
   });
 
   it('carries respect levels and dative forms for sentence building', () => {
@@ -138,6 +161,34 @@ describe('marathi/invitation composer', () => {
     expect(result.plainText).toContain('॥ श्री गणेशाय नमः ॥');
     expect(result.whatsappText).toContain('स्नेहा');
     expect(result.quality.score).toBeGreaterThan(70);
+    expect(result.quality.checks.find((c) => c.id === 'invocation')?.status).toBe('pass');
+  });
+
+  it('fails the mangalchinha check when the required invocation is missing', () => {
+    const base = {
+      eventType: 'wedding',
+      hosts: [{ name: 'रमेश', surname: 'पाटील', gender: 'male' as const }],
+      bride,
+      groom,
+      date: '2026-12-12T00:00:00Z',
+      venue: { name: 'सभागृह', city: 'पुणे' },
+    };
+    const ok = buildQualityReport(base, [], 520, '॥ श्री गणेशाय नमः ॥');
+    expect(ok.checks.find((c) => c.id === 'invocation')?.status).toBe('pass');
+    const missing = buildQualityReport(base, [], 520, '');
+    const check = missing.checks.find((c) => c.id === 'invocation');
+    expect(check?.status).toBe('fail');
+    expect(missing.score).toBeLessThan(ok.score);
+  });
+
+  it('renders the English block with a deterministic date format', () => {
+    const result = composeInvitation({
+      eventType: 'wedding', hosts: [father], bride, groom, side: 'bride',
+      date: '2026-12-12T00:00:00Z', venue: { name: 'सभागृह', city: 'पुणे' },
+      english: true,
+    });
+    expect(result.englishText).toContain('Saturday, 12 December 2026');
+    expect(result.englishText).not.toContain('NaN');
   });
 
   it('flips the sentence for the groom side', () => {

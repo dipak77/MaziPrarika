@@ -11,7 +11,7 @@
  */
 
 import {
-  lahiriAyanamsaDeg, luminaries, moonLongitudeTropical, norm360, sunLongitudeTropical,
+  ayanamsaDeg, luminaries, moonLongitudeTropical, norm360, sunLongitudeTropical,
   sunTimes as computeSunTimes, toSidereal, type AyanamsaMethod, type SunTimes,
 } from './astronomy.js';
 
@@ -178,9 +178,6 @@ export function computePanchang(
   method: AyanamsaMethod = 'lahiri',
 ): PanchangResult {
   const tz = location.tzOffsetHours ?? 5.5;
-  // Local midnight → UTC instant
-  const localMidnightUtc = Date.UTC(year, month - 1, day, 0, 0, 0) - tz * 3_600_000;
-  const noonUtc = new Date(localMidnightUtc + 12 * 3_600_000 + tz * 3_600_000 * 0);
 
   const times: SunTimes = computeSunTimes(year, month, day, location.latitude, location.longitude, tz);
   const sunrise = times.sunrise ?? new Date(Date.UTC(year, month - 1, day, 6, 0, 0) - tz * 3_600_000);
@@ -189,7 +186,6 @@ export function computePanchang(
   // Panchang values are computed at local sunrise (the traditional convention).
   const reference = sunrise;
   const { sun, moon } = luminaries(reference, method);
-  void noonUtc;
 
   const sunLong = sun.sidereal;
   const moonLong = moon.sidereal;
@@ -204,22 +200,23 @@ export function computePanchang(
 
   // End of the current tithi: next multiple of 12° of (moon - sun)
   const nextTithiBoundary = (tithiIndex + 1) * 12;
-  const tithiEndsAt = findAngleCrossing(
-    nextTithiBoundary,
-    reference.getTime() / 86_400_000 + 2440587.5,
-    (jd) => {
-      const d = new Date((jd - 2440587.5) * 86_400_000);
-      return norm360(toSidereal(moonLongitudeTropical(d), d, method) - toSidereal(sunLongitudeTropical(d), d, method));
-    },
-    12.1907, // mean elongation rate deg/day
-  );
+  const referenceJd = reference.getTime() / 86_400_000 + 2440587.5;
+  const elongationAt = (jd: number): number => {
+    const d = new Date((jd - 2440587.5) * 86_400_000);
+    return norm360(toSidereal(moonLongitudeTropical(d), d, method) - toSidereal(sunLongitudeTropical(d), d, method));
+  };
+  const lastNewMoon = findAngleCrossing(0, referenceJd - diff / 12.1907, elongationAt, 12.1907);
+  const sunAtNewMoon = toSidereal(sunLongitudeTropical(lastNewMoon), lastNewMoon, method);
+  const masaIndex = (Math.floor(sunAtNewMoon / 30) + 1) % 12;
+
+  const tithiEndsAt = findAngleCrossing(nextTithiBoundary, referenceJd, elongationAt, 12.1907);
 
   const nakshatraIndex = Math.floor(moonLong / (360 / 27));
   const pada = Math.floor((moonLong % (360 / 27)) / (360 / 108)) + 1;
   const nextNakshatraBoundary = (nakshatraIndex + 1) * (360 / 27);
   const nakshatraEndsAt = findAngleCrossing(
     nextNakshatraBoundary,
-    reference.getTime() / 86_400_000 + 2440587.5,
+    referenceJd,
     (jd) => {
       const d = new Date((jd - 2440587.5) * 86_400_000);
       return toSidereal(moonLongitudeTropical(d), d, method);
@@ -230,7 +227,7 @@ export function computePanchang(
   const yogaIndex = Math.floor(norm360(sunLong + moonLong) / (360 / 27));
   const yogaEndsAt = findAngleCrossing(
     (yogaIndex + 1) * (360 / 27),
-    reference.getTime() / 86_400_000 + 2440587.5,
+    referenceJd,
     (jd) => {
       const d = new Date((jd - 2440587.5) * 86_400_000);
       return norm360(toSidereal(sunLongitudeTropical(d), d, method) + toSidereal(moonLongitudeTropical(d), d, method));
@@ -342,7 +339,7 @@ export function computePanchang(
     dayLength: `${Math.floor(dayMs / 3_600_000)} तास ${Math.round((dayMs % 3_600_000) / 60_000)} मिनिटे`,
     moonRashi: RASHI_NAMES_MR[Math.floor(moonLong / 30)] as string,
     sunRashi: RASHI_NAMES_MR[Math.floor(sunLong / 30)] as string,
-    masa: MASA_NAMES[((month + 9) % 12)] as string,
+    masa: MASA_NAMES[masaIndex] as string,
     rahuKaal,
     yamaganda,
     gulikaKaal,
@@ -352,7 +349,7 @@ export function computePanchang(
     godhuliMuhurat: godhuli,
     choghadiyaDay,
     choghadiyaNight,
-    ayanamsa: Number(lahiriAyanamsaDeg(reference).toFixed(4)),
+    ayanamsa: Number(ayanamsaDeg(reference, method).toFixed(4)),
     method: {
       ayanamsa: method,
       ephemeris: EPHEMERIS_VERSION,
@@ -365,10 +362,11 @@ function twelfth(dayMs: number): number {
   return dayMs / 12;
 }
 
-function karanaNameFor(index: number): string {
-  if (index === 0) return 'किंस्तुघ्न';
-  if (index >= 57) return (['शकुनि', 'चतुष्पद', 'नागव'] as const)[index - 57] as string;
-  return KARANA_NAMES_MR[(index - 1) % 7] as string;
+export function karanaNameFor(index: number): string {
+  const i = ((Math.trunc(index) % 60) + 60) % 60;
+  if (i === 0) return 'किंस्तुघ्न';
+  if (i >= 57) return (['शकुनि', 'चतुष्पद', 'नागव'] as const)[i - 57] as string;
+  return KARANA_NAMES_MR[(i - 1) % 7] as string;
 }
 
 /** Shaka year from a Gregorian date (new year on 22 March). */

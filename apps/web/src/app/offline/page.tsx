@@ -22,7 +22,7 @@ export default function OfflinePage() {
           <li>• पाहुण्यांची नावे व बजेट तुमच्या डिव्हाइसवर जतन राहते.</li>
           <li>• जोडणी आल्यावर आपोआप सिंक होते.</li>
         </ul>
-        <Link href="/" className="mt-6 inline-block rounded-full bg-maroon px-6 py-3 text-sm font-semibold text-ivory">
+        <Link href="/" className="btn-base btn-maroon mt-6 px-6 text-sm">
           पुन्हा प्रयत्न करा
         </Link>
       </div>

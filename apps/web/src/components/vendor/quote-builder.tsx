@@ -2,17 +2,17 @@
 
 import { useMemo, useState, useTransition } from 'react';
 
+import { commissionRate, gatewayFeeBreakdown, priceQuote, type Quote } from '@mazi/commerce';
 import { toDevanagariDigits } from '@mazi/marathi';
 
 import { saveQuoteAction } from '@/app/vendor/actions';
+import { percent } from '@/lib/format';
 
 /**
- * Line-item quote builder.
+ * Super-Class Line-Item Quote Builder.
  *
- * Two numbers are shown side by side on every keystroke: what the customer pays
- * and what the vendor takes home. Vendors on other platforms discover the
- * commission *after* the event; here it is part of writing the quote, which is
- * the only honest way to run a take-rate business.
+ * Shows what the customer pays and what the vendor takes home in real-time,
+ * ensuring complete financial transparency and zero settlement surprises.
  */
 
 interface Row {
@@ -22,10 +22,6 @@ interface Row {
   unitPrice: string;
 }
 
-const GST = 0.18;
-const GATEWAY = 0.0236;
-const GATEWAY_GST = 0.18;
-
 const TEMPLATES: Record<string, Row[]> = {
   photographer: [
     { label: 'मुख्य छायाचित्रण (कॅन्डिड + पारंपरिक)', quantity: '2', unit: 'दिवस', unitPrice: '45000' },
@@ -33,7 +29,7 @@ const TEMPLATES: Record<string, Row[]> = {
     { label: 'ड्रोन शॉट', quantity: '1', unit: 'नग', unitPrice: '11000' },
   ],
   caterer: [
-    { label: 'भोजन — महाराष्ट्रीयन थाळी', quantity: '650', unit: 'ताळी', unitPrice: '520' },
+    { label: 'भोजन — महाराष्ट्रीयन थाळी', quantity: '650', unit: 'थाळी', unitPrice: '520' },
     { label: 'स्वागत पेय व स्नॅक्स काउंटर', quantity: '1', unit: 'काउंटर', unitPrice: '18000' },
   ],
   decorator: [
@@ -57,14 +53,10 @@ export function QuoteBuilder({
   leadId,
   category,
   suggestedPricePaise,
-  takeRateHint,
-  commissionLabel,
 }: {
   leadId: string;
   category: string;
   suggestedPricePaise: number;
-  takeRateHint: number;
-  commissionLabel: string;
 }) {
   const [pending, startTransition] = useTransition();
   const [rows, setRows] = useState<Row[]>(
@@ -73,155 +65,264 @@ export function QuoteBuilder({
     ],
   );
   const [discount, setDiscount] = useState('0');
-  const [message, setMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
 
   const totals = useMemo(() => {
-    const subtotalPaise = rows.reduce(
-      (sum, row) => sum + Math.round((Number(row.quantity) || 0) * (Number(row.unitPrice) || 0) * 100),
+    const items = rows
+      .filter(
+        (row) =>
+          row.label.trim().length > 0 && (Number(row.quantity) || 0) > 0 && (Number(row.unitPrice) || 0) > 0,
+      )
+      .map((row) => ({
+        label: row.label.trim(),
+        quantity: Number(row.quantity) || 0,
+        unit: row.unit || 'नग',
+        unitPricePaise: Math.round((Number(row.unitPrice) || 0) * 100),
+        optional: false,
+      }));
+    const breakdown = priceQuote({
+      id: 'preview',
+      vendorId: 'preview',
+      category: category as Quote['category'],
+      items,
+      discountPaise: Math.max(0, Math.round((Number(discount) || 0) * 100)),
+      validTill: new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10),
+      status: 'draft',
+    });
+    const gateway = gatewayFeeBreakdown(breakdown.taxablePaise);
+    const gatewayTotalPaise = gateway.totalPaise;
+    const payoutPaise = Math.max(
       0,
+      breakdown.customerTotalPaise - breakdown.commissionPaise - gatewayTotalPaise,
     );
-    const discountPaise = Math.round((Number(discount) || 0) * 100);
-    const taxable = Math.max(0, subtotalPaise - discountPaise);
-    const gstPaise = Math.round(taxable * GST);
-    const totalPaise = taxable + gstPaise;
-    const commissionPaise = Math.round(taxable * (commissionLabel === '१२%' ? 0.12 : 0.1));
-    const gatewayPaise = Math.round(totalPaise * GATEWAY * (1 + GATEWAY_GST));
-    const payoutPaise = Math.max(0, totalPaise - commissionPaise - gatewayPaise);
-    return { subtotalPaise, discountPaise, gstPaise, totalPaise, commissionPaise, gatewayPaise, payoutPaise };
-  }, [rows, discount, commissionLabel]);
+    return {
+      subtotalPaise: breakdown.subtotalPaise,
+      discountPaise: breakdown.discountPaise,
+      taxablePaise: breakdown.taxablePaise,
+      gstPaise: breakdown.gstPaise,
+      totalPaise: breakdown.customerTotalPaise,
+      commissionPaise: breakdown.commissionPaise,
+      gatewayPaise: gatewayTotalPaise,
+      payoutPaise,
+      rate: commissionRate(category),
+    };
+  }, [rows, discount, category]);
+
+  const shareParts = [
+    { label: 'विक्रेता मिळकत', value: Math.max(0, totals.taxablePaise - totals.commissionPaise), className: 'bg-paithani' },
+    { label: 'GST', value: totals.gstPaise, className: 'bg-maroon' },
+    { label: 'प्लॅटफॉर्म कमिशन', value: totals.commissionPaise, className: 'bg-gold-bright' },
+    { label: 'गेटवे शुल्क', value: totals.gatewayPaise, className: 'bg-charcoal-muted' },
+  ];
+  const shareTotal = shareParts.reduce((sum, part) => sum + part.value, 0) || 1;
 
   const update = (index: number, patch: Partial<Row>) =>
     setRows((current) => current.map((row, i) => (i === index ? { ...row, ...patch } : row)));
 
+  const removeRow = (index: number) => {
+    if (rows.length <= 1) return;
+    setRows((current) => current.filter((_, i) => i !== index));
+  };
+
   return (
-    <section className="surface p-5">
-      <h2 className="font-display text-lg font-bold text-charcoal">कोट तयार करा</h2>
-      <p className="mt-1 text-xs text-charcoal-soft">
-        ओळी-वार दर द्या — ग्राहकाला काय मिळेल ते स्पष्ट दिसते, आणि नंतर वाद होत नाही.
-      </p>
+    <section className="surface-elevated p-6 relative overflow-hidden">
+      <div className="flex items-center justify-between border-b border-gold/25 pb-3">
+        <div className="flex items-center gap-2.5">
+          <span className="grid size-8 place-items-center rounded-xl bg-gold/15 text-gold-deep text-base">
+            ✍️
+          </span>
+          <div>
+            <h2 className="font-display text-base font-bold text-charcoal">कोट तयार करा (Quote Builder)</h2>
+            <p className="text-[0.72rem] text-charcoal-muted">पारदर्शक ओळी-वार दर व थेट नफा हिशोब</p>
+          </div>
+        </div>
+        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[0.68rem] font-bold text-maroon border border-gold/30">
+          GST १८%
+        </span>
+      </div>
 
       <form
         action={(formData) => {
           startTransition(async () => {
             try {
               await saveQuoteAction(formData);
-              setMessage('कोट पाठवला — ग्राहकाला विनंती स्थिती अद्ययावत झाली.');
+              setNotice({ kind: 'success', text: '✓ कोट यशस्वीरीत्या पाठवला! ग्राहकाला सूचना दिली गेली.' });
             } catch (error) {
-              setMessage(error instanceof Error ? error.message : 'कोट पाठवता आला नाही.');
+              setNotice({
+                kind: 'error',
+                text: error instanceof Error ? error.message : 'कोट पाठवता आला नाही.',
+              });
             }
           });
         }}
-        className="mt-4 space-y-3"
+        className="mt-5 space-y-4"
       >
         <input type="hidden" name="leadId" value={leadId} />
         <input type="hidden" name="discount" value={discount} />
 
-        {rows.map((row, index) => (
-          <div key={index} className="rounded-xl border border-gold/25 bg-ivory p-3">
-            <input
-              name="label"
-              value={row.label}
-              onChange={(event) => update(index, { label: event.target.value })}
-              placeholder="वस्तू / सेवा"
-              className="w-full rounded-lg border border-gold/40 bg-ivory px-2 py-1.5 text-sm outline-none focus:border-maroon"
-            />
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              <label className="text-[11px]">
-                <span className="text-charcoal-soft">प्रमाण</span>
+        {/* Item Rows */}
+        <div className="space-y-3">
+          {rows.map((row, index) => (
+            <div
+              key={index}
+              className="rounded-2xl border border-gold/30 bg-ivory p-3.5 shadow-2xs transition hover:border-gold/60"
+            >
+              <div className="flex items-center justify-between gap-2">
                 <input
-                  name="quantity"
-                  inputMode="decimal"
-                  value={row.quantity}
-                  onChange={(event) => update(index, { quantity: event.target.value })}
-                  className="mt-0.5 w-full rounded-lg border border-gold/40 bg-ivory px-2 py-1.5 text-sm"
+                  name="label"
+                  value={row.label}
+                  onChange={(event) => update(index, { label: event.target.value })}
+                  placeholder="वस्तू / सेवेचे नाव (उदा. अल्बम, स्टेज सजावट)"
+                  required
+                  className="w-full rounded-xl border border-gold/35 bg-ivory px-3 py-1.5 text-xs sm:text-sm font-medium text-charcoal outline-none focus:border-maroon focus:ring-1 focus:ring-maroon/20"
                 />
-              </label>
-              <label className="text-[11px]">
-                <span className="text-charcoal-soft">एकक</span>
-                <input
-                  name="unit"
-                  value={row.unit}
-                  onChange={(event) => update(index, { unit: event.target.value })}
-                  className="mt-0.5 w-full rounded-lg border border-gold/40 bg-ivory px-2 py-1.5 text-sm"
-                />
-              </label>
-              <label className="text-[11px]">
-                <span className="text-charcoal-soft">दर (₹)</span>
-                <input
-                  name="unitPrice"
-                  inputMode="decimal"
-                  value={row.unitPrice}
-                  onChange={(event) => update(index, { unitPrice: event.target.value })}
-                  className="mt-0.5 w-full rounded-lg border border-gold/40 bg-ivory px-2 py-1.5 text-sm"
-                />
-              </label>
-            </div>
-          </div>
-        ))}
+                {rows.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => removeRow(index)}
+                    className="size-7 shrink-0 grid place-items-center rounded-lg text-charcoal-muted hover:bg-maroon-light hover:text-maroon text-xs"
+                    title="ओळ काढा"
+                  >
+                    ✕
+                  </button>
+                ) : null}
+              </div>
 
-        <div className="flex gap-2">
+              <div className="mt-2.5 grid grid-cols-3 gap-2">
+                <label className="text-xs font-medium text-charcoal-muted">
+                  <span>प्रमाण</span>
+                  <input
+                    name="quantity"
+                    inputMode="decimal"
+                    value={row.quantity}
+                    onChange={(event) => update(index, { quantity: event.target.value })}
+                    required
+                    className="mt-0.5 w-full rounded-lg border border-gold/35 bg-ivory px-2.5 py-1 text-xs sm:text-sm font-semibold text-charcoal outline-none focus:border-maroon"
+                  />
+                </label>
+                <label className="text-xs font-medium text-charcoal-muted">
+                  <span>एकक (Unit)</span>
+                  <input
+                    name="unit"
+                    value={row.unit}
+                    onChange={(event) => update(index, { unit: event.target.value })}
+                    required
+                    className="mt-0.5 w-full rounded-lg border border-gold/35 bg-ivory px-2.5 py-1 text-xs sm:text-sm font-medium text-charcoal outline-none focus:border-maroon"
+                  />
+                </label>
+                <label className="text-xs font-medium text-charcoal-muted">
+                  <span>दर प्रति एकक (₹)</span>
+                  <input
+                    name="unitPrice"
+                    inputMode="decimal"
+                    value={row.unitPrice}
+                    onChange={(event) => update(index, { unitPrice: event.target.value })}
+                    required
+                    className="mt-0.5 w-full rounded-lg border border-gold/35 bg-ivory px-2.5 py-1 text-xs sm:text-sm font-bold text-maroon outline-none focus:border-maroon"
+                  />
+                </label>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Action Buttons: Add Item & Discount */}
+        <div className="flex items-center gap-2 pt-1">
           <button
             type="button"
             onClick={() => setRows((current) => [...current, { label: '', quantity: '1', unit: 'नग', unitPrice: '' }])}
-            className="flex-1 rounded-lg border border-gold/50 px-3 py-2 text-xs font-semibold text-charcoal-soft"
+            className="flex-1 rounded-xl border border-gold/45 bg-ivory py-2 text-xs font-bold text-charcoal-soft hover:bg-gold/15 transition shadow-2xs"
           >
-            + ओळ जोडा
+            + नवीन ओळ जोडा
           </button>
-          <label className="flex-1 text-[11px]">
-            <span className="text-charcoal-soft">सूट (₹)</span>
+          <label className="flex-1 text-xs font-medium text-charcoal-muted">
+            <span className="block mb-0.5">सूट / डिस्काउंट (₹)</span>
             <input
               inputMode="numeric"
               value={discount}
+              placeholder="0"
               onChange={(event) => setDiscount(event.target.value.replace(/[^0-9]/g, ''))}
-              className="mt-0.5 w-full rounded-lg border border-gold/40 bg-ivory px-2 py-1.5 text-sm"
+              className="w-full rounded-xl border border-gold/40 bg-ivory px-3 py-1.5 text-xs font-semibold text-charcoal outline-none focus:border-maroon"
             />
           </label>
         </div>
 
-        <dl className="space-y-1 rounded-xl border border-gold/30 bg-ivory-deep/40 p-3 text-sm">
-          <div className="flex justify-between">
-            <dt className="text-charcoal-soft">उप-एकूण</dt>
-            <dd className="text-charcoal">{rupees(totals.subtotalPaise)}</dd>
+        {/* Visual Revenue Share Bar */}
+        <div className="rounded-xl border border-gold/25 bg-ivory-deep/40 p-3">
+          <div className="flex items-center justify-between text-[0.72rem] font-bold text-charcoal-muted mb-1.5">
+            <span>रक्कम विभागणी अंदाज</span>
+            <span className="text-paithani">विक्रेता नफा: ~{percent(totals.totalPaise ? totals.payoutPaise / totals.totalPaise : 0.85)}</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-ivory-deep flex">
+            {shareParts.map((part) => (
+              <div
+                key={part.label}
+                style={{ width: `${(part.value / shareTotal) * 100}%` }}
+                className={part.className}
+                title={part.label}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Calculation Table Card */}
+        <dl className="space-y-1.5 rounded-2xl border border-gold/35 bg-linear-to-b from-ivory-surface to-ivory p-4 text-xs shadow-2xs">
+          <div className="flex justify-between text-charcoal-muted">
+            <dt>एकूण सेवा मूल्य (Subtotal)</dt>
+            <dd className="font-semibold text-charcoal">{rupees(totals.subtotalPaise)}</dd>
           </div>
           {totals.discountPaise > 0 ? (
-            <div className="flex justify-between">
-              <dt className="text-charcoal-soft">सूट</dt>
-              <dd className="text-charcoal">−{rupees(totals.discountPaise)}</dd>
+            <div className="flex justify-between text-paithani font-medium">
+              <dt>सूट (Discount)</dt>
+              <dd>−{rupees(totals.discountPaise)}</dd>
             </div>
           ) : null}
-          <div className="flex justify-between">
-            <dt className="text-charcoal-soft">GST १८%</dt>
-            <dd className="text-charcoal">{rupees(totals.gstPaise)}</dd>
+          <div className="flex justify-between text-charcoal-muted">
+            <dt>GST (१८% कर)</dt>
+            <dd className="font-semibold text-charcoal">{rupees(totals.gstPaise)}</dd>
           </div>
-          <div className="flex justify-between border-t border-gold/30 pt-1.5">
-            <dt className="font-semibold text-charcoal">ग्राहक देय</dt>
-            <dd className="font-display text-lg font-bold text-maroon">{rupees(totals.totalPaise)}</dd>
+          <div className="flex justify-between border-t border-gold/30 pt-2 text-sm font-bold">
+            <dt className="text-charcoal">ग्राहकाचे देयक (Total)</dt>
+            <dd className="font-display text-lg text-maroon">{rupees(totals.totalPaise)}</dd>
           </div>
-          <div className="flex justify-between border-t border-gold/30 pt-1.5">
-            <dt className="text-charcoal-soft">प्लॅटफॉर्म कमिशन ({commissionLabel})</dt>
-            <dd className="text-charcoal">−{rupees(totals.commissionPaise)}</dd>
+          <div className="flex justify-between border-t border-gold/20 pt-2 text-[0.72rem] text-charcoal-muted">
+            <dt>प्लॅटफॉर्म कमिशन ({percent(totals.rate)})</dt>
+            <dd className="font-medium text-charcoal">−{rupees(totals.commissionPaise)}</dd>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-charcoal-soft">गेटवे शुल्क (अंदाजे)</dt>
-            <dd className="text-charcoal">−{rupees(totals.gatewayPaise)}</dd>
+          <div className="flex justify-between text-[0.72rem] text-charcoal-muted">
+            <dt>गेटवे हाताळणी शुल्क</dt>
+            <dd className="font-medium text-charcoal">−{rupees(totals.gatewayPaise)}</dd>
           </div>
-          <div className="flex justify-between border-t border-gold/30 pt-1.5">
-            <dt className="font-semibold text-charcoal">तुमची देय रक्कम</dt>
-            <dd className="font-display text-lg font-bold text-paithani">{rupees(totals.payoutPaise)}</dd>
+          <div className="flex justify-between border-t-2 border-paithani/40 pt-2 text-xs font-bold bg-paithani-soft/40 -mx-4 -mb-4 p-3 rounded-b-2xl">
+            <dt className="text-paithani">तुमची थेट देय रक्कम (Net Payout)</dt>
+            <dd className="font-display text-base text-paithani">{rupees(totals.payoutPaise)}</dd>
           </div>
         </dl>
 
+        {/* Submit Button */}
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-full bg-maroon px-5 py-3 font-semibold text-ivory shadow-soft disabled:opacity-60"
+          className="btn-base btn-maroon w-full py-3.5 text-sm shadow-md"
         >
-          {pending ? 'पाठवत आहे…' : 'कोट पाठवा'}
+          {pending ? 'कोट तयार होत आहे…' : 'ग्राहकाला अधिकृत कोट पाठवा ↵'}
         </button>
-        {message ? <p className="text-xs text-paithani">{message}</p> : null}
-        <p className="text-[11px] text-charcoal-soft">
-          कोट ७ दिवसांसाठी वैध. ग्राहकाने स्वीकारल्यावर तारीख राखीव होते आणि आगाऊ रकमेनंतर बुकिंग निश्चित.
-          {takeRateHint > 0 ? ` (सूचना: या कार्यक्रमासाठी सरासरी कमिशन ${rupees(takeRateHint)})` : ''}
+
+        {notice ? (
+          <div
+            role={notice.kind === 'error' ? 'alert' : 'status'}
+            className={
+              notice.kind === 'error'
+                ? 'rounded-xl border border-maroon/40 bg-maroon-light p-2.5 text-center text-xs font-semibold text-maroon'
+                : 'rounded-xl border border-paithani/40 bg-paithani-soft p-2.5 text-center text-xs font-semibold text-paithani'
+            }
+          >
+            {notice.text}
+          </div>
+        ) : null}
+
+        <p className="text-center text-[0.7rem] text-charcoal-muted">
+          कोट ७ दिवस वैध राहील. स्वीकारल्यानंतर कॅलेंडरवर दिवस आपोआप बुक केला जाईल.
         </p>
       </form>
     </section>

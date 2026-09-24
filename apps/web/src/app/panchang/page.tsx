@@ -6,6 +6,7 @@ import { findMuhurats } from '@mazi/panchang';
 import { PanchangMonth } from '@/components/panchang-month';
 import { CITY_OPTIONS, DPO_NOTE, locationFor, panchangFor } from '@/lib/panchang';
 import { getStore } from '@/lib/store';
+import { Kicker } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,7 +63,7 @@ export default async function PanchangPage({
   return (
     <div className="shell py-10">
       <header className="max-w-3xl">
-        <p className="font-ui text-xs uppercase tracking-[0.16em] text-gold">Panchang Engine</p>
+        <Kicker>Panchang Engine</Kicker>
         <h1 className="mt-1 font-display text-4xl font-bold text-maroon">पंचांग व मुहूर्त</h1>
         <p className="mt-3 text-lg text-charcoal-soft">
           प्रत्येक गणना शहरानुसार — सूर्योदय महाराष्ट्रात २० मिनिटांपर्यंत बदलतो, आणि तिथीची सीमा त्यावर ठरते. {DPO_NOTE}
@@ -94,7 +95,7 @@ export default async function PanchangPage({
             ))}
           </select>
         </label>
-        <button type="submit" className="rounded-full bg-maroon px-5 py-2.5 text-sm font-semibold text-ivory sm:col-span-3">
+        <button type="submit" className="btn-base btn-maroon px-5 text-sm sm:col-span-3">
           पंचांग पाहा
         </button>
       </form>
@@ -198,7 +199,7 @@ export default async function PanchangPage({
                     <p className="font-semibold text-charcoal">
                       {entry.weekday}, {formatMarathiDate(`${entry.date}T00:00:00Z`)}
                     </p>
-                    <span className="rounded-full border border-gold/45 bg-gold/10 px-2 py-0.5 text-[11px] text-charcoal">
+                    <span className="rounded-full border border-gold/45 bg-gold/10 px-2 py-0.5 text-xs text-charcoal">
                       {toDevanagariDigits(entry.score)}/१००
                     </span>
                   </div>

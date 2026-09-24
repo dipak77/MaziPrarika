@@ -6,6 +6,7 @@ import { calculateReadiness } from '@mazi/commerce';
 import { composeInvitation } from '@mazi/marathi';
 
 import { getStore } from '@/lib/store';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 /**
  * Studio server actions.
@@ -28,33 +29,44 @@ const optionalString = (value: FormDataEntryValue | null, max = 800): string | u
 };
 
 export async function addTaskAction(formData: FormData): Promise<void> {
+  const rl = await checkRateLimit('studio:task', 20, 60_000);
+  if (rl.limited) throw new Error('खूप विनंत्या — एका मिनिटाने पुन्हा प्रयत्न करा.');
   const store = getStore();
   const slug = requireString(formData.get('slug'), 'कार्यक्रम', 80);
   const event = store.events.bySlug(slug);
   if (!event) throw new Error('कार्यक्रम सापडला नाही');
 
-  const task = store.events.addTask({
-    eventId: event.id,
-    title: requireString(formData.get('title'), 'कार्य', 160),
-    category: optionalString(formData.get('category')) ?? 'सामान्य',
-    status: 'open',
-    priority: Number(formData.get('priority') ?? 2) || 2,
-    ...(optionalString(formData.get('dueDate')) ? { dueDate: optionalString(formData.get('dueDate'))! } : {}),
+  const priorityRaw = Number(formData.get('priority') ?? 2);
+  const priority = Number.isFinite(priorityRaw) ? Math.max(1, Math.min(Math.round(priorityRaw), 5)) : 2;
+  store.transaction(() => {
+    const task = store.events.addTask({
+      eventId: event.id,
+      title: requireString(formData.get('title'), 'कार्य', 160),
+      category: optionalString(formData.get('category')) ?? 'सामान्य',
+      status: 'open',
+      priority,
+      ...(optionalString(formData.get('dueDate')) ? { dueDate: optionalString(formData.get('dueDate'))! } : {}),
+    });
+    store.audit.record({ actor: event.ownerUserId, action: 'task.created', entity: 'task', entityId: task.id, after: { title: task.title, dueDate: task.dueDate } });
   });
-
-  store.audit.record({ actor: 'usr_c_ramesh', action: 'task.created', entity: 'task', entityId: task.id, after: { title: task.title, dueDate: task.dueDate } });
   revalidatePath(`/studio/${slug}`);
 }
 
 export async function toggleTaskAction(formData: FormData): Promise<void> {
+  const rl = await checkRateLimit('studio:task-toggle', 30, 60_000);
+  if (rl.limited) throw new Error('खूप विनंत्या — एका मिनिटाने पुन्हा प्रयत्न करा.');
   const store = getStore();
   const slug = requireString(formData.get('slug'), 'कार्यक्रम', 80);
+  const event = store.events.bySlug(slug);
+  if (!event) throw new Error('कार्यक्रम सापडला नाही');
   const id = requireString(formData.get('taskId'), 'कार्य', 80);
-  const current = store.events.tasks(store.events.bySlug(slug)?.id ?? '').find((task) => task.id === id);
+  const current = store.events.tasks(event.id).find((task) => task.id === id);
   if (!current) throw new Error('कार्य सापडले नाही');
 
-  const next = store.events.updateTask(id, { status: current.status === 'done' ? 'open' : 'done' });
-  store.audit.record({ actor: 'usr_c_ramesh', action: 'task.toggled', entity: 'task', entityId: id, before: { status: current.status }, after: { status: next.status } });
+  store.transaction(() => {
+    const next = store.events.updateTask(id, { status: current.status === 'done' ? 'open' : 'done' });
+    store.audit.record({ actor: event.ownerUserId, action: 'task.toggled', entity: 'task', entityId: id, before: { status: current.status }, after: { status: next.status } });
+  });
   revalidatePath(`/studio/${slug}`);
 }
 
@@ -64,20 +76,26 @@ export async function addGuestAction(formData: FormData): Promise<void> {
   const event = store.events.bySlug(slug);
   if (!event) throw new Error('कार्यक्रम सापडला नाही');
 
+  const rawGuestCount = Number(formData.get('guestCount') ?? 1);
+  const guestCount = Number.isFinite(rawGuestCount) ? Math.max(1, Math.min(Math.round(rawGuestCount), 50)) : 1;
+  store.transaction(() => {
+  const rawSide = optionalString(formData.get('side')) as 'bride' | 'groom' | 'both' | 'host' | 'guest' | undefined;
+  const allowedSides = new Set(['bride', 'groom', 'both', 'host', 'guest']);
+  const side = rawSide && allowedSides.has(rawSide) ? rawSide : 'both';
   const guest = store.events.addGuest({
     eventId: event.id,
     name: requireString(formData.get('name'), 'पाहुण्याचे नाव', 120),
     ...(optionalString(formData.get('phone'), 20) ? { phone: optionalString(formData.get('phone'), 20)! } : {}),
     ...(optionalString(formData.get('relation'), 60) ? { relation: optionalString(formData.get('relation'), 60)! } : {}),
-    side: (optionalString(formData.get('side')) as 'bride' | 'groom' | 'both' | 'host' | 'guest' | undefined) ?? 'both',
+    side,
     rsvpStatus: 'pending',
     guestCount: Math.max(1, Math.min(50, Number(formData.get('guestCount') ?? 1) || 1)),
     invitedAt: new Date().toISOString(),
   });
-
-  store.audit.record({
-    actor: 'usr_c_ramesh', action: 'guest.added', entity: 'guest', entityId: guest.id,
-    after: { name: guest.name, relation: guest.relation, code: guest.code },
+    store.audit.record({
+      actor: event.ownerUserId, action: 'guest.added', entity: 'guest', entityId: guest.id,
+      after: { name: guest.name, relation: guest.relation, code: guest.code },
+    });
   });
   revalidatePath(`/studio/${slug}`);
 }
@@ -89,16 +107,20 @@ export async function updateEventAction(formData: FormData): Promise<void> {
   if (!event) throw new Error('कार्यक्रम सापडला नाही');
 
   const before = { title: event.title, eventDate: event.eventDate, venueName: event.venueName, guestCountExpected: event.guestCountExpected };
-  const updated = store.events.update(event.id, {
-    title: optionalString(formData.get('title'), 160) ?? event.title,
-    ...(optionalString(formData.get('eventDate'), 10) ? { eventDate: optionalString(formData.get('eventDate'), 10)! } : {}),
-    ...(optionalString(formData.get('venueName'), 160) ? { venueName: optionalString(formData.get('venueName'), 160)! } : {}),
-    guestCountExpected: Math.max(1, Math.min(5000, Number(formData.get('guestCountExpected') ?? event.guestCountExpected) || event.guestCountExpected)),
-  });
-
-  store.audit.record({
-    actor: 'usr_c_ramesh', action: 'event.updated', entity: 'event', entityId: event.id,
-    before, after: { title: updated.title, eventDate: updated.eventDate, venueName: updated.venueName, guestCountExpected: updated.guestCountExpected },
+  const rawExpected = Number(formData.get('guestCountExpected') ?? event.guestCountExpected);
+  const guestCountExpected = Number.isFinite(rawExpected) ? Math.max(1, Math.min(Math.round(rawExpected), 5000)) : event.guestCountExpected;
+  let updated: typeof event;
+  store.transaction(() => {
+    updated = store.events.update(event.id, {
+      title: optionalString(formData.get('title'), 160) ?? event.title,
+      ...(optionalString(formData.get('eventDate'), 10) ? { eventDate: optionalString(formData.get('eventDate'), 10)! } : {}),
+      ...(optionalString(formData.get('venueName'), 160) ? { venueName: optionalString(formData.get('venueName'), 160)! } : {}),
+      guestCountExpected,
+    });
+    store.audit.record({
+      actor: event.ownerUserId, action: 'event.updated', entity: 'event', entityId: event.id,
+      before, after: { title: updated.title, eventDate: updated.eventDate, venueName: updated.venueName, guestCountExpected: updated.guestCountExpected },
+    });
   });
   revalidatePath(`/studio/${slug}`);
 }
@@ -121,28 +143,33 @@ export async function requestQuoteAction(formData: FormData): Promise<void> {
     return;
   }
 
-  const lead = store.marketplace.createLead({
-    eventId: event.id,
-    vendorId,
-    customerUserId: event.ownerUserId,
-    category: vendor.category,
-    message: `${event.title} — ${event.guestCountExpected} पाहुणे. कृपया उपलब्धता व पॅकेजचा तपशील कळवा.`,
-    budgetPaise: Math.max(vendor.startingPricePaise, Math.round(event.budgetTargetPaise * 0.1)),
-    ...(event.eventDate ? { eventDate: event.eventDate } : {}),
-    guestCount: event.guestCountExpected,
-    source: 'search',
-    responseDueMinutes: 120,
-  });
+  const budgetPaise = Number.isFinite(event.budgetTargetPaise) ? Math.max(0, Math.min(Math.round(event.budgetTargetPaise * 0.1), 100_000_000_00)) : 0;
+  const clampedBudget = Math.max(vendor.startingPricePaise, budgetPaise);
+  const guestCount = Number.isFinite(event.guestCountExpected) ? Math.max(1, Math.min(Math.round(event.guestCountExpected), 5000)) : 1;
+  store.transaction(() => {
+    const lead = store.marketplace.createLead({
+      eventId: event.id,
+      vendorId,
+      customerUserId: event.ownerUserId,
+      category: vendor.category,
+      message: `${event.title.slice(0, 160)} — ${guestCount} पाहुणे. कृपया उपलब्धता व पॅकेजचा तपशील कळवा.`.slice(0, 800),
+      budgetPaise: clampedBudget,
+      ...(event.eventDate ? { eventDate: event.eventDate } : {}),
+      guestCount,
+      source: 'search',
+      responseDueMinutes: 120,
+    });
 
-  store.marketplace.addMessage({
-    leadId: lead.id,
-    sender: 'customer',
-    body: lead.message ?? '',
-    attachments: [],
-    readAt: new Date().toISOString(),
-  });
+    store.marketplace.addMessage({
+      leadId: lead.id,
+      sender: 'customer',
+      body: lead.message ?? '',
+      attachments: [],
+      readAt: new Date().toISOString(),
+    });
 
-  store.audit.record({ actor: 'usr_c_ramesh', action: 'lead.created', entity: 'lead', entityId: lead.id, after: { vendorId, category: vendor.category } });
+    store.audit.record({ actor: event.ownerUserId, action: 'lead.created', entity: 'lead', entityId: lead.id, after: { vendorId, category: vendor.category, budgetPaise: clampedBudget } });
+  });
   revalidatePath(`/studio/${slug}`);
   revalidatePath('/vendor');
 }

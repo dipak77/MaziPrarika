@@ -7,10 +7,15 @@ import { VendorCalendar } from '@/components/vendor/vendor-calendar';
 import { getStore } from '@/lib/store';
 import { vendorDeskId } from '@/lib/vendor-desk';
 import { devRupees, percent } from '@/lib/format';
+import { Kicker } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'विक्रेता डेस्क — विनंत्या, कोट व कॅलेंडर' };
+export const metadata = {
+  title: 'विक्रेता डेस्क — विनंत्या, कोट व कॅलेंडर',
+  description: 'विक्रेत्यांसाठी आंतरिक ऑपरेटिंग डेस्क — विनंत्या, लेखी कोट, कॅलेंडर, सेटलमेंट व जाहिरात कामगिरी.',
+  robots: { index: false, follow: false },
+};
 
 /**
  * The vendor's side of the marketplace.
@@ -73,17 +78,17 @@ export default async function VendorDeskPage() {
     <div className="shell py-10">
       <header className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="font-ui text-xs uppercase tracking-[0.16em] text-gold">Vendor OS</p>
+          <Kicker>Vendor OS</Kicker>
           <h1 className="mt-1 font-display text-4xl font-bold text-maroon">{vendor.name}</h1>
           <p className="mt-2 text-charcoal-soft">
             {vendor.city} • योजना {vendor.plan} • सेंद्रिय गुण {toDevanagariDigits(trust.organicScore)}/१००
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link href={`/vendors/${vendor.id}`} className="rounded-full border border-gold/50 px-4 py-2 text-sm font-semibold text-charcoal">
+          <Link href={`/vendors/${vendor.id}`} className="btn-base btn-outline px-4 text-sm">
             सार्वजनिक प्रोफाइल
           </Link>
-          <Link href="/vendors" className="rounded-full bg-maroon px-4 py-2 text-sm font-semibold text-ivory">
+          <Link href="/vendors" className="btn-base btn-maroon px-4 text-sm">
             नवीन विनंत्या कोठून येतात?
           </Link>
         </div>
@@ -133,13 +138,13 @@ export default async function VendorDeskPage() {
                       <span
                         className={
                           overdue
-                            ? 'rounded-full border border-maroon/40 bg-maroon/8 px-2 py-0.5 text-[11px] text-maroon'
-                            : 'rounded-full border border-gold/45 bg-gold/10 px-2 py-0.5 text-[11px] text-charcoal'
+                            ? 'rounded-full border border-maroon/40 bg-maroon/8 px-2 py-0.5 text-xs text-maroon'
+                            : 'rounded-full border border-gold/45 bg-gold/10 px-2 py-0.5 text-xs text-charcoal'
                         }
                       >
                         {leadStatusLabel(lead.status)}
                       </span>
-                      <p className="mt-2 text-[11px] text-charcoal-soft">
+                      <p className="mt-2 text-xs text-charcoal-soft">
                         {overdue
                           ? `मुदत संपली (${toDevanagariDigits(Math.abs(minutesLeft))} मिनिटांपूर्वी)`
                           : `${toDevanagariDigits(minutesLeft)} मिनिटांत प्रतिसाद द्या`}
@@ -152,14 +157,14 @@ export default async function VendorDeskPage() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Link
                       href={`/vendor/leads/${lead.id}`}
-                      className="rounded-full bg-maroon px-4 py-2 text-xs font-semibold text-ivory"
+                      className="btn-base btn-maroon px-4 text-xs"
                     >
                       उत्तर द्या व कोट तयार करा
                     </Link>
                     {lead.eventId ? (
                       <Link
                         href={`/studio/${store.events.byId(lead.eventId)?.slug ?? ''}`}
-                        className="rounded-full border border-gold/50 px-4 py-2 text-xs font-semibold text-charcoal"
+                        className="btn-base btn-outline px-4 text-xs"
                       >
                         कार्यक्रम वर्कस्पेस पाहा
                       </Link>
@@ -197,7 +202,7 @@ export default async function VendorDeskPage() {
                 <dd className="text-charcoal">{devRupees(pendingSettlement)}</dd>
               </div>
             </dl>
-            <p className="mt-3 text-[11px] text-charcoal-soft">
+            <p className="mt-3 text-xs text-charcoal-soft">
               कमिशन श्रेणीनुसार (छायाचित्रण १२%) — आगाऊ रक्कम मिळाल्यावरच लागू, आणि तक्रार असेल तर सेटलमेंट थांबते.
             </p>
           </section>

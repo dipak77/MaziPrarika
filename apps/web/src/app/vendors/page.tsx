@@ -6,6 +6,7 @@ import { toDevanagariDigits, vendorCategoryLabel } from '@mazi/marathi';
 import { DiscoveryFeed } from '@/components/vendors/discovery-feed';
 import { CITY_OPTIONS } from '@/lib/panchang';
 import { getStore } from '@/lib/store';
+import { Kicker } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,7 +58,7 @@ export default async function VendorsPage({
   return (
     <div className="shell py-10">
       <header className="max-w-3xl">
-        <p className="font-ui text-xs uppercase tracking-[0.16em] text-gold">Marketplace</p>
+        <Kicker>Marketplace</Kicker>
         <h1 className="mt-2 font-display text-4xl font-bold text-maroon">विक्रेते शोधा</h1>
         <p className="mt-3 text-lg text-charcoal-soft">
           {toDevanagariDigits(store.vendors.search({ city, limit: 200 }).length)} विक्रेते {city} आणि परिसरात — प्रत्येक क्रमांक
@@ -70,10 +71,11 @@ export default async function VendorsPage({
           <Link
             key={entry.city}
             href={`/vendors?city=${encodeURIComponent(entry.city)}`}
+            aria-current={entry.city === city ? 'true' : undefined}
             className={
               entry.city === city
-                ? 'rounded-full bg-maroon px-3 py-1.5 text-xs font-semibold text-ivory'
-                : 'rounded-full border border-gold/40 bg-ivory px-3 py-1.5 text-xs text-charcoal-soft hover:border-maroon/60'
+                ? 'btn-base btn-maroon px-4 text-xs'
+                : 'btn-base border border-gold/40 bg-ivory px-4 text-xs font-medium text-charcoal-soft hover:border-maroon/60'
             }
           >
             {entry.city} ({toDevanagariDigits(entry.count)})

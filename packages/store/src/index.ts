@@ -16,6 +16,8 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
+import { transitionBooking, VENDOR_CATEGORIES, type TransitionRequest } from '@mazi/commerce';
+
 import { LATEST_SCHEMA_VERSION, SQLITE_MIGRATIONS } from './schema.js';
 
 export * from './schema.js';
@@ -572,6 +574,7 @@ export function openStore(options: OpenStoreOptions = {}): Store {
     mkdirSync(dirname(filename), { recursive: true });
   }
   const db = new DatabaseSync(filename);
+  let txDepth = 0;
 
   // Pragmas: durability + concurrency for a multi-request web server.
   db.exec('PRAGMA journal_mode = WAL;');
@@ -621,17 +624,23 @@ export function openStore(options: OpenStoreOptions = {}): Store {
   /* ---------------- vendors ---------------- */
   const vendors: VendorsRepository = {
     create(input) {
+      if (!(VENDOR_CATEGORIES as readonly string[]).includes(input.category)) {
+        throw new Error(`अनोळखी विक्रेता श्रेणी: ${input.category}`);
+      }
+      const clampedPrice = Number.isFinite(input.startingPricePaise as number)
+        ? Math.max(0, Math.min(Math.round(input.startingPricePaise as number), 100_000_000_00))
+        : 0;
       const vendor: Vendor = {
         id: input.id,
         ...(input.ownerUserId ? { ownerUserId: input.ownerUserId } : {}),
-        name: input.name,
+        name: input.name.slice(0, 160),
         category: input.category,
-        city: input.city,
+        city: input.city.slice(0, 80),
         ...(input.pincode ? { pincode: input.pincode } : {}),
         ...(input.latitude !== undefined ? { latitude: input.latitude } : {}),
         ...(input.longitude !== undefined ? { longitude: input.longitude } : {}),
-        ...(input.about ? { about: input.about } : {}),
-        startingPricePaise: input.startingPricePaise ?? 0,
+        ...(input.about ? { about: input.about.slice(0, 800) } : {}),
+        startingPricePaise: clampedPrice,
         plan: input.plan ?? 'free',
         rating: input.rating ?? 0,
         reviewCount: input.reviewCount ?? 0,
@@ -694,7 +703,18 @@ export function openStore(options: OpenStoreOptions = {}): Store {
     update(id, patch) {
       const current = vendors.byId(id);
       if (!current) throw new Error(`विक्रेता सापडला नाही: ${id}`);
-      const next: Vendor = { ...current, ...patch, id: current.id };
+      if (patch.category !== undefined && !(VENDOR_CATEGORIES as readonly string[]).includes(patch.category)) {
+        throw new Error(`अनोळखी विक्रेता श्रेणी: ${patch.category}`);
+      }
+      const next: Vendor = {
+        ...current,
+        ...patch,
+        ...(patch.name ? { name: patch.name.slice(0, 160) } : {}),
+        ...(patch.city ? { city: patch.city.slice(0, 80) } : {}),
+        ...(patch.about ? { about: patch.about.slice(0, 800) } : {}),
+        ...(patch.startingPricePaise !== undefined ? { startingPricePaise: Number.isFinite(patch.startingPricePaise) ? Math.max(0, Math.min(Math.round(patch.startingPricePaise), 100_000_000_00)) : current.startingPricePaise } : {}),
+        id: current.id,
+      };
       db.prepare(
         `UPDATE vendors SET owner_user_id = ?, name = ?, category = ?, city = ?, pincode = ?, latitude = ?, longitude = ?,
            about = ?, starting_price_paise = ?, plan = ?, rating = ?, review_count = ?, bookings_completed = ?,
@@ -1228,7 +1248,15 @@ export function openStore(options: OpenStoreOptions = {}): Store {
       const current = bookings.byId(id);
       if (!current) throw new Error(`बुकिंग सापडली नाही: ${id}`);
       const at = next.at ?? now();
-      const history = [...current.history, { at, actor: next.actor, from: current.state, to: next.state, ...(next.reason ? { reason: next.reason } : {}) }];
+      const result = transitionBooking({
+        from: current.state as TransitionRequest['from'],
+        to: next.state as TransitionRequest['to'],
+        actor: next.actor as TransitionRequest['actor'],
+        at,
+        ...(next.reason ? { reason: next.reason } : {}),
+      });
+      if (!result.ok) throw new Error(result.error);
+      const history = [...current.history, result.audit];
       db.prepare(
         `UPDATE bookings SET state = ?, history = ?, confirmed_at = COALESCE(confirmed_at, ?), completed_at = COALESCE(completed_at, ?), cancelled_at = COALESCE(cancelled_at, ?) WHERE id = ?`,
       ).run(
@@ -1241,14 +1269,30 @@ export function openStore(options: OpenStoreOptions = {}): Store {
       return bookings.byId(id)!;
     },
     appendLedger(entries) {
-      const insert = db.prepare('INSERT OR IGNORE INTO ledger_entries (id, booking_id, account, amount_paise, memo, idempotency_key, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
-      const stored: LedgerRow[] = [];
-      for (const entry of entries) {
-        const record = { ...entry, id: entry.id ?? newId('led'), createdAt: entry.createdAt ?? now() };
-        insert.run(record.id, record.bookingId, record.account, record.amountPaise, record.memo, record.idempotencyKey, record.createdAt);
-        stored.push(record);
-      }
-      return stored;
+      return store.transaction(() => {
+        const insert = db.prepare('INSERT OR IGNORE INTO ledger_entries (id, booking_id, account, amount_paise, memo, idempotency_key, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        const byKey = db.prepare('SELECT * FROM ledger_entries WHERE idempotency_key = ?');
+        const byId = db.prepare('SELECT id FROM ledger_entries WHERE id = ?');
+        const stored: LedgerRow[] = [];
+        for (const entry of entries) {
+          const clampedAmount = Number.isFinite(entry.amountPaise) ? Math.round(entry.amountPaise) : 0;
+          const record = { ...entry, amountPaise: clampedAmount, id: entry.id ?? newId('led'), createdAt: entry.createdAt ?? now() };
+          const info = insert.run(record.id, record.bookingId, record.account, record.amountPaise, record.memo.slice(0, 400), record.idempotencyKey.slice(0, 160), record.createdAt);
+          if (Number(info.changes) === 0) {
+            const replay = byKey.get(record.idempotencyKey);
+            if (replay) continue;
+            if (byId.get(record.id)) {
+              throw new Error(`लेजर नोंद जतन करता आली नाही: ${record.id} (इतर घटनेची आधीच नोंद आहे)`);
+            }
+            throw new Error(`लेजर नोंद जतन करता आली नाही: ${record.id}`);
+          }
+          stored.push(record);
+        }
+        for (const r of stored) {
+          if (!Number.isInteger(r.amountPaise)) throw new Error('लेजर रक्कम पूर्णांक असणे आवश्यक आहे');
+        }
+        return stored;
+      });
     },
     ledger(bookingId) {
       return db.prepare('SELECT * FROM ledger_entries WHERE booking_id = ? ORDER BY created_at').all(bookingId).map((r) => ({
@@ -1322,8 +1366,14 @@ export function openStore(options: OpenStoreOptions = {}): Store {
     },
     openDispute(dispute) {
       const record: DisputeRow = { ...dispute, id: dispute.id ?? newId('disp'), status: 'open', createdAt: now() };
-      db.prepare('INSERT INTO disputes (id, booking_id, raised_by, reason, evidence, status, resolution, created_at, resolved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .run(record.id, record.bookingId, record.raisedBy, record.reason, JSON.stringify(record.evidence), record.status, null, record.createdAt, null);
+      store.transaction(() => {
+        db.prepare('INSERT INTO disputes (id, booking_id, raised_by, reason, evidence, status, resolution, created_at, resolved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .run(record.id, record.bookingId, record.raisedBy, record.reason, JSON.stringify(record.evidence), record.status, null, record.createdAt, null);
+        const booking = bookings.byId(record.bookingId);
+        if (booking) {
+          db.prepare('UPDATE vendors SET dispute_count = dispute_count + 1 WHERE id = ?').run(booking.vendorId);
+        }
+      });
       return record;
     },
     disputes(args = {}) {
@@ -1574,7 +1624,24 @@ export function openStore(options: OpenStoreOptions = {}): Store {
     audit,
     privacy,
     transaction<T>(fn: () => T): T {
+      if (txDepth > 0) {
+        const savepoint = `sp_${txDepth}`;
+        db.exec(`SAVEPOINT ${savepoint}`);
+        txDepth += 1;
+        try {
+          const result = fn();
+          db.exec(`RELEASE ${savepoint}`);
+          return result;
+        } catch (error) {
+          db.exec(`ROLLBACK TO ${savepoint}`);
+          db.exec(`RELEASE ${savepoint}`);
+          throw error;
+        } finally {
+          txDepth -= 1;
+        }
+      }
       db.exec('BEGIN');
+      txDepth = 1;
       try {
         const result = fn();
         db.exec('COMMIT');
@@ -1582,6 +1649,8 @@ export function openStore(options: OpenStoreOptions = {}): Store {
       } catch (error) {
         db.exec('ROLLBACK');
         throw error;
+      } finally {
+        txDepth = 0;
       }
     },
     close() {

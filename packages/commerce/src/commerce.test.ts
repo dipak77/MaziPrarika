@@ -11,6 +11,7 @@ import {
   COMMERCE_VERSION,
   COMMISSION_RATES,
   commissionForPlan,
+  commissionRate,
   findBackupVendors,
   formatRupees,
   GST_RATE,
@@ -61,8 +62,18 @@ describe('quote pricing waterfall', () => {
     expect(b.customerTotalPaise).toBe(b.taxablePaise + b.gstPaise);
     expect(b.commissionPaise).toBe(Math.round(7_900_000 * COMMISSION_RATES.photographer));
     expect(b.platformFeePaise).toBe(Math.round(7_900_000 * PLATFORM_FEE_RATE));
-    expect(b.gatewayFeePaise).toBeGreaterThan(0);
+    expect(b.gatewayFeePaise).toBe(Math.round(b.taxablePaise * 0.02));
     expect(b.gatewayFeeGstPaise).toBe(Math.round(b.gatewayFeePaise * GST_RATE));
+    expect(b.gatewayFeePaise + b.gatewayFeeGstPaise).toBeLessThan(b.gstPaise + b.commissionPaise);
+  });
+
+  it('falls back to the other rate instead of NaN for unknown categories', () => {
+    expect(commissionRate('not-a-category')).toBe(COMMISSION_RATES.other);
+    expect(Number.isFinite(commissionRate('not-a-category'))).toBe(true);
+    expect(commissionRate('photographer')).toBe(COMMISSION_RATES.photographer);
+    expect(priceQuote(quote({ category: 'not-a-category' as never })).commissionPaise).toBe(
+      Math.round(7_900_000 * COMMISSION_RATES.other),
+    );
   });
 
   it('never pays the vendor the customer total — contribution is modelled, not assumed', () => {
@@ -203,6 +214,16 @@ describe('ledger postings', () => {
     const second = postingForPayment({ orderId: 'bk_test', breakdown: b, at: '2026-09-25T06:00:00.000Z', idempotencyKey: 'bk_test:payment' });
     expect(second.entries.map((e) => e.idempotencyKey)).toEqual(first.entries.map((e) => e.idempotencyKey));
   });
+
+  it('never collides entry ids or keys between payment and refund for the same order', () => {
+    const payment = postingForPayment({ orderId: 'bk_test', breakdown: b, at: '2026-09-24T06:00:00.000Z', idempotencyKey: 'bk_test:payment' });
+    const refund = postingForRefund({ orderId: 'bk_test', breakdown: b, refundPaise: 1_000_000, at: '2026-09-24T07:00:00.000Z' });
+    const ids = [...payment.entries, ...refund.entries].map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const clean = reconcileLedger([...payment.entries, ...refund.entries]);
+    expect(clean.balanced).toBe(true);
+    expect(clean.duplicateKeys).toEqual([]);
+  });
 });
 
 describe('refunds', () => {
@@ -225,10 +246,21 @@ describe('refunds', () => {
     expect(early.refundPaise).toBeLessThanOrEqual(b.customerTotalPaise);
   });
 
-  it('keeps 90% available for force-majeure', () => {
+  it('keeps 90% available for force-majeure, minus the gateway fee the platform ate', () => {
     const force = calculateRefund({ breakdown: b, daysBeforeEvent: 0, fault: 'force-majeure' });
-    expect(force.refundPaise).toBe(Math.round(b.taxablePaise * 0.9));
+    expect(force.refundPaise).toBe(Math.round(b.taxablePaise * 0.9) - (b.gatewayFeePaise + b.gatewayFeeGstPaise));
     expect(force.vendorPayoutReversedPaise).toBeGreaterThan(0);
+  });
+
+  it('makes refund deductions sum exactly to customerTotal − refund', () => {
+    for (const fault of ['customer', 'force-majeure'] as const) {
+      for (const days of [45, 20, 8, 4, 1]) {
+        const r = calculateRefund({ breakdown: b, daysBeforeEvent: days, fault });
+        const sum = r.deductions.reduce((s, d) => s + d.amountPaise, 0);
+        expect(sum).toBe(b.customerTotalPaise - r.refundPaise);
+        expect(r.refundPaise).toBeGreaterThanOrEqual(0);
+      }
+    }
   });
 });
 
@@ -289,16 +321,31 @@ describe('availability', () => {
     expect(stale.bookable).toBe(true);
   });
 
-  it('respects capacity: three teams can serve three weddings, not four', () => {
+  it('respects capacity: three booked teams on a capacity of three block the day', () => {
     const slots = [
       { vendorId: 'v1', date: '2026-11-12', status: 'booked' as const, teamCapacity: 3, bookedTeamCount: 2 },
       { vendorId: 'v1', date: '2026-11-12', status: 'booked' as const, teamCapacity: 3, bookedTeamCount: 1 },
     ];
     const third = availabilityState(slots, { vendorId: 'v1', date: '2026-11-12', now });
-    expect(third.status).toBe('available');
+    expect(third.status).toBe('booked');
+    expect(third.bookable).toBe(false);
+    expect(third.reason).toContain('3/3');
     const fourth = availabilityState(slots, { vendorId: 'v1', date: '2026-11-12', now, requiredTeam: 2 });
     expect(fourth.bookable).toBe(false);
-    expect(fourth.reason).toContain('2/3');
+    expect(fourth.reason).toContain('3/3');
+  });
+
+  it('still books a day when booked teams leave room in the capacity', () => {
+    const slots = [
+      { vendorId: 'v1', date: '2026-11-12', status: 'booked' as const, teamCapacity: 3, bookedTeamCount: 1 },
+      { vendorId: 'v1', date: '2026-11-12', status: 'booked' as const, teamCapacity: 3, bookedTeamCount: 1 },
+    ];
+    const next = availabilityState(slots, { vendorId: 'v1', date: '2026-11-12', now });
+    expect(next.status).toBe('available');
+    expect(next.bookable).toBe(true);
+    const overbooked = availabilityState(slots, { vendorId: 'v1', date: '2026-11-12', now, requiredTeam: 2 });
+    expect(overbooked.bookable).toBe(false);
+    expect(overbooked.reason).toContain('2/3');
   });
 
   it('lets a vendor block a date and never lets a hold hide it', () => {

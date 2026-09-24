@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { postingForPayment, postingForRefund, priceQuote } from '@mazi/commerce';
+
 import {
   LATEST_SCHEMA_VERSION,
   migrate,
@@ -358,6 +360,15 @@ describe('store/bookings, ledger & disputes', () => {
     store.close();
   });
 
+  it('refuses an illegal state transition instead of writing it', () => {
+    const store = fresh();
+    withBooking(store);
+    expect(() => store.bookings.updateState('b1', { state: 'SERVICE_COMPLETED', actor: 'vendor' })).toThrow(/संक्रमण/);
+    expect(store.bookings.byId('b1')?.state).toBe('BOOKING_CONFIRMED');
+    expect(store.bookings.byId('b1')?.history).toHaveLength(1);
+    store.close();
+  });
+
   it('never double-books a ledger entry with the same idempotency key', () => {
     const store = fresh();
     withBooking(store);
@@ -373,6 +384,43 @@ describe('store/bookings, ledger & disputes', () => {
     expect(rows).toHaveLength(3);
     expect(rows.reduce((sum, r) => sum + r.amountPaise, 0)).toBe(0);
     expect(store.bookings.ledgerTotals('b1').PLATFORM_CASH).toBe(7_670_000);
+    store.close();
+  });
+
+  it('stores payment and refund postings for the same order without id collisions', () => {
+    const store = fresh();
+    withBooking(store);
+    const breakdown = priceQuote({
+      id: 'q1', vendorId: 'v1', category: 'photographer',
+      items: [{ label: 'छायाचित्रण', quantity: 1, unit: 'दिवस', unitPricePaise: 4_000_000, optional: false }],
+      discountPaise: 0, validTill: '2027-01-01', status: 'sent',
+    });
+    const payment = postingForPayment({ orderId: 'b1', breakdown, at: '2026-03-02T10:00:00.000Z' });
+    const refund = postingForRefund({ orderId: 'b1', breakdown, refundPaise: 1_000_000, at: '2026-03-05T10:00:00.000Z', refundId: 'rf_1' });
+    const toRows = (posting: typeof payment) => posting.entries.map((entry) => ({
+      id: entry.id, bookingId: 'b1', account: entry.account, amountPaise: entry.amountPaise,
+      memo: entry.memo, idempotencyKey: entry.idempotencyKey, createdAt: entry.at,
+    }));
+    store.bookings.appendLedger(toRows(payment));
+    store.bookings.appendLedger(toRows(refund));
+
+    const rows = store.bookings.ledger('b1');
+    expect(rows).toHaveLength(payment.entries.length + refund.entries.length);
+    expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length);
+    expect(rows.reduce((sum, r) => sum + r.amountPaise, 0)).toBe(0);
+    store.close();
+  });
+
+  it('throws instead of silently dropping a ledger row whose id is already taken by another event', () => {
+    const store = fresh();
+    withBooking(store);
+    store.bookings.appendLedger([
+      { id: 'led_x', bookingId: 'b1', account: 'PLATFORM_CASH', amountPaise: 100, memo: 'पहिली', idempotencyKey: 'b1:first' },
+    ]);
+    expect(() => store.bookings.appendLedger([
+      { id: 'led_x', bookingId: 'b1', account: 'PLATFORM_CASH', amountPaise: 200, memo: 'दुसरी', idempotencyKey: 'b1:second' },
+    ])).toThrow(/लेजर नोंद जतन करता आली नाही/);
+    expect(store.bookings.ledger('b1')).toHaveLength(1);
     store.close();
   });
 
@@ -408,6 +456,7 @@ describe('store/bookings, ledger & disputes', () => {
       reason: 'अल्बममध्ये २० फोटो गायब आहेत', evidence: ['प्रूफ', 'चॅट'],
     });
     expect(dispute.status).toBe('open');
+    expect(store.vendors.byId('v1')?.disputeCount).toBe(1);
     const resolved = store.bookings.resolveDispute('d1', 'विक्रेत्याने सुधारित अल्बम ७ दिवसांत द्यायचा', 'resolved', '2026-05-01T10:00:00.000Z');
     expect(resolved.status).toBe('resolved');
     expect(resolved.resolution).toContain('सुधारित');

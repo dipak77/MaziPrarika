@@ -89,7 +89,7 @@ export const TOOL_REGISTRY: Record<ToolName, ToolDefinition> = {
   GetPanchang: {
     name: 'GetPanchang', description: 'दैनिक पंचांग (तिथी, नक्षत्र, राहुकाळ, चौघडिया)',
     mutating: false, cost: 'cheap',
-    inputSchema: z.object({ date: z.string(), city: z.string() }),
+    inputSchema: z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'तारीख YYYY-MM-DD स्वरूपात द्या'), city: z.string() }),
   },
   FindMuhurat: {
     name: 'FindMuhurat', description: 'कार्यक्रमासाठी शुभ मुहूर्त शोधा (पद्धत व गुणांकनासह)',
@@ -207,8 +207,9 @@ const GUARDRAILS: Array<{ category: GuardrailVerdict['category']; pattern: RegEx
 ];
 
 export function checkGuardrails(text: string): GuardrailVerdict {
+  const normalised = normaliseDigits(text);
   for (const rule of GUARDRAILS) {
-    if (rule.pattern.test(text)) {
+    if (rule.pattern.test(normalised)) {
       return { allowed: false, category: rule.category, message: rule.message, ...(rule.redirect ? { redirect: rule.redirect } : {}) };
     }
   }
@@ -256,7 +257,7 @@ const CITY_MATCHERS: CityMatcher[] = Object.entries(CITY_NAMES)
       return { pattern: new RegExp(`\\b${key}\\b`, 'i'), city };
     }
     const stem = key.length > 3 ? key.replace(/[ाीुूेैोौ]$/, '') : key;
-    return { pattern: new RegExp(`${stem}[\\u0900-\\u097F]{0,4}(?![\\u0900-\\u097F])`), city };
+    return { pattern: new RegExp(`(?<![\\u0900-\\u097F])${stem}[\\u0900-\\u097F]{0,4}(?![\\u0900-\\u097F])`, 'u'), city };
   })
   .sort((a, b) => b.pattern.source.length - a.pattern.source.length);
 
@@ -302,7 +303,9 @@ const CATEGORY_KEYWORDS: Array<{ pattern: RegExp; category: string }> = [
 
 const MARATHI_NUMBER_WORDS: Record<string, number> = {
   एक: 1, दोन: 2, तीन: 3, चार: 4, पाच: 5, सहा: 6, सात: 7, आठ: 8, नऊ: 9, दहा: 10,
-  वीस: 20, तीस: 30, चाळीस: 40, पन्नास: 50, साठ: 60, सत्तर: 70, ऐंशी: 80, नव्वद: 90, शंभर: 100,
+  अकरा: 11, बारा: 12, तेरा: 13, चौदा: 14, पंधरा: 15, सोळा: 16, सतरा: 17, अठरा: 18, एकोणीस: 19,
+  वीस: 20, एकवीस: 21, बावीस: 22, तेवीस: 23, चोवीस: 24, पंचवीस: 25, सव्वीस: 26, सत्तावीस: 27, अठ्ठावीस: 28, एकोणतीस: 29,
+  तीस: 30, चाळीस: 40, पन्नास: 50, साठ: 60, सत्तर: 70, ऐंशी: 80, नव्वद: 90, शंभर: 100,
   दीड: 1.5, अडीच: 2.5, सव्वा: 1.25,
 };
 
@@ -312,24 +315,28 @@ function normaliseDigits(text: string): string {
 }
 
 function parseAmount(text: string): number | undefined {
-  // "1 लाख", "₹1,50,000", "50 हजार", "दीड लाख"
+  // "1 लाख", "₹1,50,000", "50 हजार", "दीड लाख", "5 कोटी"
+  const croreMatch = /(\d+(?:\.\d+)?)\s*(कोटी|कोट|crore|cr\b)/i.exec(text);
+  if (croreMatch) return Math.round(Number(croreMatch[1]) * 10_000_000 * 100);
   const lakhMatch = /(\d+(?:\.\d+)?)\s*(लाख|lakh|lac)/i.exec(text);
   if (lakhMatch) return Math.round(Number(lakhMatch[1]) * 100_000 * 100);
   const thousandMatch = /(\d+(?:\.\d+)?)\s*(हजार|thousand|k\b)/i.exec(text);
   if (thousandMatch) return Math.round(Number(thousandMatch[1]) * 1000 * 100);
-  const rupeeMatch = /(?:₹|rs\.?\s*)(\d[\d,]{2,})/i.exec(text);
+  const rupeeMatch = /(?:₹|rs\.?\s*)(\d[\d,]{1,})/i.exec(text);
   if (rupeeMatch) return Math.round(Number(rupeeMatch[1]!.replace(/,/g, '')) * 100);
   for (const [word, value] of Object.entries(MARATHI_NUMBER_WORDS)) {
-    if (new RegExp(`${word}\\s*लाख`).test(text)) return Math.round(value * 100_000 * 100);
-    if (new RegExp(`${word}\\s*हजार`).test(text)) return Math.round(value * 1000 * 100);
+    const bounded = `(?<![\\u0900-\\u097F])${word}(?![\\u0900-\\u097F])`;
+    if (new RegExp(`${bounded}\\s*कोटी?`).test(text)) return Math.round(value * 10_000_000 * 100);
+    if (new RegExp(`${bounded}\\s*लाख`).test(text)) return Math.round(value * 100_000 * 100);
+    if (new RegExp(`${bounded}\\s*हजार`).test(text)) return Math.round(value * 1000 * 100);
   }
   return undefined;
 }
 
 function parseGuestCount(text: string): number | undefined {
-  const match = /(\d{2,4})\s*(?:लोक|पाहुणे|माणसे|guests|people|जण)/i.exec(text);
+  const match = /(\d{2,5})\s*(?:लोक|पाहुणे|माणसे|guests|people|जण|नग)/i.exec(text);
   if (match) return Number(match[1]);
-  const reverse = /(?:लोक|पाहुणे|guests|people)\s*(\d{2,4})/i.exec(text);
+  const reverse = /(?:लोक|पाहुणे|guests|people|नग)\s*(\d{2,5})/i.exec(text);
   if (reverse) return Number(reverse[1]);
   return undefined;
 }
@@ -339,14 +346,14 @@ function parseDateHint(text: string, now: Date): ParsedIntent['dateHint'] {
   if (iso) return { from: iso[0], to: iso[0], label: iso[0] };
   const monthNames: Array<[RegExp, number]> = [
     [/जानेवारी|january/i, 1], [/फेब्रुवारी|february/i, 2], [/मार्च|march/i, 3], [/एप्रिल|april/i, 4],
-    [/मे\b|may/i, 5], [/जून|june/i, 6], [/जुलै|july/i, 7], [/ऑगस्ट|august/i, 8],
+    [/(?<![\u0900-\u097F])मे(?![\u0900-\u097F])|may/i, 5], [/जून|june/i, 6], [/जुलै|july/i, 7], [/ऑगस्ट|august/i, 8],
     [/सप्टेंबर|september/i, 9], [/ऑक्टोबर|october/i, 10], [/नोव्हेंबर|november/i, 11], [/डिसेंबर|december/i, 12],
   ];
   for (const [pattern, month] of monthNames) {
     if (pattern.test(text)) {
       const yearMatch = /(\d{4})/.exec(text)?.[1];
       const y = yearMatch ? Number(yearMatch) : now.getUTCFullYear();
-      const from = new Date(Date.UTC(y, month - 1, 1) - 86_400_000);
+      const from = new Date(Date.UTC(y, month - 1, 1));
       const to = new Date(Date.UTC(y, month, 0));
       return {
         from: from.toISOString().slice(0, 10),
@@ -431,11 +438,12 @@ export function planFromIntent(intent: ParsedIntent, context: { now?: Date } = {
   const now = context.now ?? new Date();
   const calls: PlannedCall[] = [];
   const clarifications: string[] = [];
-  const eventType = intent.eventType ?? 'birthday';
+  const eventType = intent.eventType;
   const city = intent.city ?? '';
+  if (!eventType) clarifications.push('कार्यक्रम कोणत्या प्रकारचा आहे?');
   if (!city) clarifications.push('कार्यक्रम कोणत्या शहरात आहे?');
 
-  if (intent.eventType) {
+  if (eventType) {
     calls.push({
       tool: 'CreateEvent',
       args: {
@@ -451,7 +459,7 @@ export function planFromIntent(intent: ParsedIntent, context: { now?: Date } = {
     });
   }
 
-  if (intent.budgetPaise) {
+  if (intent.budgetPaise && eventType) {
     calls.push({
       tool: 'GetBudget',
       args: { eventType, budgetPaise: intent.budgetPaise },
@@ -475,7 +483,7 @@ export function planFromIntent(intent: ParsedIntent, context: { now?: Date } = {
     });
   }
 
-  if (intent.isMuhuratQuestion || eventType === 'wedding' || eventType === 'gruhapravesh') {
+  if (eventType && (intent.isMuhuratQuestion || eventType === 'wedding' || eventType === 'gruhapravesh')) {
     const from = intent.dateHint?.from ?? now.toISOString().slice(0, 10);
     const to = intent.dateHint?.to ?? new Date(now.getTime() + 60 * 86_400_000).toISOString().slice(0, 10);
     calls.push({
@@ -486,7 +494,7 @@ export function planFromIntent(intent: ParsedIntent, context: { now?: Date } = {
     });
   }
 
-  if (intent.isInvitationRequest) {
+  if (intent.isInvitationRequest && eventType) {
     calls.push({
       tool: 'CreateInvitation',
       args: {
@@ -494,7 +502,7 @@ export function planFromIntent(intent: ParsedIntent, context: { now?: Date } = {
         venueName: '', city,
       },
       rationale: 'मराठी पत्रिका तयार करणे (नंतर नावे/स्थळ भरता येईल)',
-      requiresConfirmation: false,
+      requiresConfirmation: true,
     });
   }
 
@@ -508,13 +516,15 @@ export function planFromIntent(intent: ParsedIntent, context: { now?: Date } = {
   }
 
   const summaryParts: string[] = [];
-  if (intent.eventType) summaryParts.push(`${eventSlug(eventType)} (${eventType})`);
+  if (eventType) summaryParts.push(`${eventSlug(eventType)} (${eventType})`);
   if (city) summaryParts.push(city);
   if (intent.guestCount) summaryParts.push(`${toDevanagariDigits(intent.guestCount)} पाहुणे`);
   if (intent.budgetPaise) summaryParts.push(formatMarathiCurrency(intent.budgetPaise / 100, { words: true }));
 
   return {
-    summary: summaryParts.length ? `समजले: ${summaryParts.join(' • ')}` : 'समजले: कार्यक्रम नियोजन विनंती',
+    summary: clarifications.length
+      ? 'अपुरी माहिती — खालील प्रश्नांची उत्तरे द्यावी.'
+      : summaryParts.length ? `समजले: ${summaryParts.join(' • ')}` : 'समजले: कार्यक्रम नियोजन विनंती',
     calls,
     clarifications,
   };
@@ -563,6 +573,15 @@ export interface ExecutionReport {
   createdEvent?: { id: string; slug: string };
 }
 
+function localRecordId(tool: ToolName, args: Record<string, unknown>): string {
+  const payload = `${tool}:${JSON.stringify(args)}`;
+  let hash = 0;
+  for (let i = 0; i < payload.length; i += 1) {
+    hash = (hash * 31 + payload.charCodeAt(i)) | 0;
+  }
+  return `${tool}_${(hash >>> 0).toString(36)}`;
+}
+
 export async function executePlan(
   plan: Plan,
   ctx: ToolContext,
@@ -577,6 +596,12 @@ export async function executePlan(
 
   for (const call of plan.calls) {
     const definition = TOOL_REGISTRY[call.tool];
+    const parsedArgs = definition.inputSchema.safeParse(call.args);
+    if (!parsedArgs.success) {
+      const issues = parsedArgs.error.issues.map((issue) => `${issue.path.join('.') || 'args'}: ${issue.message}`).join('; ');
+      results.push({ tool: call.tool, ok: false, args: call.args, error: `अवैध तर्के — ${issues}` });
+      continue;
+    }
     if (definition.mutating && !opts.confirmMutations && call.tool !== 'CreateEvent') {
       pendingConfirmation.push(call.tool);
       results.push({ tool: call.tool, ok: false, args: call.args, requiresConfirmation: true, skipped: 'वापरकर्त्याच्या पुष्टीची प्रतीक्षा' });
@@ -592,25 +617,37 @@ export async function executePlan(
             results.push({ tool: call.tool, ok: false, args: call.args, requiresConfirmation: true, skipped: 'पुष्टीची प्रतीक्षा' });
             break;
           }
-          const created = await ctx.createEvent(call.args);
+          const created = await ctx.createEvent(parsedArgs.data as Record<string, unknown>);
           createdEvent = created;
           results.push({ tool: call.tool, ok: true, args: call.args, result: created });
           break;
         }
+        case 'UpdateEvent': {
+          const args = parsedArgs.data as { eventId: string; patch: Record<string, unknown> };
+          results.push({
+            tool: call.tool, ok: true, args: call.args,
+            result: {
+              status: 'planned',
+              id: localRecordId(call.tool, call.args),
+              summary: `कार्यक्रम ${args.eventId} अद्ययावत करण्याची नोंद — बदल: ${Object.keys(args.patch).join(', ') || 'कोणतेही नाही'}`,
+            },
+          });
+          break;
+        }
         case 'SearchVendors': {
-          const found = await ctx.searchVendors(call.args as Parameters<ToolContext['searchVendors']>[0]);
+          const found = await ctx.searchVendors(parsedArgs.data as Parameters<ToolContext['searchVendors']>[0]);
           for (const v of found) if (!vendors.some((x) => x.id === v.id)) vendors.push(v);
           results.push({ tool: call.tool, ok: true, args: call.args, result: found });
           break;
         }
         case 'GetBudget': {
           if (!ctx.getBudget) throw new Error('GetBudget उपलब्ध नाही');
-          budget = await ctx.getBudget(call.args as { eventType: string; budgetPaise: number });
+          budget = await ctx.getBudget(parsedArgs.data as { eventType: string; budgetPaise: number });
           results.push({ tool: call.tool, ok: true, args: call.args, result: budget });
           break;
         }
         case 'FindMuhurat': {
-          const args = call.args as { eventType: string; city: string; from: string; to: string; limit: number };
+          const args = parsedArgs.data as { eventType: string; city: string; from: string; to: string; limit: number };
           const location = ctx.cityToLocation(args.city);
           const found = findMuhurats({
             eventType: args.eventType, location, from: args.from, to: args.to, limit: args.limit,
@@ -620,7 +657,7 @@ export async function executePlan(
           break;
         }
         case 'GetPanchang': {
-          const args = call.args as { date: string; city: string };
+          const args = parsedArgs.data as { date: string; city: string };
           const location = ctx.cityToLocation(args.city);
           const [y, m, d] = args.date.split('-').map(Number) as [number, number, number];
           const evaluation = evaluateMuhurat({ eventType: 'other', date: { year: y, month: m, day: d }, location });
@@ -628,7 +665,7 @@ export async function executePlan(
           break;
         }
         case 'CalculateKundali': {
-          const args = call.args as { bride?: GunaInput; groom?: GunaInput };
+          const args = parsedArgs.data as { bride?: GunaInput; groom?: GunaInput };
           if (args.bride && args.groom) {
             const milan = gunaMilan(args.bride, args.groom);
             results.push({ tool: call.tool, ok: true, args: call.args, result: milan });
@@ -639,8 +676,68 @@ export async function executePlan(
         }
         case 'GetAvailability': {
           if (!ctx.getAvailability) throw new Error('GetAvailability उपलब्ध नाही');
-          const res = await ctx.getAvailability(call.args as { vendorId: string; date: string });
+          const res = await ctx.getAvailability(parsedArgs.data as { vendorId: string; date: string });
           results.push({ tool: call.tool, ok: true, args: call.args, result: res });
+          break;
+        }
+        case 'CreateInvitation': {
+          const args = parsedArgs.data as { eventType: string; date: string; city: string };
+          results.push({
+            tool: call.tool, ok: true, args: call.args,
+            result: {
+              status: 'planned',
+              id: localRecordId(call.tool, call.args),
+              summary: `निमंत्रणपत्रिकाचा मसुदा तयार — ${args.eventType}, दिनांक ${args.date}${args.city ? `, ${args.city}` : ''}`,
+            },
+          });
+          break;
+        }
+        case 'CreateQuote': {
+          const args = parsedArgs.data as { vendorId: string; eventId: string; category: string };
+          results.push({
+            tool: call.tool, ok: true, args: call.args,
+            result: {
+              status: 'planned',
+              id: localRecordId(call.tool, call.args),
+              summary: `कोट विनंती नोंदवली — ${args.category} (विक्रेता ${args.vendorId}, कार्यक्रम ${args.eventId})`,
+            },
+          });
+          break;
+        }
+        case 'AddGuest': {
+          const args = parsedArgs.data as { eventId: string; guests: Array<{ name: string }> };
+          results.push({
+            tool: call.tool, ok: true, args: call.args,
+            result: {
+              status: 'planned',
+              id: localRecordId(call.tool, call.args),
+              summary: `${toDevanagariDigits(args.guests.length)} पाहुणे जोडण्याची यादी तयार — कार्यक्रम ${args.eventId}`,
+            },
+          });
+          break;
+        }
+        case 'SendReminder': {
+          const args = parsedArgs.data as { eventId: string; guestIds: string[] };
+          results.push({
+            tool: call.tool, ok: true, args: call.args,
+            result: {
+              status: 'planned',
+              id: localRecordId(call.tool, call.args),
+              summary: `स्मरणिका मसुदा तयार — कार्यक्रम ${args.eventId}, ${args.guestIds.length ? `${toDevanagariDigits(args.guestIds.length)} निवडलेल्या पाहुण्यांना` : 'सर्वपाहुण्यांना'}`,
+            },
+          });
+          break;
+        }
+        case 'CreatePrintOrder': {
+          const args = parsedArgs.data as { designId: string; quantity: number; paper: string; express: boolean };
+          results.push({
+            tool: call.tool, ok: true, args: call.args,
+            result: {
+              status: 'planned',
+              id: localRecordId(call.tool, call.args),
+              summary: `छपाई ऑर्डर मसुदा — ${toDevanagariDigits(args.quantity)} नग, ${args.paper}${args.express ? ', तातडी' : ''} (डिझाइन ${args.designId})`,
+            },
+          });
           break;
         }
         default:
@@ -692,6 +789,14 @@ export function explainPlan(plan: Plan, report: ExecutionReport, intent: ParsedI
     for (const v of report.vendors.slice(0, 6)) {
       lines.push(`  • ${v.name} (${v.category}) — ${formatMarathiCurrency(v.startingPricePaise / 100)} पासून${v.verified ? ' ✓ पडताळलेले' : ''}`);
     }
+  }
+
+  const plannedResults = report.results.filter(
+    (r) => r.ok && typeof r.result === 'object' && r.result !== null && (r.result as { status?: string }).status === 'planned',
+  );
+  if (plannedResults.length) {
+    lines.push('', 'नोंदवलेल्या तरतुदी:');
+    for (const p of plannedResults) lines.push(`  • ${(p.result as { summary: string }).summary}`);
   }
 
   if (report.pendingConfirmation.length) {
@@ -765,10 +870,11 @@ export class CostLedger {
     this.usdToInr = usdToInr;
   }
 
-  record(entry: Omit<CostRecord, 'at' | 'costUsd'> & { at?: string }): CostRecord {
-    const price = PROVIDER_DEFAULTS[entry.provider].pricePerMTokUsd;
-    const costUsd = (entry.inputTokens / 1_000_000) * price[0] + (entry.outputTokens / 1_000_000) * price[1];
-    const full: CostRecord = { at: entry.at ?? new Date().toISOString(), costUsd: Number(costUsd.toFixed(6)), ...entry };
+  record(entry: Omit<CostRecord, 'at' | 'costUsd'> & { at?: string; pricePerMTokUsd?: [number, number] }): CostRecord {
+    const { pricePerMTokUsd, ...rest } = entry;
+    const price = pricePerMTokUsd ?? PROVIDER_DEFAULTS[entry.provider].pricePerMTokUsd;
+    const costUsd = (rest.inputTokens / 1_000_000) * price[0] + (rest.outputTokens / 1_000_000) * price[1];
+    const full: CostRecord = { at: rest.at ?? new Date().toISOString(), costUsd: Number(costUsd.toFixed(6)), ...rest };
     this.records.push(full);
     return full;
   }
@@ -776,6 +882,14 @@ export class CostLedger {
   totalUsd(filter: Partial<Pick<CostRecord, 'userId' | 'eventId'>> = {}): number {
     return Number(this.records
       .filter((r) => (!filter.userId || r.userId === filter.userId) && (!filter.eventId || r.eventId === filter.eventId))
+      .reduce((s, r) => s + r.costUsd, 0)
+      .toFixed(6));
+  }
+
+  monthSpendUsd(now: Date = new Date()): number {
+    const month = now.toISOString().slice(0, 7);
+    return Number(this.records
+      .filter((r) => r.at.slice(0, 7) === month)
       .reduce((s, r) => s + r.costUsd, 0)
       .toFixed(6));
   }
@@ -808,8 +922,8 @@ export class ResponseCache {
     this.ttlMs = ttlMs;
   }
 
-  keyOf(messages: ChatMessage[], model: string): string {
-    const payload = JSON.stringify({ model, messages: messages.map((m) => [m.role, m.content]) });
+  keyOf(messages: ChatMessage[], model: string, scope?: string): string {
+    const payload = JSON.stringify({ model, scope: scope ?? '', messages: messages.map((m) => [m.role, m.content]) });
     let hash = 0;
     for (let i = 0; i < payload.length; i += 1) {
       hash = (hash * 31 + payload.charCodeAt(i)) | 0;
@@ -817,8 +931,8 @@ export class ResponseCache {
     return `c${hash.toString(36)}`;
   }
 
-  get(messages: ChatMessage[], model: string): ProviderResponse | undefined {
-    const key = this.keyOf(messages, model);
+  get(messages: ChatMessage[], model: string, scope?: string): ProviderResponse | undefined {
+    const key = this.keyOf(messages, model, scope);
     const hit = this.store.get(key);
     if (!hit) return undefined;
     if (hit.expiresAt < Date.now()) {
@@ -828,8 +942,9 @@ export class ResponseCache {
     return { ...hit.response, cached: true };
   }
 
-  set(messages: ChatMessage[], model: string, response: ProviderResponse): void {
-    this.store.set(this.keyOf(messages, model), { key: this.keyOf(messages, model), response, expiresAt: Date.now() + this.ttlMs });
+  set(messages: ChatMessage[], model: string, response: ProviderResponse, scope?: string): void {
+    const key = this.keyOf(messages, model, scope);
+    this.store.set(key, { key, response, expiresAt: Date.now() + this.ttlMs });
   }
 
   size(): number {
@@ -957,12 +1072,13 @@ export async function generate(
 
   const cache = options.cache;
   if (cache) {
-    const hit = cache.get(messages, model);
+    const hit = cache.get(messages, model, options.userId);
     if (hit) {
       options.ledger?.record({
         userId: options.userId ?? 'anonymous', provider: hit.provider, model,
         purpose: options.purpose ?? 'chat', inputTokens: 0, outputTokens: 0, cached: true,
         ...(options.eventId ? { eventId: options.eventId } : {}),
+        ...(options.config.pricePerMTokUsd ? { pricePerMTokUsd: options.config.pricePerMTokUsd } : {}),
       });
       return hit;
     }
@@ -996,12 +1112,13 @@ export async function generate(
     };
   }
 
-  if (cache && !response.fallback) cache.set(messages, model, response);
+  if (cache && !response.fallback) cache.set(messages, model, response, options.userId);
   options.ledger?.record({
     userId: options.userId ?? 'anonymous', provider: response.provider, model: response.model,
     purpose: options.purpose ?? 'chat', inputTokens: response.usage.inputTokens,
     outputTokens: response.usage.outputTokens, cached: response.cached,
     ...(options.eventId ? { eventId: options.eventId } : {}),
+    ...(options.config.pricePerMTokUsd ? { pricePerMTokUsd: options.config.pricePerMTokUsd } : {}),
   });
 
   return response;
@@ -1018,6 +1135,29 @@ export interface AssistantTurn {
   answer: string;
   provider: ProviderResponse;
   guardrail: GuardrailVerdict;
+}
+
+function assistantMonthlyUsdCap(): number {
+  const raw = process.env.ASSISTANT_MONTHLY_USD_CAP;
+  const parsed = raw === undefined || raw.trim() === '' ? Number.NaN : Number(raw);
+  return Number.isFinite(parsed) ? parsed : 25;
+}
+
+function serializeToolResults(plan: Plan, report: ExecutionReport): string {
+  const lines: string[] = [`योजना: ${plan.summary}`];
+  if (plan.clarifications.length) lines.push(`स्पष्टीकरणे: ${plan.clarifications.join(' ')}`);
+  lines.push('साधनांचे निकाल (उत्तर यावरूनच दे):');
+  for (const result of report.results) {
+    const payload = result.ok
+      ? JSON.stringify(result.result ?? null)
+      : result.requiresConfirmation
+        ? (result.skipped ?? 'पुष्टीची प्रतीक्षा')
+        : (result.error ?? 'त्रुटी');
+    lines.push(`${result.tool}: ${payload}`);
+  }
+  if (report.pendingConfirmation.length) lines.push(`पुष्टी आवश्यक: ${report.pendingConfirmation.join(', ')}`);
+  if (report.createdEvent) lines.push(`तयार झालेला कार्यक्रम: /studio/${report.createdEvent.slug}`);
+  return lines.join('\n');
 }
 
 export async function runAssistant(args: {
@@ -1048,21 +1188,65 @@ export async function runAssistant(args: {
   const report = await executePlan(plan, args.ctx, { confirmMutations: args.confirmMutations, now });
   const groundedAnswer = explainPlan(plan, report, intent);
 
-  const generated = args.generate
-    ? await generate([{ role: 'user', content: args.message }], { ...args.generate, systemPrompt: MAZI_SYSTEM_PROMPT })
-    : {
-      text: groundedAnswer,
-      provider: 'deterministic' as const,
+  const generateOptions = args.generate;
+  const wantsPaidModel = Boolean(
+    generateOptions &&
+    !generateOptions.forceDeterministic &&
+    (generateOptions.config.provider === 'groq' || generateOptions.config.provider === 'anthropic') &&
+    generateOptions.config.apiKey,
+  );
+  const capUsd = assistantMonthlyUsdCap();
+  const overCap = wantsPaidModel && (generateOptions?.ledger?.monthSpendUsd(now) ?? 0) >= capUsd;
+  const capNote = overCap
+    ? `मासिक AI बजेट हद्द (${toDevanagariDigits(capUsd)} USD) पूर्ण झाली आहे — आत्ता नियम-आधारित उत्तर देत आहोत.`
+    : undefined;
+
+  let generated: ProviderResponse;
+  if (overCap && generateOptions) {
+    generated = {
+      text: [capNote, deterministicProvider([{ role: 'user', content: args.message }])].join('\n'),
+      provider: 'deterministic',
       model: 'mazi-rules-v1',
       usage: { inputTokens: 0, outputTokens: 0 },
       cached: false,
       latencyMs: 0,
       fallback: true,
     };
+    generateOptions.ledger?.record({
+      userId: generateOptions.userId ?? 'anonymous',
+      provider: 'deterministic',
+      model: 'mazi-rules-v1',
+      purpose: generateOptions.purpose ?? 'chat',
+      inputTokens: 0,
+      outputTokens: 0,
+      cached: false,
+      ...(generateOptions.eventId ? { eventId: generateOptions.eventId } : {}),
+    });
+  } else if (generateOptions) {
+    generated = await generate(
+      [
+        { role: 'system', content: serializeToolResults(plan, report) },
+        { role: 'user', content: args.message },
+      ],
+      { ...generateOptions, systemPrompt: MAZI_SYSTEM_PROMPT },
+    );
+  } else {
+    generated = {
+      text: groundedAnswer,
+      provider: 'deterministic',
+      model: 'mazi-rules-v1',
+      usage: { inputTokens: 0, outputTokens: 0 },
+      cached: false,
+      latencyMs: 0,
+      fallback: true,
+    };
+  }
 
   // The model may rephrase, but the grounded facts must survive: if the answer
   // drops the tool-derived numbers we return the deterministic explanation.
-  const answer = generated.fallback || !isGrounded(generated.text, groundedAnswer) ? groundedAnswer : generated.text;
+  const answer = capNote
+    ? [capNote, groundedAnswer].join('\n')
+    : generated.fallback || !isGrounded(generated.text, groundedAnswer) ? groundedAnswer : generated.text;
 
   return { intent, plan, report, answer, provider: generated, guardrail };
 }

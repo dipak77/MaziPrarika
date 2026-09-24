@@ -184,7 +184,7 @@ export function DiscoveryFeed({
           </span>
         ) : null}
         {sponsoredCount > 0 ? (
-          <span className="font-ui text-[11px] uppercase tracking-wider text-charcoal-soft">
+          <span className="font-ui text-xs uppercase tracking-wider text-charcoal-soft">
             {toDevanagariDigits(sponsoredCount)} सक्रिय जाहिरात मोहीम
           </span>
         ) : null}
@@ -207,18 +207,18 @@ export function DiscoveryFeed({
             }
           >
             {vendor.sponsored ? (
-              <span className="absolute right-4 top-4 rounded-full bg-haldi/15 px-2 py-0.5 text-[11px] font-semibold text-haldi">
+              <span className="absolute right-4 top-4 rounded-full bg-haldi/15 px-2 py-0.5 text-xs font-semibold text-haldi">
                 प्रायोजित
               </span>
             ) : (
-              <span className="absolute right-4 top-4 font-ui text-[11px] text-charcoal-soft">
+              <span className="absolute right-4 top-4 font-ui text-xs text-charcoal-soft">
                 #{toDevanagariDigits(vendor.position)}
               </span>
             )}
 
             <p className="font-ui text-xs uppercase tracking-wider text-gold">{vendor.categoryLabel}</p>
             <h3 className="mt-1 font-display text-lg font-bold text-charcoal">{vendor.name}</h3>
-            <p className="mt-1 line-clamp-2 text-xs text-charcoal-soft">{vendor.about}</p>
+            <p className="mt-1 line-clamp-2 text-xs text-charcoal-soft" title={vendor.about}>{vendor.about}</p>
 
             <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <div>
@@ -245,8 +245,8 @@ export function DiscoveryFeed({
               <p
                 className={
                   vendor.availability.bookable
-                    ? 'mt-3 rounded-lg border border-paithani/40 bg-paithani/8 px-2 py-1 text-[11px] text-paithani'
-                    : 'mt-3 rounded-lg border border-maroon/40 bg-maroon/8 px-2 py-1 text-[11px] text-maroon'
+                    ? 'mt-3 rounded-lg border border-paithani/40 bg-paithani/8 px-2 py-1 text-xs text-paithani'
+                    : 'mt-3 rounded-lg border border-maroon/40 bg-maroon/8 px-2 py-1 text-xs text-maroon'
                 }
               >
                 {vendor.availability.reason}
@@ -255,15 +255,15 @@ export function DiscoveryFeed({
 
             <ul className="mt-3 flex flex-wrap gap-1.5">
               {vendor.badges.slice(0, 3).map((badge) => (
-                <li key={badge} className="rounded-full border border-gold/35 bg-ivory-deep/40 px-2 py-0.5 text-[11px] text-charcoal-soft">
+                <li key={badge} className="rounded-full border border-gold/35 bg-ivory-deep/40 px-2 py-0.5 text-xs text-charcoal-soft">
                   {badge}
                 </li>
               ))}
             </ul>
 
             <div className="mt-4 flex items-center justify-between gap-3">
-              <span className="font-ui text-[11px] text-charcoal-soft">गुण {toDevanagariDigits(vendor.organicScore)}/१००</span>
-              <Link href={`/vendors/${vendor.id}`} className="rounded-full bg-maroon px-4 py-2 text-xs font-semibold text-ivory">
+              <span className="font-ui text-xs text-charcoal-soft">गुण {toDevanagariDigits(vendor.organicScore)}/१००</span>
+              <Link href={`/vendors/${vendor.id}`} className="btn-base btn-maroon px-4 text-xs">
                 प्रोफाइल व कोट
               </Link>
             </div>

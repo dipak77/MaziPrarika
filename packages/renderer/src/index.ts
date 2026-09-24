@@ -201,6 +201,7 @@ export function applyLayout(
 
   fill('invocation', content.invocation ?? '');
   fill('headline', content.headline ?? '');
+  fill('subheadline', content.subheadline ?? '');
   fill('narrative', joinLines([
     ...content.narrative,
     ...(content.schedule ?? []).map((s) => `${s.label}: ${s.value}`),
@@ -240,6 +241,28 @@ const escapeXml = (s: string): string =>
 
 export function resolveBindings(text: string, bindings: Record<string, string>): string {
   return text.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_m, key: string) => bindings[key] ?? '');
+}
+
+export function collectMissingBindings(
+  design: DesignDocument,
+  bindings?: Record<string, string>,
+): string[] {
+  const provided = bindings ?? design.bindings ?? {};
+  const missing = new Set<string>();
+  const scan = (text: string): void => {
+    for (const match of text.matchAll(/\{\{\s*([\w.]+)\s*\}\}/g)) {
+      const key = match[1];
+      if (key && !(key in provided)) missing.add(key);
+    }
+  };
+  const walk = (elements: DesignElement[]): void => {
+    for (const el of elements) {
+      if (el.type === 'text') scan(el.text);
+      if (el.type === 'group') walk(el.children);
+    }
+  };
+  walk(design.elements);
+  return [...missing];
 }
 
 /** Deterministic SVG for a design document (mm units, 1 user unit = 1 mm). */
@@ -334,9 +357,29 @@ function renderShape(el: Extract<DesignElement, { type: 'shape' }>, design: Desi
       return motif(el, design, common, stroke);
     case 'custom-path':
       return `<path ${common} d="${escapeXml(el.path ?? '')}" fill="${escapeXml(fill)}" stroke="${escapeXml(stroke)}" stroke-width="${el.strokeWidthMm}"/>`;
+    case 'paisley':
+      return paisley(el, common, fill, stroke);
     default:
       return '';
   }
+}
+
+function paisley(
+  el: Extract<DesignElement, { type: 'shape' }>,
+  common: string,
+  fill: string,
+  stroke: string,
+): string {
+  const { x, y, width: w, height: h } = el;
+  const d = [
+    `M ${round(x + w * 0.5)} ${round(y + h * 0.04)}`,
+    `C ${round(x + w * 0.86)} ${round(y + h * 0.16)} ${round(x + w * 0.97)} ${round(y + h * 0.55)} ${round(x + w * 0.62)} ${round(y + h * 0.86)}`,
+    `C ${round(x + w * 0.4)} ${round(y + h * 1.01)} ${round(x + w * 0.08)} ${round(y + h * 0.93)} ${round(x + w * 0.1)} ${round(y + h * 0.62)}`,
+    `C ${round(x + w * 0.12)} ${round(y + h * 0.4)} ${round(x + w * 0.44)} ${round(y + h * 0.46)} ${round(x + w * 0.46)} ${round(y + h * 0.67)}`,
+    `C ${round(x + w * 0.475)} ${round(y + h * 0.78)} ${round(x + w * 0.36)} ${round(y + h * 0.82)} ${round(x + w * 0.3)} ${round(y + h * 0.73)}`,
+    'Z',
+  ].join(' ');
+  return `<path ${common} d="${d}" fill="${escapeXml(fill)}" stroke="${escapeXml(stroke)}" stroke-width="${el.strokeWidthMm}"/>`;
 }
 
 function divider(el: Extract<DesignElement, { type: 'shape' }>, common: string, stroke: string): string {
@@ -445,13 +488,16 @@ function renderQr(el: Extract<DesignElement, { type: 'qr' }>, opacity: string, t
   const payload = el.payload || 'https://mazipatrika.in';
   const { modules } = qrcode.create(payload, { errorCorrectionLevel: el.errorCorrectionLevel });
   const size = modules.size;
-  const moduleMm = el.width / size;
   const data = modules.data;
+  const quietRequested = Math.max(0, el.quietZoneMm ?? 2);
+  const quietMinModules = (4 * el.width) / (size + 8);
+  const pad = Math.min(Math.max(quietRequested, quietMinModules), el.width * 0.4);
+  const moduleMm = (el.width - pad * 2) / size;
   const rects: string[] = [];
   for (let row = 0; row < size; row += 1) {
     for (let col = 0; col < size; col += 1) {
       if (data[row * size + col]) {
-        rects.push(`<rect x="${round(el.x + col * moduleMm)}" y="${round(el.y + row * moduleMm)}" width="${round(moduleMm + 0.02)}" height="${round(moduleMm + 0.02)}"/>`);
+        rects.push(`<rect x="${round(el.x + pad + col * moduleMm)}" y="${round(el.y + pad + row * moduleMm)}" width="${round(moduleMm + 0.02)}" height="${round(moduleMm + 0.02)}"/>`);
       }
     }
   }

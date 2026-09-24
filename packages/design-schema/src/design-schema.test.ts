@@ -98,6 +98,32 @@ describe('design-schema/parsing & migration', () => {
     expect(() => migrateDesign(future)).toThrow(/newer than this build/);
   });
 
+  it('rejects duplicate element ids, including inside groups', () => {
+    const design = withText(createBlankDesign(ids));
+    design.elements.push({ ...design.elements[0]! });
+    const flat = parseDesign(JSON.parse(JSON.stringify(design)));
+    expect(flat.ok).toBe(false);
+    expect(flat.errors.join(' ')).toMatch(/unique/i);
+
+    const grouped = withText(createBlankDesign(ids));
+    grouped.elements.push({
+      id: 'grp', name: 'गट', type: 'group', role: 'free',
+      x: 0, y: 0, width: 50, height: 50, rotation: 0, opacity: 1, locked: false,
+      children: [{ ...grouped.elements[0]!, id: 'text-1' }],
+    });
+    const nested = parseDesign(JSON.parse(JSON.stringify(grouped)));
+    expect(nested.ok).toBe(false);
+    expect(nested.errors.join(' ')).toMatch(/unique/i);
+
+    const unique = withText(createBlankDesign(ids));
+    unique.elements.push({
+      id: 'grp', name: 'गट', type: 'group', role: 'free',
+      x: 0, y: 0, width: 50, height: 50, rotation: 0, opacity: 1, locked: false,
+      children: [{ ...unique.elements[0]!, id: 'text-2' }],
+    });
+    expect(parseDesign(JSON.parse(JSON.stringify(unique))).ok).toBe(true);
+  });
+
   it('migrates v1 pixel documents to millimetres with print defaults', () => {
     const v1 = {
       version: 1,
@@ -244,6 +270,17 @@ describe('design-schema/preflight — the print gate', () => {
     const blocking = preflight(design).filter((i) => i.severity === 'error');
     expect(blocking).toEqual([]);
   });
+
+  it('measures the safe area from the trim edge, not from the bleed edge', () => {
+    const atSafe = withText(createBlankDesign(ids), { x: SAFE_MARGIN_MM, y: SAFE_MARGIN_MM });
+    expect(preflight(atSafe).some((i) => i.code === 'out-of-safe-area')).toBe(false);
+
+    const insideBleed = withText(createBlankDesign(ids), { x: SAFE_MARGIN_MM - 1, y: 40 });
+    expect(preflight(insideBleed).some((i) => i.code === 'out-of-safe-area')).toBe(true);
+
+    const pastRight = withText(createBlankDesign(ids), { x: 127 - SAFE_MARGIN_MM - 79, y: 40, width: 80 });
+    expect(preflight(pastRight).some((i) => i.code === 'out-of-safe-area')).toBe(true);
+  });
 });
 
 describe('design-schema/CMYK safety', () => {
@@ -253,6 +290,14 @@ describe('design-schema/CMYK safety', () => {
     for (const colour of Object.values(BRAND_PALETTE)) {
       expect(isCmykSafe(colour)).toBe(true);
     }
+  });
+
+  it('judges 8-digit hex (#RRGGBBAA) by its RGB components', () => {
+    expect(isCmykSafe('#00FF00FF')).toBe(false);
+    expect(isCmykSafe('#00FF0080')).toBe(false);
+    expect(isCmykSafe('#FF00FF00')).toBe(false);
+    expect(isCmykSafe('#C6A15BCC')).toBe(true);
+    expect(isCmykSafe('#FBF7F0FF')).toBe(true);
   });
 });
 

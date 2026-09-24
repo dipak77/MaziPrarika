@@ -145,20 +145,22 @@ export function moonLongitudeTropical(date: Date | number): number {
   return norm360(lp + sum);
 }
 
+export type AyanamsaMethod = 'lahiri' | 'raman' | 'kp';
+
+export function ayanamsaDeg(date: Date | number, method: AyanamsaMethod = 'lahiri'): number {
+  const lahiri = lahiriAyanamsaDeg(date);
+  if (method === 'raman') return lahiri - 1.1666;
+  if (method === 'kp') return lahiri + 0.2833;
+  return lahiri;
+}
+
 /**
  * Tropical → sidereal (nirayana) longitude using the chosen ayanamsa.
  * `method` may be 'lahiri' (default, used by most Maharashtra panchangs).
  */
 export function toSidereal(tropicalLongitude: number, date: Date | number, method: AyanamsaMethod = 'lahiri'): number {
-  const ayanamsa = method === 'lahiri'
-    ? lahiriAyanamsaDeg(date)
-    : method === 'raman'
-      ? lahiriAyanamsaDeg(date) - 1.1666
-      : lahiriAyanamsaDeg(date) + 0.2833; // kp (Krishnamurti)
-  return norm360(tropicalLongitude - ayanamsa);
+  return norm360(tropicalLongitude - ayanamsaDeg(date, method));
 }
-
-export type AyanamsaMethod = 'lahiri' | 'raman' | 'kp';
 
 export interface GrahaPosition {
   graha: 'सूर्य' | 'चंद्र';
@@ -176,7 +178,7 @@ export function luminaries(date: Date | number, method: AyanamsaMethod = 'lahiri
 } {
   const sunTropical = sunLongitudeTropical(date);
   const moonTropical = moonLongitudeTropical(date);
-  const ayanamsa = lahiriAyanamsaDeg(date);
+  const ayanamsa = ayanamsaDeg(date, method);
   const build = (g: GrahaPosition['graha'], tropical: number): GrahaPosition => {
     const sidereal = toSidereal(tropical, date, method);
     return {

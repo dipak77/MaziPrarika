@@ -1,6 +1,6 @@
 'use client';
 
-import { useOptimistic, useTransition } from 'react';
+import { useOptimistic, useState, useTransition } from 'react';
 
 import { MARATHI_MONTHS_SHORT, formatMarathiDate, toDevanagariDigits } from '@mazi/marathi';
 
@@ -12,6 +12,7 @@ const PRIORITY_LABEL: Record<number, string> = { 1: 'तातडीचे', 2: 
 
 export function TaskPanel({ slug, tasks, overdue }: { slug: string; tasks: Task[]; overdue: number }) {
   const [pending, startTransition] = useTransition();
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [optimistic, toggleOptimistic] = useOptimistic(
     tasks,
     (current: Task[], taskId: string) =>
@@ -33,8 +34,17 @@ export function TaskPanel({ slug, tasks, overdue }: { slug: string; tasks: Task[
 
       <form
         action={(formData) => {
+          setResult(null);
           startTransition(async () => {
-            await addTaskAction(formData);
+            try {
+              await addTaskAction(formData);
+              setResult({ ok: true, message: 'कार्य जोडले — यादीत दिसेल.' });
+            } catch (error) {
+              setResult({
+                ok: false,
+                message: error instanceof Error ? error.message : 'कार्य जोडता आले नाही — पुन्हा प्रयत्न करा.',
+              });
+            }
           });
         }}
         className="mt-4 grid gap-2 sm:grid-cols-[1.6fr_1fr_0.8fr_auto]"
@@ -60,11 +70,24 @@ export function TaskPanel({ slug, tasks, overdue }: { slug: string; tasks: Task[
         <button
           type="submit"
           disabled={pending}
-          className="rounded-xl bg-maroon px-4 py-2 text-sm font-semibold text-ivory disabled:opacity-60"
+          className="btn-base btn-maroon px-4 text-sm disabled:opacity-60"
         >
-          जोडा
+          {pending ? 'जोडत आहे…' : 'जोडा'}
         </button>
       </form>
+
+      {result ? (
+        <p
+          className={`mt-2 rounded-xl border px-3 py-2 text-xs ${
+            result.ok
+              ? 'border-paithani/50 bg-paithani/10 text-paithani'
+              : 'border-maroon/40 bg-maroon/8 text-maroon'
+          }`}
+          role={result.ok ? 'status' : 'alert'}
+        >
+          {result.message}
+        </p>
+      ) : null}
 
       <ul className="mt-4 space-y-2">
         {open.map((task) => (
@@ -110,10 +133,11 @@ function TaskRow({
         <button
           type="submit"
           aria-label={task.status === 'done' ? `${task.title} पुन्हा उघडा` : `${task.title} पूर्ण करा`}
+          aria-pressed={task.status === 'done'}
           className={
             task.status === 'done'
-              ? 'mt-0.5 grid size-6 place-items-center rounded-md border border-paithani bg-paithani text-xs text-ivory'
-              : 'mt-0.5 grid size-6 place-items-center rounded-md border border-gold/60 bg-ivory text-xs text-transparent hover:text-gold'
+              ? 'grid size-11 shrink-0 place-items-center rounded-lg border border-paithani bg-paithani text-sm text-ivory'
+              : 'grid size-11 shrink-0 place-items-center rounded-lg border border-gold/60 bg-ivory text-sm text-transparent hover:text-gold'
           }
         >
           ✓
@@ -131,7 +155,7 @@ function TaskRow({
         </p>
       </div>
       {overdueTask ? (
-        <span className="rounded-full border border-maroon/40 bg-maroon/8 px-2 py-0.5 text-[11px] text-maroon">मुदत संपली</span>
+        <span className="rounded-full border border-maroon/40 bg-maroon/8 px-2 py-0.5 text-xs text-maroon">मुदत संपली</span>
       ) : null}
     </li>
   );

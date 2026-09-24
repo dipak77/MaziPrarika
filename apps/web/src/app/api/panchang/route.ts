@@ -15,7 +15,8 @@ export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const city = url.searchParams.get('city') ?? 'पुणे';
+  const rawCity = (url.searchParams.get('city') ?? 'पुणे').trim().slice(0, 60);
+  const city = rawCity || 'पुणे';
   const location = locationFor(city);
   const panchangLocation = {
     city: location.city,
@@ -28,8 +29,32 @@ export async function GET(request: Request) {
   const to = url.searchParams.get('to');
 
   if (from && to) {
-    const eventType = url.searchParams.get('eventType') ?? 'other';
-    const limit = Math.min(Number(url.searchParams.get('limit') ?? 10), 30);
+    const ALLOWED_EVENT_TYPES = new Set([
+      'wedding',
+      'engagement',
+      'mundan',
+      'namkaran',
+      'vastu',
+      'upanayan',
+      'satyanarayan',
+      'other',
+    ]);
+    const rawEventType = url.searchParams.get('eventType') ?? 'other';
+    const eventType = ALLOWED_EVENT_TYPES.has(rawEventType) ? rawEventType : 'other';
+    const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    if (!DATE_RE.test(from) || !DATE_RE.test(to)) {
+      return NextResponse.json({ error: 'अवैध दिनांक श्रेणी.' }, { status: 400 });
+    }
+    const rawLimit = Number(url.searchParams.get('limit') ?? 10);
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(Math.floor(rawLimit), 1), 30) : 10;
+    const fromDate = new Date(`${from}T00:00:00Z`);
+    const toDate = new Date(`${to}T00:00:00Z`);
+    if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime()) || toDate < fromDate) {
+      return NextResponse.json({ error: 'अवैध दिनांक श्रेणी.' }, { status: 400 });
+    }
+    if ((toDate.getTime() - fromDate.getTime()) / 86_400_000 > 366) {
+      return NextResponse.json({ error: 'श्रेणी ३६६ दिवसांपेक्षा जास्त असू शकत नाही.' }, { status: 400 });
+    }
     const results = findMuhurats({ eventType, location: panchangLocation, from, to, limit });
     return NextResponse.json(
       {
@@ -54,6 +79,9 @@ export async function GET(request: Request) {
   }
 
   const dateParam = url.searchParams.get('date');
+  if (dateParam && !/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+    return NextResponse.json({ error: 'अवैध दिनांक.' }, { status: 400 });
+  }
   const date = dateParam ? new Date(`${dateParam}T00:00:00Z`) : new Date();
   if (Number.isNaN(date.getTime())) {
     return NextResponse.json({ error: 'अवैध दिनांक.' }, { status: 400 });

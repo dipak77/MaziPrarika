@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { computePanchang, panchangForToday, shakaFromGregorian } from './panchang.js';
+import { computePanchang, karanaNameFor, panchangForToday, shakaFromGregorian } from './panchang.js';
 import { evaluateMuhurat, findMuhurats } from './muhurat.js';
-import { sunTimes, lahiriAyanamsaDeg, luminaries, moonLongitudeTropical } from './astronomy.js';
+import { ayanamsaDeg, lahiriAyanamsaDeg, luminaries, moonLongitudeTropical, sunLongitudeTropical, sunTimes, toSidereal } from './astronomy.js';
 import { bhakootKoota, ganaKoota, gunaMilan, kundaliFromBirth, nadiKoota, taraKoota, varnaKoota, yoniKoota } from './kundali.js';
 
 const PUNE = { city: 'पुणे', latitude: 18.5204, longitude: 73.8567, tzOffsetHours: 5.5 };
@@ -255,6 +255,133 @@ describe('panchang/kundali — private guna milan', () => {
     expect(result.methodology.table).toContain('ashtakoot');
     expect(result.methodology.disclaimer).toContain('कुटुंब');
     expect(result.methodology.variations.length).toBeGreaterThan(0);
+  });
+});
+
+describe('panchang/masa — last new moon before sunrise', () => {
+  const sunRashiAtNewMoon = (nm: Date, method: 'lahiri' | 'raman' | 'kp' = 'lahiri'): number =>
+    Math.floor(toSidereal(sunLongitudeTropical(nm), nm, method) / 30);
+
+  it('crosses from फाल्गुन to चैत्र exactly at the March 2026 new moon', () => {
+    const before = computePanchang(2026, 3, 19, PUNE);
+    const after = computePanchang(2026, 3, 20, PUNE);
+    expect(before.tithi.name).toBe('अमावास्या');
+    expect(before.masa).toBe('फाल्गुन');
+    expect(after.masa).toBe('चैत्र');
+    expect(after.masa).not.toBe(before.masa);
+  });
+
+  it('aligns every masa change with an amavasya sunrise in 2026', () => {
+    const dates: Array<[number, number, number]> = [];
+    for (let month = 1; month <= 12; month += 1) {
+      const last = new Date(Date.UTC(2026, month, 0)).getUTCDate();
+      for (let day = 1; day <= last; day += 1) dates.push([2026, month, day]);
+    }
+    const masas = dates.map(([y, m, d]) => computePanchang(y, m, d, PUNE));
+    let changes = 0;
+    for (let i = 1; i < masas.length; i += 1) {
+      if (masas[i]!.masa !== masas[i - 1]!.masa) {
+        changes += 1;
+        expect(masas[i - 1]!.tithi.name).toBe('अमावास्या');
+      }
+    }
+    expect(changes).toBeGreaterThanOrEqual(11);
+    expect(changes).toBeLessThanOrEqual(13);
+  });
+
+  it('derives the masa from the in-repo new moon for Gudi Padwa eve 2027', () => {
+    const reference = new Date('2027-04-01T00:30:00Z');
+    const elongation = (jd: number): number => {
+      const d = new Date((jd - 2440587.5) * 86_400_000);
+      return ((toSidereal(moonLongitudeTropical(d), d) - toSidereal(sunLongitudeTropical(d), d)) % 360 + 360) % 360;
+    };
+    const jdRef = reference.getTime() / 86_400_000 + 2440587.5;
+    const diff = elongation(jdRef);
+    let jd = jdRef - diff / 12.1907;
+    for (let i = 0; i < 12; i += 1) {
+      const delta = ((elongation(jd) - 0 + 540) % 360) - 180;
+      jd -= delta / 12.1907;
+    }
+    const newMoon = new Date((jd - 2440587.5) * 86_400_000);
+    expect(Math.abs(newMoon.getTime() - reference.getTime())).toBeLessThan(29.5 * 86_400_000);
+    const rashi = sunRashiAtNewMoon(newMoon);
+    expect([10, 11]).toContain(rashi);
+    const expected = ((rashi + 1) % 12);
+    const masa = computePanchang(2027, 4, 1, PUNE).masa;
+    const names = ['चैत्र', 'वैशाख', 'ज्येष्ठ', 'आषाढ', 'श्रावण', 'भाद्रपद', 'आश्विन', 'कार्तिक', 'मार्गशीर्ष', 'पौष', 'माघ', 'फाल्गुन'];
+    expect(masa).toBe(names[expected]);
+    expect(['फाल्गुन', 'चैत्र']).toContain(masa);
+  });
+});
+
+describe('panchang/ayanamsa — method threading', () => {
+  it('applies the documented offsets for raman and kp', () => {
+    const d = new Date('2026-06-01T12:00:00Z');
+    const lahiri = ayanamsaDeg(d, 'lahiri');
+    expect(ayanamsaDeg(d, 'raman')).toBeCloseTo(lahiri - 1.1666, 10);
+    expect(ayanamsaDeg(d, 'kp')).toBeCloseTo(lahiri + 0.2833, 10);
+    expect(ayanamsaDeg(d)).toBeCloseTo(lahiri, 10);
+  });
+
+  it('returns the method-specific ayanamsa from luminaries', () => {
+    const d = new Date('2026-12-12T06:00:00Z');
+    const lahiri = luminaries(d, 'lahiri');
+    const raman = luminaries(d, 'raman');
+    const kp = luminaries(d, 'kp');
+    expect(raman.ayanamsa).toBeCloseTo(lahiri.ayanamsa - 1.1666, 10);
+    expect(kp.ayanamsa).toBeCloseTo(lahiri.ayanamsa + 0.2833, 10);
+    expect(raman.sun.sidereal).toBeCloseTo(lahiri.sun.sidereal + 1.1666, 10);
+    expect(kp.moon.sidereal).toBeCloseTo(lahiri.moon.sidereal - 0.2833, 10);
+  });
+
+  it('reports the method-specific ayanamsa from computePanchang', () => {
+    const lahiri = computePanchang(2026, 12, 12, PUNE, 'lahiri');
+    const raman = computePanchang(2026, 12, 12, PUNE, 'raman');
+    expect(raman.method.ayanamsa).toBe('raman');
+    expect(raman.ayanamsa).toBeCloseTo(lahiri.ayanamsa - 1.1666, 4);
+    expect(computePanchang(2026, 12, 12, PUNE, 'kp').ayanamsa).toBeCloseTo(lahiri.ayanamsa + 0.2833, 4);
+  });
+});
+
+describe('panchang/karana — half-tithi index 0..59', () => {
+  it('maps all 60 half-tithi indices to the correct Marathi names', () => {
+    const expected: string[] = ['किंस्तुघ्न'];
+    const mobile = ['बव', 'बालव', 'कौलव', 'तैतिल', 'गर', 'वणिज', 'विष्टी'];
+    for (let i = 1; i <= 56; i += 1) expected.push(mobile[(i - 1) % 7]!);
+    expected.push('शकुनि', 'चतुष्पद', 'नागव');
+    expect(expected).toHaveLength(60);
+    for (let i = 0; i < 60; i += 1) {
+      expect(karanaNameFor(i)).toBe(expected[i]);
+    }
+  });
+
+  it('wraps out-of-range indices into 0..59', () => {
+    expect(karanaNameFor(60)).toBe(karanaNameFor(0));
+    expect(karanaNameFor(-1)).toBe(karanaNameFor(59));
+    expect(karanaNameFor(119)).toBe(karanaNameFor(59));
+    expect(karanaNameFor(120)).toBe(karanaNameFor(0));
+    expect(karanaNameFor(65)).toBe(karanaNameFor(5));
+  });
+
+  it('reports चतुष्पद/नागव for the Diwali amavasya sunrise 2026', () => {
+    const p = computePanchang(2026, 11, 9, PUNE);
+    expect(p.tithi.name).toBe('अमावास्या');
+    expect(p.karana.name).toBe('नागव');
+    expect(p.karana.index).toBeGreaterThanOrEqual(0);
+    expect(p.karana.index).toBeLessThanOrEqual(59);
+    expect(karanaNameFor(p.karana.index)).toBe(p.karana.name);
+  });
+
+  it('keeps karana.index inside 0..59 for every day of 2026', () => {
+    for (let month = 1; month <= 12; month += 1) {
+      const last = new Date(Date.UTC(2026, month, 0)).getUTCDate();
+      for (let day = 1; day <= last; day += 1) {
+        const p = computePanchang(2026, month, day, PUNE);
+        expect(p.karana.index).toBeGreaterThanOrEqual(0);
+        expect(p.karana.index).toBeLessThanOrEqual(59);
+        expect(karanaNameFor(p.karana.index)).toBe(p.karana.name);
+      }
+    }
   });
 });
 

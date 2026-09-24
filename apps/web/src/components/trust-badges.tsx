@@ -36,13 +36,13 @@ export function TrustBadgeRow({
       {badges.map((badge) => (
         <li
           key={badge.code}
-          className="rounded-full border border-paithani/30 bg-paithani/8 px-2.5 py-1 font-ui text-[0.7rem] font-medium text-paithani"
+          className="rounded-full border border-paithani/30 bg-paithani/8 px-2.5 py-1 font-ui text-xs font-medium text-paithani"
         >
           {badge.label}
         </li>
       ))}
       {responseMinutes ? (
-        <li className="rounded-full border border-gold/40 bg-ivory px-2.5 py-1 font-ui text-[0.7rem] font-medium text-charcoal-soft">
+        <li className="rounded-full border border-gold/40 bg-ivory px-2.5 py-1 font-ui text-xs font-medium text-charcoal-soft">
           ⏱ सरासरी प्रतिसाद {responseMinutes} मिनिटे
         </li>
       ) : null}

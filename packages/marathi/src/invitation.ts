@@ -211,25 +211,14 @@ function buildWedding(input: InvitationInput, opts: HonorificOptions): Invitatio
   if (bride && groom) {
     const firstName = side === 'groom' ? groom : bride;
     const secondName = side === 'groom' ? bride : groom;
-    if (side === 'groom') {
-      lines.push({
-        id: 'n1', weight: 'normal', emphasis: 'narrative',
-        text: `${brideParentsLine} ${childPossessive(firstName.gender)} ${formatPersonName(firstName, opts)} ${pronoun(firstName.gender)}`,
-      });
-      lines.push({
-        id: 'n2', weight: 'normal', emphasis: 'narrative',
-        text: `${formatPersonName(secondName, opts)} ${pronounWith(secondName.gender)}`,
-      });
-    } else {
-      lines.push({
-        id: 'n1', weight: 'normal', emphasis: 'narrative',
-        text: `${brideParentsLine} ${childPossessive(firstName.gender)} ${formatPersonName(firstName, opts)} ${pronoun(firstName.gender)}`,
-      });
-      lines.push({
-        id: 'n2', weight: 'normal', emphasis: 'narrative',
-        text: `${formatPersonName(secondName, opts)} ${pronounWith(secondName.gender)}`,
-      });
-    }
+    lines.push({
+      id: 'n1', weight: 'normal', emphasis: 'narrative',
+      text: `${brideParentsLine} ${childPossessive(firstName.gender)} ${formatPersonName(firstName, opts)} ${pronoun(firstName.gender)}`,
+    });
+    lines.push({
+      id: 'n2', weight: 'normal', emphasis: 'narrative',
+      text: `${formatPersonName(secondName, opts)} ${pronounWith(secondName.gender)}`,
+    });
     lines.push({
       id: 'n3', weight: 'normal', emphasis: 'narrative',
       text: `विवाह ${dateText} रोजी${timeText}${muhurat} ${venueText} येथे स्थिर झाला आहे.`,
@@ -482,7 +471,12 @@ export function lintMarathiText(text: string): string[] {
   return issues;
 }
 
-export function buildQualityReport(input: InvitationInput, lines: InvitationLine[], textWidthPt = 520): QualityReport {
+export function buildQualityReport(
+  input: InvitationInput,
+  lines: InvitationLine[],
+  textWidthPt = 520,
+  invocation?: string | null,
+): QualityReport {
   const checks: QualityCheck[] = [];
   const spec = getEventType(input.eventType);
   const has = (v: unknown) => isFilled(typeof v === 'string' ? v : '');
@@ -495,11 +489,14 @@ export function buildQualityReport(input: InvitationInput, lines: InvitationLine
   });
 
   if (spec.requiresRitual || spec.invitation.invocation !== 'none') {
+    const present = invocation !== undefined
+      ? isFilled(invocation)
+      : spec.invitation.invocation !== 'none';
     checks.push({
       id: 'invocation',
       label: 'मंगलचिन्ह (॥ श्री गणेशाय नमः ॥)',
-      status: spec.invitation.invocation === 'none' ? 'pass' : 'pass',
-      detail: 'विधीपूर्वक कार्यक्रमासाठी मंगलचिन्ह समाविष्ट',
+      status: present ? 'pass' : 'fail',
+      detail: present ? 'विधीपूर्वक कार्यक्रमासाठी मंगलचिन्ह समाविष्ट' : 'मंगलचिन्ह आवश्यक — निमंत्रणात ॥ श्री गणेशाय नमः ॥ समाविष्ट करा',
     });
   }
 
@@ -616,13 +613,24 @@ function buildPanchangLines(panchang?: PanchangSummary): string[] {
   return out;
 }
 
+const EN_WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
+const EN_MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+] as const;
+
+function formatEnglishDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const weekday = EN_WEEKDAYS[date.getUTCDay()] ?? '';
+  const month = EN_MONTHS[date.getUTCMonth()] ?? '';
+  return `${weekday}, ${date.getUTCDate()} ${month} ${date.getUTCFullYear()}`;
+}
+
 /** Deterministic English rendering composed from the same structured data. */
 function buildEnglish(input: InvitationInput): string {
   const spec = getEventType(input.eventType);
-  const date = new Date(input.date);
-  const dateText = date.toLocaleDateString('en-IN', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
-  });
+  const dateText = formatEnglishDate(input.date);
   const time = input.startTime
     ? new Date(input.startTime).toISOString().slice(11, 16)
     : undefined;
@@ -688,7 +696,7 @@ export function composeInvitation(input: InvitationInput): ComposedInvitation {
     ? `कृपया येण्याची खात्री ${toDevanagariDigits(input.rsvp.whatsapp ?? input.rsvp.phone ?? '')} या क्रमांकावर कळवावी.`
     : undefined;
 
-  const quality = buildQualityReport(input, narrative, 520);
+  const quality = buildQualityReport(input, narrative, 520, invocation);
 
   const footer: ComposedInvitation['footer'] = {
     ...(rsvpText ? { rsvp: rsvpText } : {}),

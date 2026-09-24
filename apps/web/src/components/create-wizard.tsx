@@ -5,15 +5,6 @@ import { useCallback, useState } from 'react';
 
 import { toDevanagariDigits } from '@mazi/marathi';
 
-/**
- * The AI setup wizard.
- *
- * Two-phase by design: the first call only *proposes* a plan (read-only tools
- * run immediately so the user sees real value), and nothing that writes to the
- * account happens until the user confirms. That is the difference between an
- * assistant and an agent that spends your money.
- */
-
 interface AssistantResponse {
   answer: string;
   summary: string;
@@ -45,6 +36,25 @@ const TOOL_LABELS: Record<string, string> = {
   CreatePrintOrder: 'छपाई ऑर्डर तयार करणे',
 };
 
+function isAssistantResponse(data: unknown): data is AssistantResponse {
+  if (typeof data !== 'object' || data === null) return false;
+  const value = data as Partial<AssistantResponse>;
+  return (
+    typeof value.answer === 'string' &&
+    typeof value.summary === 'string' &&
+    Array.isArray(value.plan) &&
+    Array.isArray(value.results) &&
+    Array.isArray(value.pendingConfirmation) &&
+    Array.isArray(value.vendors) &&
+    Array.isArray(value.muhurats) &&
+    Array.isArray(value.budget) &&
+    Array.isArray(value.clarifications) &&
+    typeof value.provider === 'object' &&
+    value.provider !== null &&
+    typeof value.provider.id === 'string'
+  );
+}
+
 export function CreateWizard({ examples }: { examples: string[] }) {
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState(false);
@@ -60,11 +70,25 @@ export function CreateWizard({ examples }: { examples: string[] }) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ message: text, confirm }),
       });
-      const data = (await result.json()) as AssistantResponse;
-      if (!result.ok) {
-        setError(data.error ?? 'सहाय्यक उत्तर देत नाही.');
+      let data: unknown = null;
+      try {
+        data = await result.json();
+      } catch {
+        data = null;
       }
-      setResponse(data);
+      if (!result.ok) {
+        const failure =
+          data && typeof data === 'object' && typeof (data as { error?: unknown }).error === 'string'
+            ? (data as { error: string }).error
+            : 'सहाय्यक उत्तर देत नाही.';
+        setError(failure);
+        return;
+      }
+      if (isAssistantResponse(data)) {
+        setResponse(data);
+      } else {
+        setError('सहाय्यक उत्तर देत नाही.');
+      }
     } catch {
       setError('नेटवर्क अडचण — पुन्हा प्रयत्न करा.');
     } finally {
@@ -72,116 +96,139 @@ export function CreateWizard({ examples }: { examples: string[] }) {
     }
   }, []);
 
-  const submitted = response !== null;
+  const view = response !== null && isAssistantResponse(response) ? response : null;
+  const submitted = view !== null;
 
   return (
-    <section className="surface p-6">
+    <section className="surface-elevated overflow-hidden p-0" aria-busy={pending}>
+      <div className="paithani-edge h-1.5" aria-hidden />
       <form
+        className="p-6 sm:p-7"
         onSubmit={(event) => {
           event.preventDefault();
           if (message.trim().length < 2) return;
           void send(message, false);
         }}
       >
-        <label htmlFor="request" className="font-display text-lg font-bold text-charcoal">
-          कार्यक्रमाबद्दल सांगा
-        </label>
-        <p className="mt-1 text-sm text-charcoal-soft">
+        <div className="flex items-center gap-2">
+          <span aria-hidden className="grid size-9 place-items-center rounded-xl bg-maroon text-gold-shimmer ring-1 ring-gold/30">✦</span>
+          <label htmlFor="request" className="font-display text-lg font-bold tracking-tight text-charcoal">
+            कार्यक्रमाबद्दल सांगा
+          </label>
+          <span className="ml-auto rounded-full bg-gold/12 px-2.5 py-1 font-ui text-xs font-semibold text-gold-ink ring-1 ring-gold/25">AI Studio</span>
+        </div>
+        <p className="mt-2 text-sm leading-relaxed text-charcoal-soft">
           शहर, तारीख (किंवा महिना), पाहुण्यांची संख्या आणि बजेट — जेवढे सांगाल तेवढे अचूक नियोजन.
         </p>
-        <textarea
-          id="request"
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-          rows={4}
-          maxLength={1200}
-          className="mt-3 w-full rounded-xl border border-gold/40 bg-ivory px-4 py-3 text-base text-charcoal outline-none focus:border-maroon"
-          placeholder="उदा. पुण्यात एप्रिल २०२७ मध्ये लग्न आहे, ६५० पाहुणे, बजेट १८ लाख…"
-        />
+        <div className="relative mt-4">
+          <textarea
+            id="request"
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            rows={4}
+            maxLength={1200}
+            className="min-h-[7.5rem] w-full resize-none rounded-2xl border border-gold/30 bg-white px-4 py-3.5 text-base leading-relaxed text-charcoal placeholder:text-charcoal-muted/60 shadow-sm outline-none transition focus:border-maroon/60 focus:ring-2 focus:ring-maroon/12"
+            placeholder="उदा. पुण्यात एप्रिल २०२७ मध्ये लग्न आहे, ६५० पाहुणे, बजेट १८ लाख…"
+          />
+          <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-gold/30 to-transparent" />
+        </div>
+        <p className="mt-2 flex items-center justify-between text-xs text-charcoal-soft" aria-live="polite">
+          <span className="font-ui">उदाहरणावर टॅप करा → मजकूर भरेगा</span>
+          <span className="font-ui font-medium">{toDevanagariDigits(message.length)} / {toDevanagariDigits(1200)} अक्षरे</span>
+        </p>
 
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           {examples.map((example) => (
             <button
               key={example}
               type="button"
               onClick={() => setMessage(example)}
-              className="rounded-full border border-gold/40 bg-ivory px-3 py-1.5 text-xs text-charcoal-soft transition hover:border-maroon hover:text-maroon"
+              className="group inline-flex min-h-11 items-center gap-1.5 rounded-full border border-gold/30 bg-ivory-surface px-3.5 py-2 text-xs font-medium leading-tight text-charcoal-soft shadow-2xs transition hover:border-maroon/30 hover:bg-ivory-deep hover:text-maroon"
             >
+              <span className="size-1.5 rounded-full bg-gold/60 group-hover:bg-maroon" aria-hidden />
               {example.slice(0, 46)}…
             </button>
           ))}
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            disabled={pending || message.trim().length < 2}
-            className="rounded-full bg-maroon px-6 py-3 font-semibold text-ivory shadow-soft transition hover:bg-maroon-soft disabled:cursor-not-allowed disabled:opacity-60"
-          >
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <button type="submit" disabled={pending || message.trim().length < 2} className="btn-base btn-maroon px-7 text-sm shadow-sm disabled:opacity-60">
             {pending ? 'नियोजन तयार होत आहे…' : 'नियोजन तयार करा'}
+            <span aria-hidden>↗</span>
           </button>
           {submitted ? (
             <button
               type="button"
               onClick={() => {
                 setResponse(null);
+                setError(null);
                 setMessage('');
               }}
-              className="text-sm font-semibold text-charcoal-soft underline decoration-gold decoration-2 underline-offset-4"
+              className="btn-base btn-outline px-5 text-sm"
             >
               नवीन विनंती
             </button>
           ) : null}
-          <span className="font-ui text-xs text-charcoal-soft">
-            मुहूर्त व दर पंचांग-गणना व विक्रेत्यांच्या खऱ्या माहितीवरून — AI स्वतः तयार करत नाही.
-          </span>
         </div>
+        <p className="mt-3 flex items-center gap-1.5 text-xs leading-relaxed text-charcoal-muted">
+          <span aria-hidden className="size-1.5 rounded-full bg-paithani" />
+          मुहूर्त व दर पंचांग-गणना व विक्रेत्यांच्या खऱ्या माहितीवरून — AI स्वतः तयार करत नाही.
+        </p>
       </form>
 
       {error ? (
-        <p className="mt-5 rounded-xl border border-maroon/30 bg-maroon/5 px-4 py-3 text-sm text-maroon">{error}</p>
+        <div className="mx-6 mb-6 rounded-2xl border border-maroon/20 bg-maroon/5 px-4 py-4 sm:mx-7">
+          <p role="alert" className="text-sm font-medium leading-relaxed text-maroon">{error}</p>
+          <button
+            type="button"
+            onClick={() => {
+              if (message.trim().length >= 2) void send(message, false);
+            }}
+            disabled={pending}
+            className="btn-base btn-maroon mt-3 px-5 text-sm"
+          >
+            पुन्हा प्रयत्न करा
+          </button>
+        </div>
       ) : null}
 
-      {response ? (
-        <div className="mt-8 space-y-6">
-          <div className="rounded-xl border border-gold/30 bg-ivory-deep/60 p-4">
-            <p className="font-ui text-xs uppercase tracking-wider text-charcoal-soft">
-              {response.summary} • {response.provider.id}
-              {response.provider.fallback ? ' (नियम-आधारित)' : ''} • {toDevanagariDigits(response.provider.latencyMs)} मिसे
+      {view ? (
+        <div className="border-t border-gold/20 bg-ivory-deep/40 p-6 sm:p-7 space-y-6" aria-live="polite">
+          <div className="rounded-2xl border border-gold/25 bg-ivory-surface p-4 shadow-sm">
+            <p className="inline-flex flex-wrap items-center gap-2 font-ui text-xs font-semibold uppercase tracking-wider text-charcoal-soft">
+              <span className="rounded-full bg-gold/15 px-2.5 py-1 text-gold-ink ring-1 ring-gold/30">{view.summary}</span>
+              <span>{view.provider.id}{view.provider.fallback ? ' (नियम-आधारित)' : ''}</span>
+              <span>• {toDevanagariDigits(view.provider.latencyMs)} मिसे</span>
             </p>
             <pre className="mt-3 whitespace-pre-wrap font-[inherit] text-sm leading-relaxed text-charcoal">
-              {response.answer}
+              {view.answer}
             </pre>
           </div>
 
           <div>
-            <h3 className="font-display text-lg font-bold text-charcoal">केलेली पायरे</h3>
+            <h3 className="font-display text-lg font-bold tracking-tight text-charcoal">केलेली पायरे</h3>
             <ol className="mt-3 space-y-2">
-              {response.plan.map((call) => {
-                const result = response.results.find((r) => r.tool === call.tool);
-                const state = result?.ok
-                  ? 'done'
-                  : result?.requiresConfirmation
-                    ? 'confirm'
-                    : 'failed';
+              {view.plan.map((call) => {
+                const result = view.results.find((r) => r.tool === call.tool);
+                const state = result?.ok ? 'done' : result?.requiresConfirmation ? 'confirm' : 'failed';
                 return (
-                  <li key={call.tool} className="flex items-start gap-3 rounded-xl border border-gold/25 bg-ivory px-4 py-3">
+                  <li key={call.tool} className="flex items-start gap-3 rounded-2xl border border-gold/20 bg-ivory-surface px-4 py-3 shadow-2xs">
                     <span
                       aria-hidden
                       className={
                         state === 'done'
-                          ? 'mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-paithani text-xs text-ivory'
+                          ? 'mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-paithani text-xs font-bold text-ivory shadow-sm'
                           : state === 'confirm'
-                            ? 'mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-gold text-xs text-ivory'
-                            : 'mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-maroon text-xs text-ivory'
+                            ? 'mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-gold text-xs font-bold text-ink shadow-sm'
+                            : 'mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-maroon text-xs font-bold text-ivory shadow-sm'
                       }
                     >
                       {state === 'done' ? '✓' : state === 'confirm' ? '⏸' : '×'}
                     </span>
-                    <span>
-                      <span className="font-semibold text-charcoal">{TOOL_LABELS[call.tool] ?? call.tool}</span>
-                      <span className="mt-0.5 block text-xs text-charcoal-soft">{call.rationale}</span>
-                      {result?.error ? <span className="mt-1 block text-xs text-maroon">{result.error}</span> : null}
+                    <span className="min-w-0">
+                      <span className="text-sm font-semibold text-charcoal">{TOOL_LABELS[call.tool] ?? call.tool}</span>
+                      <span className="mt-0.5 block text-xs leading-relaxed text-charcoal-soft">{call.rationale}</span>
+                      {result?.error ? <span className="mt-1 block rounded-lg bg-maroon/6 px-2 py-1 text-xs font-medium text-maroon">{result.error}</span> : null}
                     </span>
                   </li>
                 );
@@ -189,69 +236,58 @@ export function CreateWizard({ examples }: { examples: string[] }) {
             </ol>
           </div>
 
-          {response.pendingConfirmation.length ? (
-            <div className="rounded-xl border border-gold/50 bg-gold/10 p-4">
-              <p className="text-sm text-charcoal">
-                पुढील पायऱ्यांसाठी तुमची पुष्टी आवश्यक आहे: {response.pendingConfirmation.map((tool) => TOOL_LABELS[tool] ?? tool).join(', ')}.
+          {view.pendingConfirmation.length ? (
+            <div className="rounded-2xl border border-gold/40 bg-amber-50/70 p-4 shadow-sm">
+              <p className="text-sm leading-relaxed text-charcoal">
+                पुढील पायऱ्यांसाठी तुमची पुष्टी आवश्यक आहे: <span className="font-semibold">{view.pendingConfirmation.map((tool) => TOOL_LABELS[tool] ?? tool).join(', ')}</span>.
               </p>
-              <button
-                type="button"
-                onClick={() => void send(message, true)}
-                disabled={pending}
-                className="mt-3 rounded-full bg-maroon px-5 py-2.5 text-sm font-semibold text-ivory transition hover:bg-maroon-soft disabled:opacity-60"
-              >
+              <button type="button" onClick={() => void send(message, true)} disabled={pending} className="btn-base btn-maroon mt-3 px-5 text-sm">
                 हो, पुढे जा — कार्यक्रम तयार करा
               </button>
             </div>
           ) : null}
 
-          {response.muhurats.length ? (
+          {view.muhurats.length ? (
             <div>
-              <h3 className="font-display text-lg font-bold text-charcoal">मुहूर्त अनुकूलता</h3>
+              <h3 className="font-display text-lg font-bold tracking-tight text-charcoal">मुहूर्त अनुकूलता</h3>
               <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-                {response.muhurats.map((muhurat) => (
-                  <li key={muhurat.date} className="rounded-xl border border-gold/25 bg-ivory px-4 py-3">
-                    <p className="font-semibold text-charcoal">
-                      {muhurat.weekday}, {muhurat.date}
-                    </p>
-                    <p className="mt-1 text-xs text-charcoal-soft">
+                {view.muhurats.map((muhurat) => (
+                  <li key={muhurat.date} className="rounded-2xl border border-gold/20 bg-ivory-surface px-4 py-3 shadow-2xs">
+                    <p className="text-sm font-semibold text-charcoal">{muhurat.weekday}, {muhurat.date}</p>
+                    <p className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-paithani-soft px-2.5 py-1 text-xs font-semibold text-paithani ring-1 ring-paithani/20">
                       {muhurat.band} • {toDevanagariDigits(muhurat.score)}/१००
                     </p>
                   </li>
                 ))}
               </ul>
-              <p className="mt-2 text-xs text-charcoal-soft">
-                ही अनुकूलता गणना आहे; अंतिम निर्णय कुटुंबीय व गुरुजींच्या सल्ल्याने घ्यावा.
-              </p>
+              <p className="mt-2 text-xs leading-relaxed text-charcoal-soft">ही अनुकूलता गणना आहे; अंतिम निर्णय कुटुंबीय व गुरुजींच्या सल्ल्याने घ्यावा.</p>
             </div>
           ) : null}
 
-          {response.budget.length ? (
+          {view.budget.length ? (
             <div>
-              <h3 className="font-display text-lg font-bold text-charcoal">अंदाजे बजेट वाटप</h3>
-              <ul className="mt-3 space-y-1 text-sm">
-                {response.budget.slice(0, 8).map((line) => (
-                  <li key={line.category} className="flex items-center justify-between gap-4 border-b border-gold/20 py-1.5">
-                    <span className="text-charcoal">{line.label}</span>
-                    <span className="font-semibold text-maroon">
-                      ₹{toDevanagariDigits((line.estimatedPaise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 }))}
-                    </span>
+              <h3 className="font-display text-lg font-bold tracking-tight text-charcoal">अंदाजे बजेट वाटप</h3>
+              <ul className="mt-3 overflow-hidden rounded-2xl border border-gold/20 bg-ivory-surface shadow-2xs">
+                {view.budget.slice(0, 8).map((line) => (
+                  <li key={line.category} className="flex items-center justify-between gap-4 border-b border-gold/12 px-4 py-3 last:border-0">
+                    <span className="text-sm text-charcoal">{line.label}</span>
+                    <span className="rounded-full bg-maroon-light px-2.5 py-1 text-sm font-bold text-maroon ring-1 ring-maroon/10">₹{toDevanagariDigits((line.estimatedPaise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 }))}</span>
                   </li>
                 ))}
               </ul>
             </div>
           ) : null}
 
-          {response.vendors.length ? (
+          {view.vendors.length ? (
             <div>
-              <h3 className="font-display text-lg font-bold text-charcoal">या विनंतीसाठी उपलब्ध विक्रेते</h3>
+              <h3 className="font-display text-lg font-bold tracking-tight text-charcoal">या विनंतीसाठी उपलब्ध विक्रेते</h3>
               <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-                {response.vendors.map((vendor) => (
-                  <li key={vendor.id} className="rounded-xl border border-gold/25 bg-ivory px-4 py-3">
-                    <p className="font-semibold text-charcoal">{vendor.name}</p>
-                    <p className="mt-1 text-xs text-charcoal-soft">
-                      ★ {toDevanagariDigits(vendor.rating.toFixed(1))} • ₹
-                      {toDevanagariDigits((vendor.startingPricePaise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 }))} पासून
+                {view.vendors.map((vendor) => (
+                  <li key={vendor.id} className="rounded-2xl border border-gold/20 bg-ivory-surface px-4 py-3 shadow-2xs">
+                    <p className="text-sm font-semibold text-charcoal">{vendor.name}</p>
+                    <p className="mt-1 inline-flex items-center gap-2 text-xs text-charcoal-soft">
+                      <span className="rounded-full bg-gold/14 px-2 py-0.5 font-bold text-maroon">★ {toDevanagariDigits(vendor.rating.toFixed(1))}</span>
+                      <span>₹{toDevanagariDigits((vendor.startingPricePaise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 }))} पासून</span>
                     </p>
                   </li>
                 ))}
@@ -259,29 +295,20 @@ export function CreateWizard({ examples }: { examples: string[] }) {
             </div>
           ) : null}
 
-          {response.event ? (
-            <div className="rounded-xl border border-paithani/40 bg-paithani/8 p-4">
-              <p className="text-sm text-charcoal">
-                कार्यक्रम वर्कस्पेस तयार आहे — बजेट व कार्यसूची पारंपरिक रचनेनुसार भरलेली आहे.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-3">
-                <Link href={`/studio/${response.event.slug}`} className="rounded-full bg-maroon px-5 py-2.5 text-sm font-semibold text-ivory">
-                  वर्कस्पेस उघडा
-                </Link>
-                <Link
-                  href={`/studio/${response.event.slug}/invitation`}
-                  className="rounded-full border border-maroon/30 px-5 py-2.5 text-sm font-semibold text-maroon"
-                >
-                  पत्रिका तयार करा
-                </Link>
+          {view.event ? (
+            <div className="rounded-2xl border border-paithani/30 bg-linear-to-br from-paithani/10 via-ivory-surface to-ivory-deep p-4 shadow-sm">
+              <p className="text-sm font-medium leading-relaxed text-charcoal">कार्यक्रम वर्कस्पेस तयार आहे — बजेट व कार्यसूची पारंपरिक रचनेनुसार भरलेली आहे.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link href={`/studio/${view.event.slug}`} className="btn-base btn-maroon px-5 py-2.5 text-sm">वर्कस्पेस उघडा</Link>
+                <Link href={`/studio/${view.event.slug}/invitation`} className="btn-base btn-outline px-5 py-2.5 text-sm bg-white">पत्रिका तयार करा</Link>
               </div>
             </div>
           ) : null}
 
-          {response.clarifications.length ? (
-            <div className="rounded-xl border border-gold/40 bg-ivory px-4 py-3 text-sm text-charcoal-soft">
-              {response.clarifications.map((question) => (
-                <p key={question}>❓ {question}</p>
+          {view.clarifications.length ? (
+            <div className="rounded-2xl border border-gold/30 bg-white px-4 py-3 shadow-sm">
+              {view.clarifications.map((question) => (
+                <p key={question} className="flex gap-2 text-sm leading-relaxed text-charcoal-soft"><span aria-hidden>❓</span>{question}</p>
               ))}
             </div>
           ) : null}

@@ -16,6 +16,25 @@ import { requestVendorQuoteAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  try {
+    const { getStore } = await import('@/lib/store');
+    const vendor = getStore().vendors.byId(id);
+    if (!vendor) return { title: 'विक्रेता सापडला नाही' };
+    const title = `${vendor.name} • ${vendor.city}`;
+    const description = `${vendor.name} — ${vendor.city} मधील पडताळलेले विक्रेते. दर, उपलब्धता, परीक्षणे व थेट चौकशी.`;
+    return {
+      title,
+      description,
+      openGraph: { title, description, locale: 'mr_IN', type: 'website' },
+      twitter: { card: 'summary', title, description },
+    };
+  } catch {
+    return { title: 'विक्रेता • माझी पत्रिका' };
+  }
+}
+
 const AVAILABILITY_LABEL: Record<string, string> = {
   available: 'उपलब्ध',
   tentative: 'चर्चेत',
@@ -150,8 +169,8 @@ export default async function VendorProfilePage({
                   key={day.date}
                   className={
                     day.bookable
-                      ? 'rounded-lg border border-paithani/40 bg-paithani/8 px-2 py-1.5 text-[11px] text-paithani'
-                      : 'rounded-lg border border-maroon/35 bg-maroon/8 px-2 py-1.5 text-[11px] text-maroon'
+                      ? 'rounded-lg border border-paithani/40 bg-paithani/8 px-2 py-1.5 text-xs text-paithani'
+                      : 'rounded-lg border border-maroon/35 bg-maroon/8 px-2 py-1.5 text-xs text-maroon'
                   }
                   title={day.reason}
                 >
@@ -169,10 +188,10 @@ export default async function VendorProfilePage({
                 <li key={review.id} className="border-b border-gold/20 pb-3 last:border-0">
                   <p className="text-sm font-semibold text-charcoal">
                     {review.authorName} • ★ {toDevanagariDigits(review.rating.toFixed(1))}
-                    {review.verifiedBooking ? <span className="ml-2 text-[11px] text-paithani">पडताळलेले बुकिंग</span> : null}
+                    {review.verifiedBooking ? <span className="ml-2 text-xs text-paithani">पडताळलेले बुकिंग</span> : null}
                   </p>
                   {review.body ? <p className="mt-1 text-sm text-charcoal-soft">{review.body}</p> : null}
-                  <p className="mt-1 font-ui text-[11px] text-charcoal-soft">
+                  <p className="mt-1 font-ui text-xs text-charcoal-soft">
                     {formatMarathiDate(review.createdAt, 'day-month')}
                   </p>
                 </li>
@@ -243,11 +262,11 @@ export default async function VendorProfilePage({
                 </label>
                 <button
                   type="submit"
-                  className="w-full rounded-full bg-maroon px-5 py-3 font-semibold text-ivory shadow-soft transition hover:bg-maroon-soft"
+                  className="btn-base btn-maroon w-full px-5 text-sm"
                 >
                   विनंती पाठवा (बुकिंग नाही)
                 </button>
-                <p className="text-[11px] text-charcoal-soft">
+                <p className="text-xs text-charcoal-soft">
                   विनंती पाठवल्याने काहीही बुक होत नाही. दर, तारीख व अटी लेखी कोटमध्ये ठरतील, आणि तुम्ही संमती दिल्यावरच
                   बुकिंग निश्चित होते.
                 </p>

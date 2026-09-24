@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="माझी पत्रिका — महाराष्ट्रीयन कार्यक्रम OS">
+  <defs>
+    <linearGradient id="mp-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2E0A13"/>
+      <stop offset="0.38" stop-color="#6B1D2A"/>
+      <stop offset="0.72" stop-color="#80182A"/>
+      <stop offset="1" stop-color="#4A0F1D"/>
+    </linearGradient>
+    <linearGradient id="mp-gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7A5410"/>
+      <stop offset="0.22" stop-color="#C6A15B"/>
+      <stop offset="0.5" stop-color="#F3E5AB"/>
+      <stop offset="0.74" stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#996F16"/>
+    </linearGradient>
+    <linearGradient id="mp-gold-v" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F3E5AB"/>
+      <stop offset="1" stop-color="#B8912E"/>
+    </linearGradient>
+    <radialGradient id="mp-glow" cx="0.5" cy="0.38" r="0.72">
+      <stop offset="0" stop-color="#D4AF37" stop-opacity="0.28"/>
+      <stop offset="0.45" stop-color="#D4AF37" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#D4AF37" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="mp-vignette" cx="0.5" cy="0.5" r="0.85">
+      <stop offset="0.68" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1A0408" stop-opacity="0.42"/>
+    </radialGradient>
+    <pattern id="mp-grain" width="120" height="120" patternUnits="userSpaceOnUse">
+      <rect width="120" height="120" fill="none"/>
+      <g opacity="0.07">
+        <circle cx="12" cy="18" r="0.7" fill="#F3E5AB"/>
+        <circle cx="48" cy="42" r="0.5" fill="#F3E5AB"/>
+        <circle cx="84" cy="12" r="0.6" fill="#F3E5AB"/>
+        <circle cx="102" cy="78" r="0.5" fill="#F3E5AB"/>
+        <circle cx="36" cy="96" r="0.6" fill="#F3E5AB"/>
+      </g>
+    </pattern>
+    <g id="mp-rosette">
+      <g fill="none" stroke="#D4AF37" stroke-width="1.5">
+        <circle r="76" stroke-dasharray="2.2 8.5" opacity="0.72"/>
+        <circle r="64" opacity="0.92"/>
+        <circle r="28" opacity="0.9"/>
+        <circle r="14" stroke-dasharray="3 4" opacity="0.85"/>
+        <path d="M0 -30 C 9 -41 19 -52 0 -68 C -19 -52 -9 -41 0 -30 Z"/>
+        <path d="M0 -30 C 9 -41 19 -52 0 -68 C -19 -52 -9 -41 0 -30 Z" transform="rotate(45)"/>
+        <path d="M0 -30 C 9 -41 19 -52 0 -68 C -19 -52 -9 -41 0 -30 Z" transform="rotate(90)"/>
+        <path d="M0 -30 C 9 -41 19 -52 0 -68 C -19 -52 -9 -41 0 -30 Z" transform="rotate(135)"/>
+        <path d="M0 -30 C 9 -41 19 -52 0 -68 C -19 -52 -9 -41 0 -30 Z" transform="rotate(180)"/>
+        <path d="M0 -30 C 9 -41 19 -52 0 -68 C -19 -52 -9 -41 0 -30 Z" transform="rotate(225)"/>
+        <path d="M0 -30 C 9 -41 19 -52 0 -68 C -19 -52 -9 -41 0 -30 Z" transform="rotate(270)"/>
+        <path d="M0 -30 C 9 -41 19 -52 0 -68 C -19 -52 -9 -41 0 -30 Z" transform="rotate(315)"/>
+      </g>
+      <circle r="7.5" fill="#D4AF37"/>
+      <circle r="3.2" fill="#3B0912"/>
+    </g>
+    <g id="mp-paisley">
+      <path d="M0 0 C 0 -9.5 7.2 -17 16.5 -17 C 23.5 -17 28.5 -12.2 28.5 -6.2 C 28.5 -1 23.8 2.8 19.8 0.2 C 15.2 -2.8 18.5 -7.8 22.2 -6.6" fill="none" stroke="#D4AF37" stroke-width="1.7" stroke-linecap="round"/>
+      <circle cx="40.5" cy="-8.5" r="2.2" fill="#D4AF37"/>
+      <circle cx="48" cy="-8.5" r="1" fill="#F3E5AB" opacity="0.9"/>
+    </g>
+    <g id="mp-kalash" opacity="0.08">
+      <ellipse cx="0" cy="28" rx="22" ry="7" fill="#F3E5AB"/>
+      <path d="M-18 18 C -18 2  -8 -8 0 -8 C 8 -8 18 2 18 18 C 18 36 10 52 0 52 C -10 52 -18 36 -18 18 Z" fill="#F3E5AB"/>
+      <path d="M-14 -18 C -22 -26 -28 -36 -30 -48 C -16 -45 -6 -32 0 -18 Z" fill="#F3E5AB"/>
+      <path d="M14 -18 C 22 -26 28 -36 30 -48 C 16 -45 6 -32 0 -18 Z" fill="#F3E5AB"/>
+    </g>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#mp-bg)"/>
+  <rect width="1200" height="630" fill="url(#mp-glow)"/>
+  <rect width="1200" height="630" fill="url(#mp-grain)"/>
+  <rect width="1200" height="630" fill="url(#mp-vignette)"/>
+
+  <rect x="22" y="22" width="1156" height="586" rx="20" fill="none" stroke="#D4AF37" stroke-width="2.8" opacity="0.92"/>
+  <rect x="32" y="32" width="1136" height="566" rx="16" fill="none" stroke="#C6A15B" stroke-width="1" opacity="0.55"/>
+  <rect x="36" y="36" width="1128" height="558" rx="14" fill="none" stroke="#F3E5AB" stroke-width="0.7" opacity="0.18"/>
+
+  <g opacity="0.82">
+    <use href="#mp-rosette" transform="translate(120 122)"/>
+    <use href="#mp-rosette" transform="translate(1080 122)"/>
+    <use href="#mp-rosette" transform="translate(120 508)"/>
+    <use href="#mp-rosette" transform="translate(1080 508)"/>
+  </g>
+
+  <g opacity="0.42">
+    <use href="#mp-kalash" transform="translate(600 300) scale(2.6)"/>
+  </g>
+
+  <g opacity="0.9">
+    <use href="#mp-paisley" transform="translate(286 68)"/>
+    <use href="#mp-paisley" transform="translate(386 68)"/>
+    <use href="#mp-paisley" transform="translate(486 68)"/>
+    <use href="#mp-paisley" transform="translate(586 68)"/>
+    <use href="#mp-paisley" transform="translate(686 68) scale(-1 1)"/>
+    <use href="#mp-paisley" transform="translate(786 68) scale(-1 1)"/>
+    <use href="#mp-paisley" transform="translate(886 68) scale(-1 1)"/>
+    <use href="#mp-paisley" transform="translate(986 68) scale(-1 1)"/>
+    <use href="#mp-paisley" transform="translate(286 572) scale(1 -1)"/>
+    <use href="#mp-paisley" transform="translate(386 572) scale(1 -1)"/>
+    <use href="#mp-paisley" transform="translate(486 572) scale(1 -1)"/>
+    <use href="#mp-paisley" transform="translate(586 572) scale(1 -1)"/>
+    <use href="#mp-paisley" transform="translate(686 572) scale(-1 -1)"/>
+    <use href="#mp-paisley" transform="translate(786 572) scale(-1 -1)"/>
+    <use href="#mp-paisley" transform="translate(886 572) scale(-1 -1)"/>
+    <use href="#mp-paisley" transform="translate(986 572) scale(-1 -1)"/>
+  </g>
+
+  <g text-anchor="middle">
+    <rect x="420" y="138" width="360" height="28" rx="14" fill="none" stroke="#D4AF37" stroke-width="1.2" opacity="0.38"/>
+    <rect x="428" y="142" width="344" height="20" rx="10" fill="#D4AF37" opacity="0.1"/>
+    <text x="600" y="160" font-family="'Tiro Devanagari Marathi','Noto Serif Devanagari',Georgia,serif" font-size="16.5" font-weight="700" letter-spacing="5.5" fill="#F3E5AB">॥  श्री गणेशाय नमः  ॥</text>
+  </g>
+
+  <text x="600" y="300" text-anchor="middle" font-family="'Noto Serif Devanagari','Tiro Devanagari Marathi',Georgia,serif" font-size="132" font-weight="700" fill="url(#mp-gold)" style="filter: drop-shadow(0 6px 18px rgba(0,0,0,0.38));">माझी पत्रिका</text>
+  <text x="600" y="300" text-anchor="middle" font-family="'Noto Serif Devanagari','Tiro Devanagari Marathi',Georgia,serif" font-size="132" font-weight="700" fill="none" stroke="#3B0912" stroke-width="1.2" opacity="0.18">माझी पत्रिका</text>
+
+  <g>
+    <rect x="398" y="332" width="404" height="3" rx="1.5" fill="url(#mp-gold-v)" opacity="0.95"/>
+    <rect x="398" y="332" width="404" height="3" rx="1.5" fill="none" stroke="#F3E5AB" stroke-width="0.5" opacity="0.22"/>
+    <circle cx="600" cy="333.5" r="11" fill="#FDFBF7" stroke="#D4AF37" stroke-width="1.8"/>
+    <circle cx="600" cy="333.5" r="6.5" fill="none" stroke="#D4AF37" stroke-width="1" opacity="0.6"/>
+    <circle cx="600" cy="333.5" r="3.2" fill="#D4AF37"/>
+    <circle cx="412" cy="333.5" r="2.8" fill="#D4AF37" opacity="0.95"/>
+    <circle cx="788" cy="333.5" r="2.8" fill="#D4AF37" opacity="0.95"/>
+  </g>
+
+  <text x="600" y="382" text-anchor="middle" font-family="'Noto Sans Devanagari','Inter',system-ui,sans-serif" font-size="30.5" font-weight="700" fill="#F6EFE3" letter-spacing="0.2">पत्रिका  •  पंचांग  •  विक्रेते  •  पाहुणे — एकाच वर्कस्पेसमध्ये</text>
+
+  <g>
+    <rect x="332" y="410" width="536" height="38" rx="19" fill="#FDFBF7" opacity="0.94"/>
+    <rect x="332" y="410" width="536" height="38" rx="19" fill="none" stroke="#D4AF37" stroke-width="1.2" opacity="0.45"/>
+    <text x="600" y="435" text-anchor="middle" font-family="'Inter','Noto Sans Devanagari',system-ui,sans-serif" font-size="15.5" font-weight="700" letter-spacing="4.8" fill="#7A5410">MAZI PATRIKA  •  MAHARASHTRIAN EVENT OS</text>
+  </g>
+
+  <g text-anchor="middle" font-family="'Noto Sans Devanagari','Inter',system-ui,sans-serif">
+    <text x="600" y="492" font-size="13.5" fill="#C6A15B" letter-spacing="2.4" opacity="0.92">WYSIWYP  •  3mm BLEED  •  CMYK SAFE  •  GOLD FOIL READY  •  QR DIGITAL PAGE</text>
+    <text x="600" y="512" font-size="12.5" fill="#F3E5AB" opacity="0.62" letter-spacing="1.2">सूर्यसिद्धांत पंचांग • स्थानिक सूर्योदय • मराठी टंकयोजना • एस्क्रो सुरक्षित</text>
+  </g>
+
+  <g opacity="0.32">
+    <rect x="56" y="94" width="1.2" height="442" fill="#D4AF37"/>
+    <rect x="1142.8" y="94" width="1.2" height="442" fill="#D4AF37"/>
+  </g>
+</svg>

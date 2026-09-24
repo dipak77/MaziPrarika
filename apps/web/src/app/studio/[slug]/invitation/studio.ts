@@ -1,4 +1,5 @@
 import { designFromTemplate, getTemplatePreset, TEMPLATE_PRESETS, type DesignDocument } from '@mazi/design-schema';
+import { gatewayFeeBreakdown } from '@mazi/commerce';
 import { composeInvitation, getEventType, type InvitationInput, type InvitationTone } from '@mazi/marathi';
 import { renderSvg } from '@mazi/renderer';
 import { buildInvitationFromTemplate } from '@mazi/renderer';
@@ -187,8 +188,8 @@ export function printQuote(args: {
   const totalPaise = taxable + gstPaise;
 
   const commissionPaise = Math.round(subtotalPaise * 0.15); // invitation/print take rate
-  const gatewayPaise = Math.max(100, Math.round(totalPaise * 0.0236));
-  const vendorPayoutPaise = totalPaise - commissionPaise - Math.round(gatewayPaise * 1.18);
+  const gatewayPaise = gatewayFeeBreakdown(taxable).totalPaise;
+  const vendorPayoutPaise = totalPaise - commissionPaise - gatewayPaise;
 
   return {
     quantity,

@@ -14,6 +14,7 @@ import {
   planFromIntent,
   runAssistant,
   type ChatMessage,
+  type Plan,
   type ToolContext,
 } from './index.js';
 
@@ -70,6 +71,12 @@ describe('guardrails', () => {
     expect(verdict.category).toBe('personal-data');
     expect(verdict.redirect).toContain('गेटवे');
   });
+
+  it('catches Devanagari-digit Aadhaar numbers even without the label', () => {
+    const verdict = checkGuardrails('माझा क्रमांक १२३४५६७८९०१२ आहे');
+    expect(verdict.allowed).toBe(false);
+    expect(verdict.category).toBe('personal-data');
+  });
 });
 
 describe('intent parsing', () => {
@@ -86,9 +93,21 @@ describe('intent parsing', () => {
 
   it('reads a month + year as a date window, without inventing a muhurat', () => {
     const intent = parseIntent('एप्रिल २०२७ मध्ये लग्न', new Date('2026-09-24T06:00:00.000Z'));
-    expect(intent.dateHint?.from.startsWith('2027-03-31')).toBe(true);
+    expect(intent.dateHint?.from).toBe('2027-04-01');
     expect(intent.dateHint?.to.startsWith('2027-04-30')).toBe(true);
     expect(intent.dateHint?.label).toContain('एप्रिल');
+  });
+
+  it('parses मे २०२७ as May even though Devanagari has no word boundaries', () => {
+    const intent = parseIntent('मे २०२७ मध्ये लग्न', new Date('2026-09-24T06:00:00.000Z'));
+    expect(intent.dateHint?.from).toBe('2027-05-01');
+    expect(intent.dateHint?.to).toBe('2027-05-31');
+    expect(intent.dateHint?.label).toContain('मे');
+  });
+
+  it('does not read मे inside another word as the month of May', () => {
+    const intent = parseIntent('या कामे पूर्ण झाली आहेत', new Date('2026-09-24T06:00:00.000Z'));
+    expect(intent.dateHint).toBeUndefined();
   });
 
   it('parses English phrasing equally well', () => {
@@ -111,6 +130,25 @@ describe('intent parsing', () => {
     expect(intent.eventType).toBeUndefined();
     expect(intent.city).toBeUndefined();
   });
+
+  it('parses crore amounts, compound lakh words and short rupee figures', () => {
+    expect(parseIntent('बजेट ५ कोटी').budgetPaise).toBe(5 * 10_000_000 * 100);
+    expect(parseIntent('बजेट अठरा लाख').budgetPaise).toBe(18 * 100_000 * 100);
+    expect(parseIntent('बजेट पंचवीस लाख').budgetPaise).toBe(25 * 100_000 * 100);
+    expect(parseIntent('बजेट एकोणीस लाख').budgetPaise).toBe(19 * 100_000 * 100);
+    expect(parseIntent('बजेट ₹50').budgetPaise).toBe(50 * 100);
+  });
+
+  it('parses नग quantities and five-digit guest counts', () => {
+    expect(parseIntent('पत्रिकेची ५०० नग छपाई').guestCount).toBe(500);
+    expect(parseIntent('१२३४५ पाहुणे येणार आहेत').guestCount).toBe(12345);
+  });
+
+  it('never reads a city stem inside an unrelated word', () => {
+    expect(parseIntent('विनाशिका काम करते').city).toBeUndefined();
+    expect(parseIntent('हा विनाश झाला आहे').city).toBeUndefined();
+    expect(parseIntent('नाशिकात लग्न आहे').city).toBe('नाशिक');
+  });
 });
 
 describe('planner', () => {
@@ -130,6 +168,28 @@ describe('planner', () => {
     for (const call of plan.calls) {
       expect(call.requiresConfirmation).toBe(MUTATING_TOOLS.includes(call.tool));
     }
+  });
+
+  it('marks every mutating tool it emits as requiring confirmation, across intents', () => {
+    const samples = [
+      MESSAGE,
+      'पुण्यात वाढदिवस पत्रिका व छपाई हवी, ३०० नग',
+      'मुंबईत साखरपुडा, बजेट १० लाख, मुहूर्त सांगा',
+    ];
+    for (const text of samples) {
+      const plan = planFromIntent(parseIntent(text, new Date('2026-09-24T00:00:00Z')), { now: new Date('2026-09-24T00:00:00Z') });
+      for (const call of plan.calls) {
+        expect(call.requiresConfirmation).toBe(MUTATING_TOOLS.includes(call.tool));
+      }
+    }
+  });
+
+  it('asks for the event type instead of assuming one, and reports the clarification path instead of claiming a plan', () => {
+    const plan = planFromIntent(parseIntent('पुण्यात बजेट ५ लाख किती लागेल?', new Date('2026-09-24T00:00:00Z')), { now: new Date('2026-09-24T00:00:00Z') });
+    expect(plan.clarifications.join(' ')).toContain('प्रकार');
+    expect(plan.summary).not.toContain('समजले');
+    expect(plan.calls.some((c) => c.tool === 'GetBudget')).toBe(false);
+    expect(plan.calls.some((c) => c.tool === 'CreateEvent')).toBe(false);
   });
 
   it('every tool in the registry carries a Marathi description and a schema', () => {
@@ -182,6 +242,66 @@ describe('executor', () => {
     expect(failed?.error).toContain('डेटाबेस');
     expect(report.muhurats.length).toBeGreaterThan(0);
   });
+
+  it('executes every tool planFromIntent can emit — none comes back unavailable', async () => {
+    const samples = [
+      MESSAGE,
+      'पुण्यात वाढदिवस पत्रिका व छपाई हवी, ३०० नग',
+    ];
+    const seen = new Set<string>();
+    for (const text of samples) {
+      const plan = planFromIntent(parseIntent(text, new Date('2026-09-24T00:00:00Z')), { now: new Date('2026-09-24T00:00:00Z') });
+      const report = await executePlan(plan, fakeContext(), { confirmMutations: true, now: new Date('2026-09-24T00:00:00Z') });
+      for (const result of report.results) {
+        seen.add(result.tool);
+        expect(result.ok, `${result.tool}: ${result.error ?? ''}`).toBe(true);
+        expect(result.error).toBeUndefined();
+      }
+    }
+    for (const tool of ['CreateEvent', 'GetBudget', 'SearchVendors', 'FindMuhurat', 'CreateInvitation', 'CreatePrintOrder']) {
+      expect(seen).toContain(tool);
+    }
+  });
+
+  it('runs every registered tool with valid args — the unavailable fallback is unreachable', async () => {
+    const plan: Plan = {
+      summary: 'सर्व साधने', clarifications: [],
+      calls: [
+        { tool: 'CreateEvent', args: { eventType: 'wedding', title: 'विवाह', date: '2027-04-10', city: 'पुणे' }, rationale: '', requiresConfirmation: true },
+        { tool: 'UpdateEvent', args: { eventId: 'evt_1', patch: { title: 'नवीन नाव' } }, rationale: '', requiresConfirmation: true },
+        { tool: 'SearchVendors', args: { category: 'caterer', city: 'पुणे', limit: 5 }, rationale: '', requiresConfirmation: false },
+        { tool: 'GetAvailability', args: { vendorId: 'vnd_1', date: '2027-04-10' }, rationale: '', requiresConfirmation: false },
+        { tool: 'GetPanchang', args: { date: '2027-04-10', city: 'पुणे' }, rationale: '', requiresConfirmation: false },
+        { tool: 'FindMuhurat', args: { eventType: 'wedding', city: 'पुणे', from: '2027-04-01', to: '2027-04-30', limit: 5 }, rationale: '', requiresConfirmation: false },
+        { tool: 'CalculateKundali', args: { bride: { rashi: 1, nakshatra: 1 }, groom: { rashi: 2, nakshatra: 2 } }, rationale: '', requiresConfirmation: false },
+        { tool: 'CreateInvitation', args: { eventType: 'wedding', hosts: ['रमेश'], date: '2027-04-10', venueName: 'सभागृह', city: 'पुणे' }, rationale: '', requiresConfirmation: true },
+        { tool: 'CreateQuote', args: { vendorId: 'vnd_1', eventId: 'evt_1', category: 'caterer' }, rationale: '', requiresConfirmation: true },
+        { tool: 'GetBudget', args: { eventType: 'wedding', budgetPaise: 1_800_000_00 }, rationale: '', requiresConfirmation: false },
+        { tool: 'AddGuest', args: { eventId: 'evt_1', guests: [{ name: 'सौ. शुभा' }] }, rationale: '', requiresConfirmation: true },
+        { tool: 'SendReminder', args: { eventId: 'evt_1' }, rationale: '', requiresConfirmation: true },
+        { tool: 'CreatePrintOrder', args: { designId: 'dsg_1', quantity: 250 }, rationale: '', requiresConfirmation: true },
+      ],
+    };
+    const report = await executePlan(plan, fakeContext(), { confirmMutations: true });
+    expect(report.results).toHaveLength(Object.keys(TOOL_REGISTRY).length);
+    for (const result of report.results) {
+      expect(result.ok, `${result.tool}: ${result.error ?? ''}`).toBe(true);
+      expect(result.error ?? '').not.toContain('उपलब्ध नाही');
+    }
+  });
+
+  it('rejects invalid tool arguments with a structured error instead of NaN', async () => {
+    const plan: Plan = {
+      summary: 'परीक्षण', clarifications: [],
+      calls: [{ tool: 'GetPanchang', args: { date: 'उद्याची तारीख', city: 'पुणे' }, rationale: 'परीक्षण', requiresConfirmation: false }],
+    };
+    const report = await executePlan(plan, fakeContext());
+    const result = report.results[0]!;
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('अवैध');
+    expect(result.error).toContain('date');
+    expect(result.error).not.toContain('NaN');
+  });
 });
 
 describe('explainer', () => {
@@ -213,7 +333,10 @@ describe('explainer', () => {
 describe('providers, cost control and cache', () => {
   const messages: ChatMessage[] = [{ role: 'user', content: MESSAGE }];
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
 
   it('falls back to the deterministic provider when no key is configured', async () => {
     const response = await generate(messages, { config: { provider: 'groq' } });
@@ -238,6 +361,53 @@ describe('providers, cost control and cache', () => {
     expect(turn.provider.provider).toBe('groq');
     expect(turn.answer).toContain('मुहूर्त अनुकूलता');
     expect(turn.answer).toContain('गुरुजींच्या सल्ल्याने');
+  });
+
+  it('shows the model the serialized tool results along with the user message', async () => {
+    let body = '';
+    vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit) => {
+      body = String(init?.body ?? '');
+      return new Response(JSON.stringify({
+        choices: [{ message: { content: 'मुहूर्त अनुकूलता: कुलकर्णी पिक्चर्स निवडा.' } }],
+        usage: { prompt_tokens: 220, completion_tokens: 25 },
+      }), { status: 200 });
+    }));
+
+    const turn = await runAssistant({
+      message: MESSAGE,
+      ctx: fakeContext(),
+      now: new Date('2026-09-24T00:00:00Z'),
+      generate: { config: { provider: 'groq', apiKey: 'test-key', model: 'llama-test' }, userId: 'usr_1' },
+    });
+    expect(turn.provider.provider).toBe('groq');
+    expect(body).toContain(MESSAGE);
+    expect(body).toContain('SearchVendors');
+    expect(body).toContain('vnd_photo_1');
+    expect(turn.answer).toContain('मुहूर्त अनुकूलता');
+  });
+
+  it('never calls a paid provider once the monthly USD cap is spent', async () => {
+    vi.stubEnv('ASSISTANT_MONTHLY_USD_CAP', '25');
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    const ledger = new CostLedger();
+    ledger.record({
+      userId: 'usr_1', provider: 'anthropic', model: 'claude', purpose: 'chat',
+      inputTokens: 40_000_000, outputTokens: 0, cached: false,
+    });
+    expect(ledger.monthSpendUsd()).toBeGreaterThan(25);
+
+    const turn = await runAssistant({
+      message: MESSAGE,
+      ctx: fakeContext(),
+      now: new Date(),
+      generate: { config: { provider: 'groq', apiKey: 'test-key' }, ledger, userId: 'usr_1' },
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(turn.provider.provider).toBe('deterministic');
+    expect(turn.provider.fallback).toBe(true);
+    expect(turn.answer).toContain('हद्द');
+    expect(turn.answer).toContain('मुहूर्त अनुकूलता');
   });
 
   it('survives a provider outage by falling back with zero cost', async () => {
@@ -276,6 +446,20 @@ describe('providers, cost control and cache', () => {
       cached: false, latencyMs: 1, fallback: false,
     });
     expect(cache.get(messages, 'llama-test')).toBeUndefined();
+  });
+
+  it('scopes cache keys per user so identical messages cannot leak across users', () => {
+    const cache = new ResponseCache();
+    const anonymous = cache.keyOf(messages, 'llama-test');
+    expect(cache.keyOf(messages, 'llama-test', 'usr_1')).not.toBe(anonymous);
+    expect(cache.keyOf(messages, 'llama-test', 'usr_1')).not.toBe(cache.keyOf(messages, 'llama-test', 'usr_2'));
+
+    cache.set(messages, 'llama-test', {
+      text: 'एकाच वापरकर्त्याचे उत्तर', provider: 'groq', model: 'llama-test',
+      usage: { inputTokens: 1, outputTokens: 1 }, cached: false, latencyMs: 1, fallback: false,
+    }, 'usr_1');
+    expect(cache.get(messages, 'llama-test', 'usr_2')).toBeUndefined();
+    expect(cache.get(messages, 'llama-test', 'usr_1')?.text).toBe('एकाच वापरकर्त्याचे उत्तर');
   });
 
   it('tracks spend per user, per event and per paid user in rupees', () => {

@@ -19,6 +19,7 @@ export function RsvpForm({ slug }: { slug: string }) {
   return (
     <form
       action={(formData) => {
+        setResult(null);
         startTransition(async () => {
           const outcome = await rsvpAction(formData);
           setResult(outcome);
@@ -33,7 +34,7 @@ export function RsvpForm({ slug }: { slug: string }) {
         {(
           [
             { key: 'yes' as const, label: 'येऊ', tone: 'bg-paithani text-ivory' },
-            { key: 'maybe' as const, label: 'कदाचित', tone: 'bg-gold text-ivory' },
+            { key: 'maybe' as const, label: 'कदाचित', tone: 'bg-gold-deep text-ivory' },
             { key: 'no' as const, label: 'येऊ शकत नाही', tone: 'bg-maroon text-ivory' },
           ]
         ).map((option) => (
@@ -41,10 +42,11 @@ export function RsvpForm({ slug }: { slug: string }) {
             key={option.key}
             type="button"
             onClick={() => setState(option.key)}
+            aria-pressed={state === option.key}
             className={
               state === option.key
-                ? `flex-1 rounded-xl px-3 py-2 text-sm font-semibold ${option.tone}`
-                : 'flex-1 rounded-xl border border-gold/50 bg-ivory px-3 py-2 text-sm font-semibold text-charcoal-soft'
+                ? `min-h-11 flex-1 rounded-xl px-3 py-2 text-sm font-semibold ${option.tone} ring-2 ring-offset-1 ring-maroon/40`
+                : 'min-h-11 flex-1 rounded-xl border border-gold/50 bg-ivory px-3 py-2 text-sm font-semibold text-charcoal-soft'
             }
           >
             {option.label}
@@ -89,7 +91,7 @@ export function RsvpForm({ slug }: { slug: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-full bg-maroon px-5 py-3 font-semibold text-ivory shadow-soft disabled:opacity-60"
+        className="btn-base btn-maroon w-full px-5 text-sm disabled:opacity-60"
       >
         {pending ? 'पाठवत आहे…' : 'नोंदवा'}
       </button>
@@ -101,13 +103,13 @@ export function RsvpForm({ slug }: { slug: string }) {
               ? 'rounded-xl border border-paithani/50 bg-paithani/10 px-3 py-2 text-sm text-paithani'
               : 'rounded-xl border border-maroon/40 bg-maroon/8 px-3 py-2 text-sm text-maroon'
           }
-          role="status"
+          role={result.ok ? 'status' : 'alert'}
         >
           {result.message}
         </p>
       ) : null}
 
-      <p className="text-[11px] text-charcoal-soft">
+      <p className="text-xs text-charcoal-soft">
         आम्ही फक्त नाव व ऐच्छिक मोबाइल क्रमांक घेतो — पाहुण्यांची यादी इतरांना दिसत नाही.
       </p>
     </form>

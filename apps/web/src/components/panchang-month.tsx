@@ -46,25 +46,33 @@ export function PanchangMonth({
         </p>
       </div>
 
-      <div className="mt-4 grid grid-cols-7 gap-1.5">
+      <div className="mt-4 grid grid-cols-7 gap-1.5 sm:gap-2" role="group" aria-label="महिन्यातील तारखा">
         {days.map((day) => {
           const score = day.muhuratScore ?? 0;
           const tint =
-            score >= 85 ? 'bg-paithani/25' : score >= 70 ? 'bg-paithani/15' : score >= 50 ? 'bg-gold/15' : 'bg-ivory-deep/60';
+            score >= 85
+              ? 'bg-paithani/25 border-paithani/50'
+              : score >= 70
+                ? 'bg-paithani/15 border-paithani/30'
+                : score >= 50
+                  ? 'bg-gold/15 border-gold/40'
+                  : 'bg-ivory-deep/60 border-gold/25';
+          const isSelected = day.date === selected;
           return (
             <button
               key={day.date}
               type="button"
               onClick={() => setSelected(day.date)}
-              className={`rounded-lg border px-1 py-2 text-center text-xs transition ${
-                day.date === selected ? 'border-maroon ring-1 ring-maroon' : 'border-gold/25'
+              className={`min-h-[3rem] rounded-xl border px-1 py-2 text-center text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-bright sm:min-h-[3.5rem] ${
+                isSelected ? 'border-maroon ring-2 ring-maroon' : ''
               } ${tint}`}
-              aria-pressed={day.date === selected}
+              aria-pressed={isSelected}
+              aria-label={`${day.date} — ${day.weekday}, अनुकूलता ${day.muhuratScore ?? '—'}`}
             >
               <span className="block font-semibold text-charcoal">{toDevanagariDigits(day.date.slice(-2))}</span>
-              <span className="block font-ui text-[10px] text-charcoal-soft">{day.weekday.slice(0, 3)}</span>
+              <span className="block font-ui text-xs text-charcoal-soft">{day.weekday.slice(0, 3)}</span>
               {day.muhuratScore !== null ? (
-                <span className="block font-ui text-[10px] text-charcoal-soft">{toDevanagariDigits(day.muhuratScore)}</span>
+                <span className="block font-ui text-xs font-semibold text-charcoal">{toDevanagariDigits(day.muhuratScore)}</span>
               ) : null}
             </button>
           );

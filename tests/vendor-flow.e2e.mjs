@@ -62,13 +62,39 @@ function walk(dir, out = []) {
 
 function discoverActionIds() {
   const ids = new Map();
-  // Both build outputs: `.next` (production build) and `.next-dev` (dev server).
-  const files = [...walk(join(root, 'apps/web/.next/server')), ...walk(join(root, 'apps/web/.next-dev/server'))];
+  const add = (name, id) => {
+    if (!name || !id) return;
+    const list = ids.get(name) ?? [];
+    if (!list.includes(id)) list.push(id);
+    ids.set(name, list);
+  };
+
+  // Authoritative source: each build's server-reference-manifest.json maps
+  // id → { exportedName }. Production first; callers try candidates in order,
+  // so whichever build the running server uses gets hit first.
+  const manifests = [
+    join(root, 'apps/web/.next/server/server-reference-manifest.json'),
+    join(root, 'apps/web/.next-dev/server/server-reference-manifest.json'),
+  ];
+  for (const file of manifests) {
+    try {
+      const manifest = JSON.parse(readFileSync(file, 'utf8'));
+      for (const [id, entry] of Object.entries(manifest.node ?? {})) {
+        add(entry?.exportedName, id);
+      }
+    } catch {
+      /* build absent or unreadable — fall through to regex discovery */
+    }
+  }
+
+  // Fallback: compiled chunks encode id → export-name pairs inline.
+  const files = [...walk(join(root, 'apps/web/.next-dev/server')), ...walk(join(root, 'apps/web/.next/server'))];
   const id = '(4[0-9a-f]{40,})';
   const patterns = [
     new RegExp(`"id":"${id}","exportedName":"([A-Za-z0-9_$]+)"`, 'g'),
-    new RegExp(`\\\\"id\\\\":\\\\"${id}\\\\",\\\\"exportedName\\\\":\\\\"([A-Za-z0-9_$]+)\\\\"`, 'g'),
+    new RegExp(`\\"id\\":\\"${id}\\",\\"exportedName\\":\\"([A-Za-z0-9_$]+)\\"`, 'g'),
     new RegExp(`%22id%22%3A%22${id}%22%2C%22exportedName%22%3A%22([A-Za-z0-9_$]+)%22`, 'g'),
+    new RegExp(`createServerReference\\)\\("${id}"[^)]*,"([A-Za-z0-9_$]+)"\\)`, 'g'),
   ];
   for (const file of files) {
     let text;
@@ -78,7 +104,8 @@ function discoverActionIds() {
       continue;
     }
     for (const pattern of patterns) {
-      for (const match of text.matchAll(pattern)) ids.set(match[2], match[1]);
+      pattern.lastIndex = 0;
+      for (const match of text.matchAll(pattern)) add(match[2], match[1]);
     }
   }
   return ids;
@@ -123,6 +150,23 @@ async function postAction(url, actionId, fields) {
   // 404 into the flight payload after revalidation. The action still ran.
   const artifact = message === 'This page could not be found.';
   return { status: response.status, message, artifact };
+}
+
+/**
+ * Post an action by export name, trying each discovered id until one is not a
+ * plain 404 — the id must match the build the running server actually loaded
+ * (production `.next` vs a stale `.next-dev` are otherwise indistinguishable
+ * from outside).
+ */
+async function postActionByName(url, name, ids, fields) {
+  const candidates = ids.get(name) ?? [];
+  if (!candidates.length) return { status: 404, message: null, artifact: false };
+  let last = { status: 404, message: null, artifact: false };
+  for (const actionId of candidates) {
+    last = await postAction(url, actionId, fields);
+    if (last.status !== 404) return last;
+  }
+  return last;
 }
 
 const store = () => openStore({ filename: defaultDatabasePath(root) });
@@ -179,15 +223,15 @@ async function main() {
   // it, and a Server Action POST that races that compile is not a product bug — but
   // it would make this test flaky, so the page is rendered before it is posted to.
   await fetch(quoteUrl);
-  const quoteAction = ids.get('saveQuoteAction');
-  check('discovery: saveQuoteAction id found in the build', Boolean(quoteAction), quoteAction ?? 'not found');
+  const quoteCandidates = ids.get('saveQuoteAction') ?? [];
+  check('discovery: saveQuoteAction id found in the build', quoteCandidates.length > 0, quoteCandidates[0] ?? 'not found');
 
   const lineItems = [
     ['label', 'मुख्य सेवा पॅकेज'], ['quantity', '1'], ['unit', 'पॅकेज'], ['unitPrice', '145000'],
     ['label', 'अतिरिक्त सहाय्यक टीम'], ['quantity', '6'], ['unit', 'तास'], ['unitPrice', '9500'],
     ['discount', '4000'],
   ];
-  const quoteResult = await postAction(quoteUrl, quoteAction, [['leadId', String(quoteLead.id)], ...lineItems]);
+  const quoteResult = await postActionByName(quoteUrl, 'saveQuoteAction', ids, [['leadId', String(quoteLead.id)], ...lineItems]);
   check('quote: action accepted', quoteResult.status === 200 && (!quoteResult.message || quoteResult.artifact), JSON.stringify(quoteResult));
 
   const category = String(quoteLead.category);
@@ -210,10 +254,10 @@ async function main() {
   }
 
   /* ---- 4. the customer accepts — twice -------------------------------- */
-  const acceptAction = ids.get('acceptQuoteAsCustomerAction');
-  check('discovery: acceptQuoteAsCustomerAction id found in the build', Boolean(acceptAction), acceptAction ?? 'not found');
-  const first = await postAction(quoteUrl, acceptAction, [['quoteId', quoteId]]);
-  const second = await postAction(quoteUrl, acceptAction, [['quoteId', quoteId]]);
+  const acceptCandidates = ids.get('acceptQuoteAsCustomerAction') ?? [];
+  check('discovery: acceptQuoteAsCustomerAction id found in the build', acceptCandidates.length > 0, acceptCandidates[0] ?? 'not found');
+  const first = await postActionByName(quoteUrl, 'acceptQuoteAsCustomerAction', ids, [['quoteId', quoteId]]);
+  const second = await postActionByName(quoteUrl, 'acceptQuoteAsCustomerAction', ids, [['quoteId', quoteId]]);
   check(
     'accept: both taps accepted (double-tap safe)',
     [first, second].every((r) => r.status === 200 && (!r.message || r.artifact)),

@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { availabilityState, rankForDiscovery, trustBadges, type VendorSignals } from '@mazi/commerce';
+import { availabilityState, rankForDiscovery, trustBadges, VENDOR_CATEGORIES, type VendorSignals } from '@mazi/commerce';
 import { toDevanagariDigits, vendorCategoryLabel } from '@mazi/marathi';
+
+import { CITY_OPTIONS } from '@/lib/panchang';
 
 import { getStore } from '@/lib/store';
 
@@ -22,12 +24,15 @@ import { getStore } from '@/lib/store';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const ALLOWED_CATEGORIES = new Set<string>(VENDOR_CATEGORIES as readonly string[]);
+const ALLOWED_CITIES = new Set<string>(CITY_OPTIONS);
+
 const QuerySchema = z.object({
-  q: z.string().max(120).optional(),
-  category: z.string().max(40).optional(),
-  city: z.string().max(60).optional(),
+  q: z.string().trim().max(120).optional(),
+  category: z.string().max(40).optional().refine((v) => !v || ALLOWED_CATEGORIES.has(v), { message: 'अवैध श्रेणी.' }),
+  city: z.string().max(60).optional().refine((v) => !v || ALLOWED_CITIES.has(v), { message: 'अवैध शहर.' }),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  maxPricePaise: z.coerce.number().int().positive().optional(),
+  maxPricePaise: z.coerce.number().int().positive().max(10_000_000_00).optional(),
   minRating: z.coerce.number().min(0).max(5).optional(),
   limit: z.coerce.number().int().min(1).max(24).default(9),
 });

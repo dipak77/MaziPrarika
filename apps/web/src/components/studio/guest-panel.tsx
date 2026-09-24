@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 
 import { toDevanagariDigits } from '@mazi/marathi';
 
@@ -17,10 +17,10 @@ const SIDE_LABEL: Record<string, string> = {
 };
 
 const RSVP_STYLE: Record<string, string> = {
-  yes: 'border-paithani/50 bg-paithani/10 text-paithani',
-  no: 'border-maroon/40 bg-maroon/8 text-maroon',
-  maybe: 'border-gold/60 bg-gold/12 text-charcoal',
-  pending: 'border-gold/30 bg-ivory-deep/60 text-charcoal-soft',
+  yes: 'border-paithani/30 bg-paithani-soft text-paithani',
+  no: 'border-maroon/25 bg-maroon-light text-maroon',
+  maybe: 'border-gold/40 bg-gold/12 text-gold-ink',
+  pending: 'border-gold/20 bg-ivory-deep text-charcoal-soft',
 };
 
 export function GuestPanel({
@@ -34,6 +34,8 @@ export function GuestPanel({
 }) {
   const [query, setQuery] = useState('');
   const [side, setSide] = useState<'all' | 'bride' | 'groom' | 'both'>('all');
+  const [pending, startTransition] = useTransition();
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   const filtered = guests.filter((guest) => {
     const matchesQuery = query
@@ -46,142 +48,187 @@ export function GuestPanel({
   const responseRate = rsvp.invited ? Math.round((rsvp.responded / rsvp.invited) * 100) : 0;
 
   return (
-    <section className="surface mt-6 p-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="font-display text-xl font-bold text-charcoal">पाहुणे व आर.एस.व्ही.पी.</h2>
-        <p className="font-ui text-xs text-charcoal-soft">
-          आमंत्रित {toDevanagariDigits(rsvp.invited)} • उत्तर {toDevanagariDigits(rsvp.responded)} ({toDevanagariDigits(responseRate)}%) • अपेक्षित व्यक्ती{' '}
-          {toDevanagariDigits(rsvp.expectedHeads)}
+    <section className="surface-elevated overflow-hidden p-0">
+      <div aria-hidden className="paithani-edge h-1.5" />
+      <div className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-display text-xl font-bold tracking-tight text-charcoal">पाहुणे व आर.एस.व्ही.पी.</h2>
+            <p className="mt-1 font-ui text-xs font-medium uppercase tracking-wider text-charcoal-soft">आदरयुक्त नातेसंबंध-आधारित यादी • QR आर.एस.व्ही.पी. स्वयंचलित</p>
+          </div>
+          <span className="rounded-full bg-ivory-deep px-3 py-1.5 font-ui text-xs font-semibold text-charcoal-soft ring-1 ring-gold/20">
+            आमंत्रित {toDevanagariDigits(rsvp.invited)} • उत्तर {toDevanagariDigits(rsvp.responded)} ({toDevanagariDigits(responseRate)}%) • अपेक्षित {toDevanagariDigits(rsvp.expectedHeads)}
+          </span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: 'येतील', value: rsvp.yes, tone: 'paithani' },
+            { label: 'येणार नाहीत', value: rsvp.no, tone: 'maroon' },
+            { label: 'कदाचित', value: rsvp.maybe, tone: 'gold' },
+            { label: 'प्रतीक्षेत', value: rsvp.invited - rsvp.responded, tone: 'soft' },
+          ].map((tile) => (
+            <div
+              key={tile.label}
+              className={
+                tile.tone === 'paithani'
+                  ? 'rounded-2xl border border-paithani/20 bg-paithani-soft/70 p-3.5 shadow-2xs'
+                  : tile.tone === 'maroon'
+                    ? 'rounded-2xl border border-maroon/15 bg-maroon-light p-3.5 shadow-2xs'
+                    : tile.tone === 'gold'
+                      ? 'rounded-2xl border border-gold/30 bg-gold/10 p-3.5 shadow-2xs'
+                      : 'rounded-2xl border border-gold/20 bg-ivory-deep/60 p-3.5 shadow-2xs'
+              }
+            >
+              <p className="font-ui text-xs font-bold uppercase tracking-wider text-charcoal-soft">{tile.label}</p>
+              <p className="mt-1 font-display text-2xl font-bold tracking-tight text-charcoal">{toDevanagariDigits(tile.value)}</p>
+            </div>
+          ))}
+        </div>
+
+        <form
+          action={(formData) => {
+            setResult(null);
+            startTransition(async () => {
+              try {
+                await addGuestAction(formData);
+                setResult({ ok: true, message: 'पाहुणा जोडला — यादीत दिसेल.' });
+              } catch (error) {
+                setResult({
+                  ok: false,
+                  message: error instanceof Error ? error.message : 'पाहुणा जोडता आला नाही — पुन्हा प्रयत्न करा.',
+                });
+              }
+            });
+          }}
+          className="mt-6 grid gap-2.5 sm:grid-cols-[1.4fr_1fr_1fr_0.7fr_0.9fr_auto]"
+        >
+          <input type="hidden" name="slug" value={slug} />
+          <input
+            name="name"
+            required
+            maxLength={120}
+            placeholder="पाहुण्याचे नाव *"
+            className="rounded-xl border border-gold/30 bg-white px-3.5 py-2.5 text-sm font-medium text-charcoal placeholder:text-charcoal-muted/60 shadow-2xs outline-none focus:border-maroon/40 focus:ring-2 focus:ring-maroon/10"
+          />
+          <input
+            name="phone"
+            inputMode="tel"
+            pattern="[0-9+ -]{8,15}"
+            placeholder="मोबाइल (ऐच्छिक)"
+            className="rounded-xl border border-gold/30 bg-white px-3.5 py-2.5 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon/40 focus:ring-2 focus:ring-maroon/10"
+          />
+          <input
+            name="relation"
+            placeholder="नाते — उदा. मामा"
+            className="rounded-xl border border-gold/30 bg-white px-3.5 py-2.5 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon/40 focus:ring-2 focus:ring-maroon/10"
+          />
+          <input
+            name="guestCount"
+            type="number"
+            min={1}
+            max={50}
+            defaultValue={1}
+            aria-label="किती व्यक्ती"
+            className="rounded-xl border border-gold/30 bg-white px-3.5 py-2.5 text-sm font-bold text-charcoal shadow-2xs outline-none focus:border-maroon/40 focus:ring-2 focus:ring-maroon/10"
+          />
+          <select
+            name="side"
+            defaultValue="both"
+            aria-label="कडे"
+            className="rounded-xl border border-gold/30 bg-white px-3.5 py-2.5 text-sm font-medium text-charcoal shadow-2xs outline-none focus:border-maroon/40"
+          >
+            <option value="groom">वरकडील</option>
+            <option value="bride">वधूकडील</option>
+            <option value="both">दोन्हीकडील</option>
+            <option value="host">यजमान</option>
+          </select>
+          <button type="submit" disabled={pending} className="btn-base btn-maroon px-5 text-sm shadow-sm disabled:opacity-60">
+            {pending ? 'जोडत आहे…' : 'पाहुणा जोडा'}
+          </button>
+        </form>
+
+        {result ? (
+          <p
+            className={`mt-3 rounded-xl border px-3.5 py-2.5 text-xs font-medium leading-relaxed ${result.ok ? 'border-paithani/30 bg-paithani-soft text-paithani' : 'border-maroon/25 bg-maroon-light text-maroon'}`}
+            role={result.ok ? 'status' : 'alert'}
+          >
+            {result.message}
+          </p>
+        ) : null}
+
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <div className="relative min-w-56 flex-1">
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="शोधा — नाव, नाते किंवा संहिता"
+              className="min-h-11 w-full rounded-full border border-gold/30 bg-white px-4 py-2 pl-10 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon/40 focus:ring-2 focus:ring-maroon/10"
+            />
+            <span aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-charcoal-muted">⌕</span>
+          </div>
+          {(['all', 'groom', 'bride', 'both'] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setSide(option)}
+              aria-pressed={side === option}
+              className={
+                side === option
+                  ? 'min-h-11 rounded-full bg-maroon px-4 text-xs font-bold text-white shadow-sm'
+                  : 'min-h-11 rounded-full border border-gold/30 bg-white px-4 text-xs font-semibold text-charcoal-soft shadow-2xs hover:border-gold/50'
+              }
+            >
+              {option === 'all' ? 'सर्व' : SIDE_LABEL[option]}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-2xl border border-gold/15 bg-white shadow-sm">
+          <div className="max-h-96 overflow-auto">
+            <table className="w-full min-w-[36rem] text-sm">
+              <caption className="sr-only">पाहुण्यांची यादी — नाव, नाते, कडे, व्यक्ती, आर.एस.व्ही.पी. व संहिता</caption>
+              <thead className="sticky top-0 z-10 bg-ivory-deep/90 backdrop-blur">
+                <tr className="text-left font-ui text-xs font-bold uppercase tracking-wider text-charcoal-soft">
+                  <th scope="col" className="px-4 py-3">नाव</th>
+                  <th scope="col" className="px-3 py-3">नाते</th>
+                  <th scope="col" className="px-3 py-3">कडे</th>
+                  <th scope="col" className="px-3 py-3 text-right">व्यक्ती</th>
+                  <th scope="col" className="px-3 py-3">आर.एस.व्ही.पी.</th>
+                  <th scope="col" className="px-3 py-3">संहिता</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.slice(0, 60).map((guest) => (
+                  <tr key={guest.id} className="border-t border-gold/10 transition hover:bg-ivory-deep/40">
+                    <td className="px-4 py-3 font-semibold text-charcoal">{guest.name}</td>
+                    <td className="px-3 py-3 text-charcoal-soft">{guest.relation ?? '—'}</td>
+                    <td className="px-3 py-3 text-charcoal-soft">{SIDE_LABEL[guest.side ?? 'guest']}</td>
+                    <td className="px-3 py-3 text-right font-bold text-charcoal">{toDevanagariDigits(guest.guestCount)}</td>
+                    <td className="px-3 py-3">
+                      <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${RSVP_STYLE[guest.rsvpStatus] ?? RSVP_STYLE.pending}`}>
+                        {guest.rsvpStatus === 'yes' ? 'येतील' : guest.rsvpStatus === 'no' ? 'नाही' : guest.rsvpStatus === 'maybe' ? 'कदाचित' : 'प्रतीक्षेत'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 font-ui text-xs font-medium text-charcoal-muted">{guest.code}</td>
+                  </tr>
+                ))}
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-10 text-center">
+                      <p className="font-display font-bold text-charcoal">जुळणारे पाहुणे नाहीत</p>
+                      <p className="mt-1 text-sm text-charcoal-soft">शोध शब्द बदला किंवा नवीन पाहुणा जोडा.</p>
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p className="mt-2 text-center font-ui text-xs font-medium text-charcoal-muted">
+          {toDevanagariDigits(Math.min(60, filtered.length))} / {toDevanagariDigits(filtered.length)} पाहुणे • डिजिटल पानावरून आर.एस.व्ही.पी. आपोआप अद्ययावत
         </p>
       </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: 'येतील', value: rsvp.yes, tone: 'paithani' },
-          { label: 'येणार नाहीत', value: rsvp.no, tone: 'maroon' },
-          { label: 'कदाचित', value: rsvp.maybe, tone: 'gold' },
-          { label: 'प्रतीक्षेत', value: rsvp.invited - rsvp.responded, tone: 'soft' },
-        ].map((tile) => (
-          <div key={tile.label} className="rounded-xl border border-gold/25 bg-ivory-deep/40 p-3">
-            <p className="font-ui text-xs uppercase tracking-wider text-charcoal-soft">{tile.label}</p>
-            <p className="mt-1 font-display text-2xl font-bold text-charcoal">{toDevanagariDigits(tile.value)}</p>
-          </div>
-        ))}
-      </div>
-
-      <form
-        action={addGuestAction}
-        className="mt-5 grid gap-2 sm:grid-cols-[1.4fr_1fr_1fr_0.7fr_0.9fr_auto]"
-      >
-        <input type="hidden" name="slug" value={slug} />
-        <input
-          name="name"
-          required
-          maxLength={120}
-          placeholder="पाहुण्याचे नाव"
-          className="rounded-xl border border-gold/40 bg-ivory px-3 py-2 text-sm text-charcoal outline-none focus:border-maroon"
-        />
-        <input
-          name="phone"
-          inputMode="tel"
-          pattern="[0-9+ -]{8,15}"
-          placeholder="मोबाइल (ऐच्छिक)"
-          className="rounded-xl border border-gold/40 bg-ivory px-3 py-2 text-sm text-charcoal outline-none focus:border-maroon"
-        />
-        <input
-          name="relation"
-          placeholder="नाते — उदा. मामा"
-          className="rounded-xl border border-gold/40 bg-ivory px-3 py-2 text-sm text-charcoal outline-none focus:border-maroon"
-        />
-        <input
-          name="guestCount"
-          type="number"
-          min={1}
-          max={50}
-          defaultValue={1}
-          aria-label="किती व्यक्ती"
-          className="rounded-xl border border-gold/40 bg-ivory px-3 py-2 text-sm text-charcoal outline-none focus:border-maroon"
-        />
-        <select
-          name="side"
-          defaultValue="both"
-          aria-label="कडे"
-          className="rounded-xl border border-gold/40 bg-ivory px-3 py-2 text-sm text-charcoal outline-none focus:border-maroon"
-        >
-          <option value="groom">वरकडील</option>
-          <option value="bride">वधूकडील</option>
-          <option value="both">दोन्हीकडील</option>
-          <option value="host">यजमान</option>
-        </select>
-        <button type="submit" className="rounded-xl bg-maroon px-4 py-2 text-sm font-semibold text-ivory">
-          पाहुणा जोडा
-        </button>
-      </form>
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="शोधा — नाव, नाते किंवा संहिता"
-          className="min-w-56 flex-1 rounded-xl border border-gold/40 bg-ivory px-3 py-2 text-sm text-charcoal outline-none focus:border-maroon"
-        />
-        {(['all', 'groom', 'bride', 'both'] as const).map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => setSide(option)}
-            className={
-              side === option
-                ? 'rounded-full bg-maroon px-3 py-1.5 text-xs font-semibold text-ivory'
-                : 'rounded-full border border-gold/40 bg-ivory px-3 py-1.5 text-xs text-charcoal-soft'
-            }
-          >
-            {option === 'all' ? 'सर्व' : SIDE_LABEL[option]}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-3 max-h-96 overflow-auto rounded-xl border border-gold/20">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-ivory-deep/90 backdrop-blur">
-            <tr className="text-left font-ui text-xs uppercase tracking-wider text-charcoal-soft">
-              <th className="px-3 py-2">नाव</th>
-              <th className="px-3 py-2">नाते</th>
-              <th className="px-3 py-2">कडे</th>
-              <th className="px-3 py-2 text-right">व्यक्ती</th>
-              <th className="px-3 py-2">आर.एस.व्ही.पी.</th>
-              <th className="px-3 py-2">संहिता</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.slice(0, 60).map((guest) => (
-              <tr key={guest.id} className="border-t border-gold/15">
-                <td className="px-3 py-2 font-semibold text-charcoal">{guest.name}</td>
-                <td className="px-3 py-2 text-charcoal-soft">{guest.relation ?? '—'}</td>
-                <td className="px-3 py-2 text-charcoal-soft">{SIDE_LABEL[guest.side ?? 'guest']}</td>
-                <td className="px-3 py-2 text-right text-charcoal">{toDevanagariDigits(guest.guestCount)}</td>
-                <td className="px-3 py-2">
-                  <span className={`rounded-full border px-2 py-0.5 text-[11px] ${RSVP_STYLE[guest.rsvpStatus] ?? RSVP_STYLE.pending}`}>
-                    {guest.rsvpStatus === 'yes' ? 'येतील' : guest.rsvpStatus === 'no' ? 'नाही' : guest.rsvpStatus === 'maybe' ? 'कदाचित' : 'प्रतीक्षेत'}
-                  </span>
-                </td>
-                <td className="px-3 py-2 font-ui text-xs text-charcoal-soft">{guest.code}</td>
-              </tr>
-            ))}
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-sm text-charcoal-soft">
-                  जुळणारे पाहुणे नाहीत.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
-      <p className="mt-2 text-xs text-charcoal-soft">
-        {toDevanagariDigits(Math.min(60, filtered.length))} / {toDevanagariDigits(filtered.length)} पाहुणे दाखवत आहोत — डिजिटल पानावरून
-        आर.एस.व्ही.पी. आपोआप अद्ययावत होते.
-      </p>
     </section>
   );
 }

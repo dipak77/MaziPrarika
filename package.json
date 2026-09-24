@@ -25,7 +25,9 @@
     "lint": "tsc -p tsconfig.packages.json --noEmit",
     "test:e2e": "node --experimental-sqlite --import ./scripts/register-ts.mjs tests/vendor-flow.e2e.mjs",
     "icons": "node scripts/generate-icons.mjs",
-    "measure": "node --experimental-sqlite --import ./scripts/register-ts.mjs scripts/measure.mjs"
+    "measure": "node --experimental-sqlite --import ./scripts/register-ts.mjs scripts/measure.mjs",
+    "build:static": "npm run build && node scripts/export-static.mjs",
+    "deploy:firebase": "npm run build:static && node C:/Users/haran/AppData/Roaming/npm/node_modules/firebase-tools/lib/bin/firebase.js deploy --only hosting --non-interactive"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
