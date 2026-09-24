@@ -1,0 +1,62 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "jsx": "preserve",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowJs": true,
+    "noEmit": true,
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@mazi/marathi": [
+        "../../packages/marathi/src/index.ts"
+      ],
+      "@mazi/panchang": [
+        "../../packages/panchang/src/index.ts"
+      ],
+      "@mazi/design-schema": [
+        "../../packages/design-schema/src/index.ts"
+      ],
+      "@mazi/renderer": [
+        "../../packages/renderer/src/index.ts"
+      ],
+      "@mazi/commerce": [
+        "../../packages/commerce/src/index.ts"
+      ],
+      "@mazi/ai-gateway": [
+        "../../packages/ai-gateway/src/index.ts"
+      ],
+      "@mazi/store": [
+        "../../packages/store/src/index.ts"
+      ],
+      "@mazi/store/seed": [
+        "../../packages/store/src/seed.ts"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "next-env.d.ts",
+    ".next-dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

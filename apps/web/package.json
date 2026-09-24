@@ -1,0 +1,34 @@
+{
+  "name": "@mazi/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mazi/ai-gateway": "*",
+    "@mazi/commerce": "*",
+    "@mazi/design-schema": "*",
+    "@mazi/marathi": "*",
+    "@mazi/panchang": "*",
+    "@mazi/renderer": "*",
+    "@mazi/store": "*",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.469.0",
+    "next": "15.5.7",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "tailwind-merge": "^2.5.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.13",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "tailwindcss": "^4.1.13"
+  }
+}

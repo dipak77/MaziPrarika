@@ -1,0 +1,138 @@
+@import 'tailwindcss';
+
+/*
+ * Mazi Patrika design tokens.
+ *
+ * The palette is taken from the platform brand (ivory, maroon, gold, charcoal)
+ * with two cultural accents — haldi (turmeric) for auspicious warmth and
+ * paithani green for contrast — because Marathi print tradition is warm, not
+ * neon. Every colour here is CMYK-safe: the same hex is used for screen and for
+ * print output, so a "what you see is what you print" promise is real.
+ */
+
+@theme {
+  --color-ivory: #fbf7f0;
+  --color-ivory-deep: #f4ecdf;
+  --color-maroon: #6b1d2a;
+  --color-maroon-soft: #8c3242;
+  --color-gold: #c6a15b;
+  --color-gold-soft: #e0c894;
+  --color-charcoal: #221c1a;
+  --color-charcoal-soft: #4b423f;
+  --color-haldi: #d98a1f;
+  --color-paithani: #1f6b4f;
+  --color-ink: #191412;
+
+  --font-display: 'Noto Serif Devanagari', 'Tiro Devanagari Marathi', Georgia, serif;
+  --font-body: 'Noto Sans Devanagari', 'Inter', system-ui, sans-serif;
+  --font-ui: 'Inter', 'Noto Sans Devanagari', system-ui, sans-serif;
+  --font-script: 'Tiro Devanagari Marathi', 'Noto Serif Devanagari', serif;
+
+  --radius-card: 1.25rem;
+  --shadow-soft: 0 1px 2px rgb(34 28 26 / 0.04), 0 12px 32px -12px rgb(34 28 26 / 0.18);
+  --shadow-lift: 0 2px 4px rgb(34 28 26 / 0.06), 0 24px 56px -20px rgb(107 29 42 / 0.28);
+
+  --breakpoint-xs: 24rem;
+}
+
+@font-face {
+  font-family: 'Noto Serif Devanagari';
+  src: url('/fonts/noto-serif-devanagari/noto-serif-devanagari-devanagari-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Serif Devanagari';
+  src: url('/fonts/noto-serif-devanagari/noto-serif-devanagari-devanagari-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans Devanagari';
+  src: url('/fonts/noto-sans-devanagari/noto-sans-devanagari-devanagari-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans Devanagari';
+  src: url('/fonts/noto-sans-devanagari/noto-sans-devanagari-devanagari-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Tiro Devanagari Marathi';
+  src: url('/fonts/tiro-devanagari-marathi/tiro-devanagari-marathi-devanagari-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/inter-latin-wght-normal.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+  --page-max: 78rem;
+}
+
+html {
+  /* Marathi matras need slightly more room than Latin text. */
+  line-height: 1.65;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--color-ivory);
+  color: var(--color-charcoal);
+  font-family: var(--font-body);
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+/* Focus states are visible for keyboard users — accessibility is not optional. */
+:focus-visible {
+  outline: 2px solid var(--color-maroon);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@utility shell {
+  width: 100%;
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+@utility surface {
+  background: color-mix(in oklab, var(--color-ivory) 92%, white);
+  border: 1px solid color-mix(in oklab, var(--color-gold) 34%, transparent);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
+}
+
+@utility gold-rule {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+}
+
+/* The paithani border used as a page flourish — pure CSS, prints identically. */
+@utility paithani-edge {
+  background-image:
+    radial-gradient(circle at 50% 0%, var(--color-gold) 0 2px, transparent 3px),
+    linear-gradient(90deg, var(--color-maroon) 0 50%, var(--color-paithani) 50% 100%);
+  background-size: 14px 6px, 100% 3px;
+  background-repeat: repeat-x, no-repeat;
+  background-position: top left;
+}
+
+@media print {
+  body { background: white; }
+  .no-print { display: none !important; }
+}
