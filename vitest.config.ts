@@ -14,6 +14,7 @@ export default defineConfig({
       '@mazi/ai-gateway': pkg('ai-gateway'),
       '@mazi/store': pkg('store'),
       '@mazi/store/seed': fileURLToPath(new URL('./packages/store/src/seed.ts', import.meta.url)),
+      'server-only': fileURLToPath(new URL('./tests/server-only-mock.ts', import.meta.url)),
     },
   },
   test: {

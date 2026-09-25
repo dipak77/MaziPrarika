@@ -1,5 +1,7 @@
 import { Chip, Eyebrow, Icon } from "@/components/ui";
 import { getStore } from "@/lib/store";
+import { devRupees } from "@/lib/format";
+import { settleBookingAction, refundBookingAction } from "@/app/vendor/actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -25,12 +27,12 @@ const CATEGORY_DEMAND = [
   { c: "प्रिंटिंग", v: 44 },
 ];
 
-const BOOKINGS = [
-  { id: "MZ-2417", ev: "देशमुख विवाह", vendor: "शिवनेरी लॉन्स", amt: "₹८५,०००", st: "बुक ✓", cls: "bg-leaf-600/10 text-leaf-700" },
-  { id: "MZ-2416", ev: "आर्वी नामकरण", vendor: "अथर्व मोमेंट्स", amt: "₹४२,०००", st: "बुक ✓", cls: "bg-leaf-600/10 text-leaf-700" },
-  { id: "MZ-2415", ev: "पाटील गृहप्रवेश", vendor: "स्वरांगी कॅटरर्स", amt: "₹६८,०००", st: "ठेव बाकी", cls: "bg-gold-400/15 text-gold-700" },
-  { id: "MZ-2414", ev: "जोशी साखरपुडा", vendor: "कलासंगर डेकोरेटर्स", amt: "₹७५,०००", st: "बुक ✓", cls: "bg-leaf-600/10 text-leaf-700" },
-  { id: "MZ-2413", ev: "कुलकर्णी पूजा", vendor: "भटजी सेवा मंडळ", amt: "₹११,०००", st: "रिफंड", cls: "bg-maroon-700/10 text-maroon-700" },
+const DEFAULT_BOOKINGS = [
+  { id: "MZ-2417", fullId: "MZ-2417", ev: "देशमुख विवाह", vendor: "शिवनेरी लॉन्स", amt: "₹८५,०००", st: "बुक ✓", cls: "bg-leaf-600/10 text-leaf-700", state: "BOOKING_CONFIRMED" },
+  { id: "MZ-2416", fullId: "MZ-2416", ev: "आर्वी नामकरण", vendor: "अथर्व मोमेंट्स", amt: "₹४२,०००", st: "बुक ✓", cls: "bg-leaf-600/10 text-leaf-700", state: "BOOKING_CONFIRMED" },
+  { id: "MZ-2415", fullId: "MZ-2415", ev: "पाटील गृहप्रवेश", vendor: "स्वरांगी कॅटरर्स", amt: "₹६८,०००", st: "ठेव बाकी", cls: "bg-gold-400/15 text-gold-700", state: "PAYMENT_PENDING" },
+  { id: "MZ-2414", fullId: "MZ-2414", ev: "जोशी साखरपुडा", vendor: "कलासंगर डेकोरेटर्स", amt: "₹७५,०००", st: "बुक ✓", cls: "bg-leaf-600/10 text-leaf-700", state: "BOOKING_CONFIRMED" },
+  { id: "MZ-2413", fullId: "MZ-2413", ev: "कुलकर्णी पूजा", vendor: "भटजी सेवा मंडळ", amt: "₹११,०००", st: "रिफंड", cls: "bg-maroon-700/10 text-maroon-700", state: "REFUNDED" },
 ];
 
 const RESPONSE = [
@@ -46,7 +48,44 @@ export default async function ConsolePage() {
   const allVendors = store.vendors.search({ limit: 50 });
   const allBookings = store.bookings.list({ limit: 50 });
 
-  const gmvMonth = 580000;
+  const liveBookingsTotalPaise = allBookings.reduce((sum, b) => sum + (b.totalPaise ?? 0), 0);
+  const liveCommissionPaise = allBookings.reduce((sum, b) => sum + (b.commissionPaise ?? 0), 0);
+  const effectiveGmvRupees = liveBookingsTotalPaise > 0 ? liveBookingsTotalPaise / 100 : 580000;
+  const takeRate = liveBookingsTotalPaise > 0
+    ? `${((liveCommissionPaise / liveBookingsTotalPaise) * 100).toFixed(1)}%`
+    : "८.२%";
+
+  const renderedBookings = allBookings.length > 0
+    ? allBookings.slice(0, 8).map((b) => {
+        const event = b.eventId ? store.events.byId(b.eventId) : undefined;
+        const vendor = store.vendors.byId(b.vendorId);
+        const isSettled = b.state === 'SETTLEMENT';
+        const isConfirmed = b.state === 'BOOKING_CONFIRMED' || b.state === 'SERVICE_SCHEDULED' || b.state === 'SERVICE_COMPLETED';
+        const isRefunded = b.state === 'REFUNDED' || b.state === 'REFUND_PENDING';
+        const isDisputed = b.state === 'DISPUTED';
+
+        return {
+          id: b.id.replace(/^bk_qt_/, 'MZ-').slice(0, 10),
+          fullId: b.id,
+          ev: event?.title ?? 'सोहळा',
+          vendor: vendor?.name ?? b.vendorId,
+          amt: devRupees(b.totalPaise),
+          st: isSettled ? 'सेटलमेंट ✓' : isConfirmed ? 'बुक ✓' : isRefunded ? 'रिफंड' : isDisputed ? 'वाद' : 'प्रलंबित',
+          cls: isSettled
+            ? 'bg-leaf-600/15 text-leaf-800'
+            : isConfirmed
+            ? 'bg-leaf-600/10 text-leaf-700'
+            : isRefunded
+            ? 'bg-maroon-700/10 text-maroon-700'
+            : isDisputed
+            ? 'bg-maroon-900 text-white'
+            : 'bg-gold-400/15 text-gold-700',
+          state: b.state,
+          canSettle: b.state === 'BOOKING_CONFIRMED' || b.state === 'SERVICE_SCHEDULED' || b.state === 'SERVICE_COMPLETED',
+          canRefund: b.state === 'BOOKING_CONFIRMED' || b.state === 'DISPUTED',
+        };
+      })
+    : DEFAULT_BOOKINGS.map((b) => ({ ...b, canSettle: false, canRefund: false }));
 
   return (
     <div className="bg-ivory-200/50 pb-16">
@@ -61,8 +100,8 @@ export default async function ConsolePage() {
           </p>
           <div className="mt-7 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-4">
             {[
-              { l: "GMV (या महिन्यात)", v: `₹${(gmvMonth / 100000).toFixed(1)} लाख` },
-              { l: "टेक-रेट", v: "८.२%" },
+              { l: "GMV (या महिन्यात)", v: `₹${(effectiveGmvRupees / 100000).toFixed(1)} लाख` },
+              { l: "टेक-रेट", v: takeRate },
               { l: "बुकिंग रूपांतरण", v: "२१.५%" },
               { l: "सक्रिय व्हेंडर्स", v: String(allVendors.length) },
             ].map((k) => (
@@ -147,16 +186,28 @@ export default async function ConsolePage() {
               <h3 className="text-[15px] font-extrabold text-ink-900">अलिकडची बुकिंग्स</h3>
             </div>
             <div className="divide-y divide-ivory-200">
-              {BOOKINGS.map((b) => (
-                <div key={b.id} className="flex items-center justify-between gap-4 px-6 py-3.5 text-[13px]">
+              {renderedBookings.map((b) => (
+                <div key={b.fullId} className="flex items-center justify-between gap-4 px-6 py-3.5 text-[13px]">
                   <div>
                     <span className="font-mono text-[11px] text-ink-400">{b.id} · </span>
                     <span className="font-bold text-ink-900">{b.ev}</span>
                     <span className="text-ink-500"> → {b.vendor}</span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     <span className="font-display font-semibold text-maroon-800">{b.amt}</span>
                     <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${b.cls}`}>{b.st}</span>
+                    {b.canSettle && (
+                      <form action={settleBookingAction} className="inline">
+                        <input type="hidden" name="bookingId" value={b.fullId} />
+                        <button
+                          type="submit"
+                          className="rounded-md bg-gold-500/20 px-2 py-0.5 text-[11px] font-bold text-gold-800 hover:bg-gold-500/30 transition-colors"
+                          title="सेटलमेंट पूर्ण करा"
+                        >
+                          सेटल
+                        </button>
+                      </form>
+                    )}
                   </div>
                 </div>
               ))}

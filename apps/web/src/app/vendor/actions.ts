@@ -2,10 +2,22 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { availabilityState, postingForPayment, priceQuote, VENDOR_CATEGORIES, type Quote } from '@mazi/commerce';
+import {
+  availabilityState,
+  postingForPayment,
+  postingForSettlement,
+  postingForRefund,
+  priceQuote,
+  transitionBooking,
+  VENDOR_CATEGORIES,
+  type BookingState,
+  type Quote,
+} from '@mazi/commerce';
 
 import { getStore } from '@/lib/store';
 import { vendorDeskId } from '@/lib/vendor-desk';
+import { getSession, requireVendor, requireUser } from '@/lib/session';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 /**
  * Vendor OS actions.
@@ -336,3 +348,201 @@ export async function setVacationAction(formData: FormData): Promise<void> {
   });
   revalidatePath('/vendor');
 }
+
+export async function settleBookingAction(formData: FormData): Promise<void> {
+  const store = getStore();
+  const bookingId = String(formData.get('bookingId') ?? '').slice(0, 80);
+  const booking = store.bookings.byId(bookingId);
+  if (!booking) throw new Error('बुकिंग सापडली नाही');
+
+  const { session } = await requireVendor(booking.vendorId);
+  const quote = booking.quoteId ? store.marketplace.quoteById(booking.quoteId) : undefined;
+  const lead = booking.leadId ? store.marketplace.leadById(booking.leadId) : undefined;
+  if (!quote || !lead) throw new Error('बुकिंगशी संबंधित तपशील सापडले नाहीत');
+
+  const breakdown = priceQuote({
+    id: quote.id,
+    vendorId: booking.vendorId,
+    eventId: booking.eventId,
+    category: lead.category as Quote['category'],
+    items: quote.items,
+    discountPaise: quote.discountPaise,
+    validTill: quote.validTill,
+    status: 'accepted',
+  });
+
+  const at = new Date().toISOString();
+
+  store.transaction(() => {
+    if (booking.state !== 'SERVICE_COMPLETED' && booking.state === 'BOOKING_CONFIRMED') {
+      store.bookings.updateState(bookingId, {
+        state: 'SERVICE_COMPLETED',
+        actor: session.role === 'admin' ? 'admin' : 'vendor',
+        at,
+      });
+    }
+
+    store.bookings.updateState(bookingId, {
+      state: 'SETTLEMENT',
+      actor: session.role === 'admin' ? 'admin' : 'system',
+      at,
+    });
+
+    const settlementPosting = postingForSettlement({ orderId: bookingId, breakdown, at });
+    store.bookings.appendLedger(
+      settlementPosting.entries.map((entry) => ({
+        id: entry.id,
+        bookingId,
+        account: entry.account,
+        amountPaise: entry.amountPaise,
+        memo: entry.memo,
+        idempotencyKey: entry.idempotencyKey,
+        createdAt: entry.at,
+      })),
+    );
+
+    store.audit.record({
+      actor: session.userId,
+      action: 'booking.settled',
+      entity: 'booking',
+      entityId: bookingId,
+      after: { vendorPayoutPaise: breakdown.vendorPayoutPaise },
+      at,
+    });
+  });
+
+  revalidatePath('/vendor');
+  revalidatePath('/admin');
+  revalidatePath('/console');
+}
+
+export async function refundBookingAction(formData: FormData): Promise<void> {
+  const store = getStore();
+  const session = await getSession();
+  if (session.role !== 'admin') {
+    throw new Error('परतावा प्रक्रिया केवळ ॲडमिन करू शकतात');
+  }
+
+  const bookingId = String(formData.get('bookingId') ?? '').slice(0, 80);
+  const booking = store.bookings.byId(bookingId);
+  if (!booking) throw new Error('बुकिंग सापडली नाही');
+
+  const reason = String(formData.get('reason') ?? 'ग्राहकाच्या विनंतीनुसार परतावा').trim().slice(0, 200);
+  const rawRefund = Number(formData.get('refundRupees') ?? booking.advancePaise / 100);
+  const refundPaise = Math.round(Math.min(Math.max(rawRefund * 100, 0), booking.totalPaise));
+  if (refundPaise <= 0) throw new Error('परतावा रक्कम शून्य असू शकत नाही');
+
+  const quote = booking.quoteId ? store.marketplace.quoteById(booking.quoteId) : undefined;
+  const lead = booking.leadId ? store.marketplace.leadById(booking.leadId) : undefined;
+  if (!quote || !lead) throw new Error('बुकिंगशी संबंधित तपशील सापडले नाहीत');
+
+  const breakdown = priceQuote({
+    id: quote.id,
+    vendorId: booking.vendorId,
+    eventId: booking.eventId,
+    category: lead.category as Quote['category'],
+    items: quote.items,
+    discountPaise: quote.discountPaise,
+    validTill: quote.validTill,
+    status: 'accepted',
+  });
+
+  const at = new Date().toISOString();
+
+  store.transaction(() => {
+    if (booking.state !== 'REFUND_PENDING') {
+      store.bookings.updateState(bookingId, {
+        state: 'REFUND_PENDING',
+        actor: 'admin',
+        reason,
+        at,
+      });
+    }
+
+    store.bookings.updateState(bookingId, {
+      state: 'REFUNDED',
+      actor: 'admin',
+      reason,
+      at,
+    });
+
+    const refundPosting = postingForRefund({
+      orderId: bookingId,
+      breakdown,
+      refundPaise,
+      at,
+    });
+
+    store.bookings.appendLedger(
+      refundPosting.entries.map((entry) => ({
+        id: entry.id,
+        bookingId,
+        account: entry.account,
+        amountPaise: entry.amountPaise,
+        memo: entry.memo,
+        idempotencyKey: entry.idempotencyKey,
+        createdAt: entry.at,
+      })),
+    );
+
+    store.bookings.recordPayment({
+      bookingId,
+      kind: 'refund',
+      provider: 'simulated',
+      providerRef: `refund_${bookingId}_${Date.now()}`,
+      amountPaise: refundPaise,
+      status: 'captured',
+      idempotencyKey: `${bookingId}:pay:refund:${Date.now()}`,
+      raw: { reason, initiatedBy: session.userId },
+      createdAt: at,
+    });
+
+    store.audit.record({
+      actor: session.userId,
+      action: 'booking.refunded',
+      entity: 'booking',
+      entityId: bookingId,
+      after: { refundPaise, reason },
+      at,
+    });
+  });
+
+  revalidatePath('/vendor');
+  revalidatePath('/admin');
+  revalidatePath('/console');
+}
+
+export async function disputeBookingAction(formData: FormData): Promise<void> {
+  const store = getStore();
+  const session = await getSession();
+  const bookingId = String(formData.get('bookingId') ?? '').slice(0, 80);
+  const booking = store.bookings.byId(bookingId);
+  if (!booking) throw new Error('बुकिंग सापडली नाही');
+
+  const reason = String(formData.get('reason') ?? 'सेवेबद्दल तक्रार').trim().slice(0, 300);
+  if (!reason) throw new Error('तक्रारीचे कारण लिहा');
+
+  const at = new Date().toISOString();
+  store.transaction(() => {
+    store.bookings.updateState(bookingId, {
+      state: 'DISPUTED',
+      actor: session.role === 'vendor' ? 'vendor' : session.role === 'admin' ? 'admin' : 'customer',
+      reason,
+      at,
+    });
+
+    store.audit.record({
+      actor: session.userId,
+      action: 'booking.disputed',
+      entity: 'booking',
+      entityId: bookingId,
+      after: { reason },
+      at,
+    });
+  });
+
+  revalidatePath('/vendor');
+  revalidatePath('/admin');
+  revalidatePath('/console');
+}
+
