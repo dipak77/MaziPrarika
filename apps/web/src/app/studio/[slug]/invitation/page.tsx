@@ -107,13 +107,13 @@ export default async function InvitationStudioPage({
         </div>
         <div className="flex flex-wrap gap-3">
           <a
-            href={`/api/designs/${design.id}/svg?print=1`}
+            href={`/api/designs/${design.id}/svg?print=1&slug=${encodeURIComponent(slug)}&v=${design.version}`}
             className="btn-base border border-maroon/30 px-4 text-sm font-semibold text-maroon hover:bg-maroon/5"
           >
             प्रिंट SVG
           </a>
           <a
-            href={`/api/designs/${design.id}/print`}
+            href={`/api/designs/${design.id}/print?slug=${encodeURIComponent(slug)}&v=${design.version}`}
             target="_blank"
             rel="noreferrer"
             className="btn-base btn-outline px-4 text-sm"
@@ -217,6 +217,8 @@ export default async function InvitationStudioPage({
             eventDateLabel={event.eventDate ? formatMarathiDate(event.eventDate) : 'तारीख ठरलेली नाही'}
             printerLabel={vendorCategoryLabel('printer')}
             expressDefault={express}
+            paper={paper}
+            finishing={finishing}
           />
         </aside>
       </div>

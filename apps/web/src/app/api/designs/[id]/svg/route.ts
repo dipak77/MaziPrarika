@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { NextResponse } from 'next/server';
 
 import { renderSvg, toSocialSvg } from '@mazi/renderer';
@@ -34,14 +36,32 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     : renderSvg(resolved.design, { print: url.searchParams.get('print') === '1' });
 
   const download = url.searchParams.get('download') === '1';
+  const variant = [
+    resolved.source,
+    String(resolved.version),
+    url.searchParams.get('print') ?? '',
+    social ?? '',
+    url.searchParams.get('template') ?? '',
+    url.searchParams.get('scheme') ?? '',
+  ].join('|');
+  const etag = `"${createHash('sha1').update(`${id}|${variant}`).digest('hex').slice(0, 16)}"`;
+  const headers = {
+    'content-type': 'image/svg+xml; charset=utf-8',
+    etag,
+    // The design id is stable across edits. Revalidate; do not pin for a year.
+    'cache-control': 'public, max-age=60, must-revalidate',
+    'x-mazi-design-source': resolved.source,
+    'x-mazi-design-version': String(resolved.version),
+  };
+  if (request.headers.get('if-none-match') === etag) {
+    return new NextResponse(null, { status: 304, headers });
+  }
+  const safeName = id.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80) || 'patrika';
   return new NextResponse(svg, {
     status: 200,
     headers: {
-      'content-type': 'image/svg+xml; charset=utf-8',
-      // Deterministic output → safe to cache hard; the id changes with any edit.
-      'cache-control': 'public, max-age=31536000, immutable',
-      'x-mazi-design-source': resolved.source,
-      ...(download ? { 'content-disposition': `attachment; filename="${id}.svg"` } : {}),
+      ...headers,
+      ...(download ? { 'content-disposition': `attachment; filename="${safeName}.svg"` } : {}),
     },
   });
 }

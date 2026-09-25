@@ -97,6 +97,19 @@ export function DiscoveryFeed({
     return () => clearTimeout(timer);
   }, [load]);
 
+  const seenAds = useRef(new Set<string>());
+  useEffect(() => {
+    if (!feed) return;
+    const ids = feed.results.filter((row) => row.sponsored).map((row) => row.id).filter((id) => !seenAds.current.has(`${city}:${id}`));
+    if (ids.length === 0) return;
+    for (const id of ids) seenAds.current.add(`${city}:${id}`);
+    void fetch('/api/ads/impression', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ vendorIds: ids, city }),
+    });
+  }, [feed, city]);
+
   const categoryLabel = categories.find((entry) => entry.key === category)?.label;
 
   return (
@@ -216,7 +229,7 @@ export function DiscoveryFeed({
               </span>
             )}
 
-            <p className="font-ui text-xs uppercase tracking-wider text-gold">{vendor.categoryLabel}</p>
+            <p className="font-ui text-xs uppercase tracking-wider text-gold-ink">{vendor.categoryLabel}</p>
             <h3 className="mt-1 font-display text-lg font-bold text-charcoal">{vendor.name}</h3>
             <p className="mt-1 line-clamp-2 text-xs text-charcoal-soft" title={vendor.about}>{vendor.about}</p>
 

@@ -1,8 +1,7 @@
 /* ── Mazi Patrika shared catalog & helpers ─────────────────────────────── */
 
 export const IMG = {
-  mandapStage:
-    "https://images.pexels.com/photos/12432503/pexels-photo-12432503.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
+  mandapStage: "/art/mandap.jpg",
   goldenColumns:
     "https://images.pexels.com/photos/14395559/pexels-photo-14395559.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
   haldiDecor:
@@ -11,8 +10,7 @@ export const IMG = {
     "https://images.pexels.com/photos/35508972/pexels-photo-35508972.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
   bridePetals:
     "https://images.pexels.com/photos/19569602/pexels-photo-19569602.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
-  coupleRitual:
-    "https://images.pexels.com/photos/30184678/pexels-photo-30184678.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
+  coupleRitual: "/art/camera.jpg",
   ceremonyColor:
     "https://images.pexels.com/photos/35872915/pexels-photo-35872915.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
   mehndiHands:
@@ -22,12 +20,10 @@ export const IMG = {
   maharashtrianBride:
     "https://images.pexels.com/photos/38961898/pexels-photo-38961898.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
   diya: "https://images.pexels.com/photos/14170937/pexels-photo-14170937.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
-  banquet:
-    "https://images.pexels.com/photos/36766850/pexels-photo-36766850.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
+  banquet: "/art/lawn.jpg",
   banquetTable:
     "https://images.pexels.com/photos/29410669/pexels-photo-29410669.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
-  thali:
-    "https://images.pexels.com/photos/29148133/pexels-photo-29148133.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
+  thali: "/art/thali.jpg",
   thaliServe:
     "https://images.pexels.com/photos/8818723/pexels-photo-8818723.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=627&w=1200",
   dessertTable:

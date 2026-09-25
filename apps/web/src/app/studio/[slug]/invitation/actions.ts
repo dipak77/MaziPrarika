@@ -6,9 +6,11 @@ import { TEMPLATE_PRESETS } from '@mazi/design-schema';
 import { composeInvitation } from '@mazi/marathi';
 import { renderSvg } from '@mazi/renderer';
 
+import { newId } from '@mazi/store';
+
 import { getStore } from '@/lib/store';
 
-import { designForEvent, printQuote } from './studio';
+import { designForEvent, printQuote, STUDIO_SCHEMES } from './studio';
 
 /**
  * Server actions for the invitation studio. Everything that writes goes through
@@ -25,7 +27,7 @@ export async function saveDesignAction(formData: FormData): Promise<void> {
 
   const rawTemplateId = String(formData.get('templateId') ?? TEMPLATE_PRESETS[0]!.id);
   const templateId = TEMPLATE_PRESETS.some((p) => p.id === rawTemplateId) ? rawTemplateId : TEMPLATE_PRESETS[0]!.id;
-  const ALLOWED_SCHEMES = new Set(['paithani', 'royal-maroon', 'temple-gold', 'haldi', 'ivory-classic', 'emerald', 'rose-gold', 'midnight']);
+  const ALLOWED_SCHEMES = new Set(STUDIO_SCHEMES.map((scheme) => scheme.id));
   const rawSchemeId = String(formData.get('schemeId') ?? 'paithani');
   const schemeId = ALLOWED_SCHEMES.has(rawSchemeId) ? rawSchemeId : 'paithani';
   const { design, composed } = designForEvent({
@@ -87,7 +89,8 @@ export async function setDesignStatusAction(formData: FormData): Promise<void> {
   if (!ALLOWED_STATUS.has(rawStatus)) throw new Error('अवैध स्थिती');
   const status = rawStatus as 'draft' | 'review' | 'approved' | 'printing' | 'archived';
   const design = store.designs.byId(designId);
-  if (!design) throw new Error('पत्रिका सापडली नाही');
+  const event = store.events.bySlug(slug);
+  if (!design || !event || design.eventId !== event.id) throw new Error('पत्रिका सापडली नाही');
 
   store.transaction(() => {
     store.designs.save(design.id, design.doc, { status, name: design.name });
@@ -128,14 +131,14 @@ export async function placePrintOrderAction(formData: FormData): Promise<void> {
   const designId = String(formData.get('designId') ?? '');
   const event = store.events.bySlug(slug);
   const design = store.designs.byId(designId);
-  if (!event || !design) throw new Error('ऑर्डरसाठी माहिती अपूर्ण आहे');
+  if (!event || !design || design.eventId !== event.id) throw new Error('ऑर्डरसाठी माहिती अपूर्ण आहे');
 
   const rawQty = Number(formData.get('quantity') ?? 100);
   const quantity = Number.isFinite(rawQty) ? Math.min(Math.max(Math.floor(rawQty), 25), 10000) : 100;
   const ALLOWED_PAPERS = new Set(['matte-300gsm', 'glossy-250gsm', 'textured-280gsm', 'kraft-250gsm', 'silk-350gsm']);
   const rawPaper = String(formData.get('paper') ?? 'matte-300gsm');
   const paper = ALLOWED_PAPERS.has(rawPaper) ? rawPaper : 'matte-300gsm';
-  const ALLOWED_FINISHING = new Set(['gold-foil', 'emboss', 'lamination', 'edge-gilding', 'none']);
+  const ALLOWED_FINISHING = new Set(['gold-foil', 'emboss', 'spot-uv', 'die-cut', 'waxseal', 'envelope', 'lamination', 'edge-gilding', 'none']);
   const finishing = formData.getAll('finishing').map((value) => String(value)).filter((f) => ALLOWED_FINISHING.has(f));
   const express = formData.get('express') === 'on';
   const quote = printQuote({ designId, quantity, paper, finishing, express });
@@ -143,7 +146,7 @@ export async function placePrintOrderAction(formData: FormData): Promise<void> {
   const printer = store.vendors.search({ category: 'printer', limit: 1 })[0];
   store.transaction(() => {
     const order = store.designs.createPrintOrder({
-      id: `prt_${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36).padStart(2, '0')}`,
+      id: newId('prt'),
       eventId: event.id,
       designId: design.id,
       ...(printer ? { vendorId: printer.id } : {}),

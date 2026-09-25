@@ -22,10 +22,16 @@ export async function GET() {
   } catch {
     return NextResponse.json({ status: 'degraded', checks: { database: false, ledgerBalanced: false, aiBudget: true }, latencyMs: Date.now() - started, checkedAt: new Date().toISOString() }, { status: 503, headers: { 'cache-control': 'no-store' } });
   }
-  const integrity = store.db.prepare('SELECT COUNT(*) AS vendors FROM vendors').get() as { vendors?: number } | undefined;
-  const unbalanced = store.db
-    .prepare('SELECT COUNT(*) AS c FROM (SELECT booking_id, SUM(amount_paise) AS total FROM ledger_entries GROUP BY booking_id HAVING total <> 0)')
-    .get() as { c?: number } | undefined;
+  let integrity: { vendors?: number } | undefined;
+  let unbalanced: { c?: number } | undefined;
+  try {
+    integrity = store.db.prepare('SELECT COUNT(*) AS vendors FROM vendors').get() as { vendors?: number } | undefined;
+    unbalanced = store.db
+      .prepare('SELECT COUNT(*) AS c FROM (SELECT booking_id, SUM(amount_paise) AS total FROM ledger_entries GROUP BY booking_id HAVING total <> 0)')
+      .get() as { c?: number } | undefined;
+  } catch {
+    return NextResponse.json({ status: 'degraded', checks: { database: false, ledgerBalanced: false, aiBudget: true }, latencyMs: Date.now() - started, checkedAt: new Date().toISOString() }, { status: 503, headers: { 'cache-control': 'no-store' } });
+  }
 
   const usdCapRaw = process.env.ASSISTANT_MONTHLY_USD_CAP;
   const inrBudgetRaw = process.env.AI_MONTHLY_BUDGET_INR;
@@ -37,7 +43,7 @@ export async function GET() {
   const spendUsd = assistantLedger().totalUsd();
 
   const checks = {
-    database: Number(integrity?.vendors ?? 0) >= 0,
+    database: store.version === LATEST_SCHEMA_VERSION && Number(integrity?.vendors ?? -1) >= 0,
     ledgerBalanced: Number(unbalanced?.c ?? 0) === 0,
     aiBudget: spendUsd <= capUsd,
   };
@@ -47,7 +53,7 @@ export async function GET() {
       status: Object.values(checks).every(Boolean) ? 'ok' : 'degraded',
       checks,
       versions: {
-        store: LATEST_SCHEMA_VERSION,
+        store: store.version,
         designSchema: DESIGN_SCHEMA_VERSION,
         renderer: RENDERER_VERSION,
         panchang: EPHEMERIS_VERSION,

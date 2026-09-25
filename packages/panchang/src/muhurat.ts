@@ -77,6 +77,8 @@ function methodFor(eventType: string): MuhuratMethod {
     case 'naming':
     case 'annaprashan': return 'नामकरण मुहूर्त';
     case 'mundan': return 'जावळ/मुंडन मुहूर्त';
+    case 'thread':
+    case 'upanayan': return 'सामान्य शुभ मुहूर्त';
     case 'satyanarayan': return 'सत्यनारायण पूजा';
     default: return 'सामान्य शुभ मुहूर्त';
   }

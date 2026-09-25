@@ -168,15 +168,26 @@ export function printQuote(args: {
   const printer = (args.vendorId ? store.vendors.byId(args.vendorId) : undefined) ?? printers[0];
 
   const packages = printer ? store.vendors.packages(printer.id) : [];
-  const matching = packages.find((pkg) => pkg.title.includes(args.paper)) ?? packages[0];
+  // Catalogue titles are Marathi. English paper codes never appear in them.
+  const paperHint: Record<string, string> = {
+    'matte-300gsm': 'मॅट',
+    'silk-350gsm': 'पैठणी',
+    'metallic-250gsm': 'गोल्ड',
+  };
+  const hint = paperHint[args.paper];
+  const matching = (hint ? packages.find((pkg) => pkg.title.includes(hint)) : undefined) ?? packages[0];
   const basePerCard = matching ? Math.round(matching.pricePaise / Math.max(25, matching.capacity ?? 100)) : 6_500;
 
   const tierFactor = quantity >= 1000 ? 0.72 : quantity >= 500 ? 0.82 : quantity >= 250 ? 0.92 : 1;
-  const finishingCost: Record<string, number> = {
+  // Rupees per card, from the commerce spec (₹200–₹1,600). Stored below as paise.
+  const finishingRupees: Record<string, number> = {
     'gold-foil': 900, 'silver-foil': 850, emboss: 700, deboss: 600, 'spot-uv': 650,
     'die-cut': 1100, 'laser-cut': 1600, 'round-corner': 200, ribbon: 350, 'insert-card': 700,
-    envelope: 800, waxseal: 450,
+    envelope: 800, waxseal: 450, lamination: 400, 'edge-gilding': 500,
   };
+  const finishingCost: Record<string, number> = Object.fromEntries(
+    Object.entries(finishingRupees).map(([code, rupees]) => [code, rupees * 100]),
+  );
   const finishingPerCard = args.finishing.reduce((sum, code) => sum + (finishingCost[code] ?? 0), 0);
 
   const unitPricePaise = Math.round(basePerCard * tierFactor) + finishingPerCard;

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { KalashArt } from "@/components/decor/kalash";
+import { MandalaCorner } from "@/components/decor/mandala";
 import { InvitationCard } from "@/components/invitation-card";
 import { Reveal } from "@/components/reveal";
 import {
@@ -48,6 +50,8 @@ export default function Home() {
 function Hero() {
   return (
     <section className="bg-weave relative">
+      <MandalaCorner className="pointer-events-none absolute -left-6 top-6 hidden h-40 w-40 text-gold-500/35 lg:block" />
+      <KalashArt className="pointer-events-none absolute right-6 bottom-4 hidden h-40 w-28 text-maroon-800/20 lg:block" />
       <div className="pointer-events-none absolute -top-32 -right-40 h-[480px] w-[480px] rounded-full bg-gold-400/15 blur-3xl" />
       <div className="pointer-events-none absolute top-64 -left-52 h-[420px] w-[420px] rounded-full bg-maroon-700/10 blur-3xl" />
 
@@ -202,11 +206,11 @@ function Marquee() {
 /* ══ PILLARS ══════════════════════════════════════════════════════════ */
 
 const PILLARS: { icon: IconName; mr: string; en: string; desc: string; href: string }[] = [
-  { icon: "brush", mr: "क्रिएट स्टुडिओ", en: "Create Studio", desc: "पैठणी, वारली, राजमुद्रा — २५+ प्रीमियम टेम्पलेट्स. बायोडेटा, पत्रिका, व्हिडिओ आमंत्रण, इव्हेंट वेबसाइट व QR — मिनिटांत.", href: "/studio" },
-  { icon: "layers", mr: "इव्हेंट ओएस", en: "Event OS", desc: "पाहुणे यादी, बजेट ट्रॅकर, चेकलिस्ट, मुहूर्त आणि तयारी-स्कोर. काका, मामी, आत्या — नातेवाईकांसह संपूर्ण इव्हेंट एका पानावर.", href: "/events" },
+  { icon: "brush", mr: "क्रिएट स्टुडिओ", en: "Create Studio", desc: "पैठणी, वारली, देवालय, मंडल — बारा सांस्कृतिक पत्रिका. QR असलेले डिजिटल पान आणि छपाई-तयार निर्यात.", href: "/studio" },
+  { icon: "layers", mr: "इव्हेंट ओएस", en: "Event OS", desc: "पाहुणे यादी, बजेट ट्रॅकर, चेकलिस्ट, मुहूर्त आणि तयारी-स्कोर. काका, मामी, आत्या — नातेवाईकांसह संपूर्ण इव्हेंट एका पानावर.", href: "/studio/patil-patil-vivah-2027" },
   { icon: "search", mr: "डिस्कव्हरी", en: "Discovery", desc: "सत्यपडताळलेले व्हेन्यू, डेकोरेटर, फोटोग्राफर, कॅटरर — किंमत, उपलब्धता आणि खऱ्या रिव्ह्यूंसह तुलना करा.", href: "/vendors" },
-  { icon: "wallet", mr: "कॉमर्स", en: "Commerce", desc: "चौकशी → कोट → बुकिंग → पेमेंट → रिफंड. स्वतंत्र लेजर, पारदर्शक कमिशन आणि ठेव-सुरक्षा धोरण.", href: "/vendor-os" },
-  { icon: "building", mr: "व्हेंडर ओएस", en: "Vendor OS", desc: "लीड्स, कोट्स, कॅलेंडर, पेमेंट्स आणि रिव्ह्यू — व्हेंडरसाठी संपूर्ण बिझनेस डॅशबोर्ड. उत्पन्न वाढवा, वेळ वाचवा.", href: "/vendor-os" },
+  { icon: "wallet", mr: "कॉमर्स", en: "Commerce", desc: "चौकशी → कोट → बुकिंग → सेटलमेंट. स्वतंत्र लेजर, पारदर्शक कमिशन आणि ठेव-सुरक्षा धोरण.", href: "/admin" },
+  { icon: "building", mr: "व्हेंडर ओएस", en: "Vendor OS", desc: "लीड्स, कोट्स, कॅलेंडर, पेमेंट्स आणि रिव्ह्यू — व्हेंडरसाठी संपूर्ण बिझनेस डॅशबोर्ड.", href: "/vendor" },
   { icon: "printer", mr: "प्रिंट व प्रसार", en: "Print & Share", desc: "WYSIWYP — प्रिंट-परफेक्ट पत्रिका. ब्लीड, क्रॉप मार्क्स, गोल्ड फॉइल प्रिव्ह्यू. २४–४८ तासांत घरपोच.", href: "/studio" },
 ];
 

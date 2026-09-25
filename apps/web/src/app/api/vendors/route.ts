@@ -117,20 +117,6 @@ export async function GET(request: Request) {
   const results = ranked
     .map((position) => {
       const row = byId.get(position.id)!;
-      if (position.sponsored) {
-        // Impressions are only counted when a sponsored row is actually served.
-        try {
-          const campaign = sponsoredByVendor.get(row.vendor.id)!;
-          store.ads.recordEvent({
-            campaignId: campaign.id,
-            kind: 'impression',
-            ...(city ? { city } : {}),
-            costPaise: Math.round(campaign.budgetPaise / 2000),
-          });
-        } catch {
-          /* an ad counter must never break discovery */
-        }
-      }
       return {
         id: row.vendor.id,
         name: row.vendor.name,

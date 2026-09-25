@@ -17,12 +17,26 @@ export interface SessionData {
 
 const SESSION_COOKIE_NAME = 'mazi_session';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const PLACEHOLDER_SECRET = 'change-me-to-a-64-char-random-string-in-production';
+
+/**
+ * The seeded walkthrough stays open unless a pilot explicitly turns it off.
+ * `MAZI_DEMO=0` is the production lock: no demo identity, and a placeholder
+ * session secret refuses to sign anything.
+ */
+export function demoModeEnabled(): boolean {
+  return process.env.MAZI_DEMO !== '0';
+}
 
 function getSecretKey(): string {
   const secret = process.env.SESSION_SECRET;
-  if (!secret || secret === 'change-me-to-a-64-char-random-string-in-production') {
+  const missing = !secret || secret === PLACEHOLDER_SECRET;
+  if (missing && !demoModeEnabled()) {
+    throw new Error('SESSION_SECRET must be a unique random string when MAZI_DEMO=0.');
+  }
+  if (missing) {
     if (process.env.NODE_ENV === 'production') {
-      console.warn('[SECURITY WARNING] SESSION_SECRET is using a placeholder in production. Please set a secure random string.');
+      console.warn('[SECURITY WARNING] SESSION_SECRET is a placeholder. Set MAZI_DEMO=0 only after a real secret is in place.');
     }
     return 'mazi_patrika_dev_fallback_secret_key_88492019482019482019';
   }
@@ -110,7 +124,7 @@ export function getDemoSession(role: UserRole = 'customer'): SessionData {
 /**
  * Resolves current user session from HTTP-only cookie.
  */
-export async function getSession(): Promise<SessionData> {
+export async function getSession(): Promise<SessionData | null> {
   try {
     const cookieStore = await cookies();
     const raw = cookieStore.get(SESSION_COOKIE_NAME)?.value;
@@ -121,8 +135,8 @@ export async function getSession(): Promise<SessionData> {
   } catch {
     // cookies() unavailable in non-request contexts
   }
-  // Fallback to customer demo identity so UI seamlessly works in preview/demo mode
-  return getDemoSession('customer');
+  if (demoModeEnabled()) return getDemoSession('customer');
+  return null;
 }
 
 /**
@@ -153,6 +167,7 @@ export async function clearSession(): Promise<void> {
  */
 export async function requireUser(allowedRoles?: UserRole[]): Promise<SessionData> {
   const session = await getSession();
+  if (!session) throw new Error('सत्र आवश्यक आहे. कृपया पुन्हा प्रवेश करा.');
   if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(session.role)) {
     throw new Error(`अनधिकृत प्रवेश: ${session.role} या भूमिकेस परवानगी नाही.`);
   }
@@ -164,10 +179,11 @@ export async function requireUser(allowedRoles?: UserRole[]): Promise<SessionDat
  */
 export async function requireVendor(targetVendorId?: string): Promise<{ session: SessionData; vendorId: string }> {
   const session = await getSession();
+  if (!session) throw new Error('विक्रेता सत्र आवश्यक आहे.');
   const effectiveVendorId = session.vendorId || (session.role === 'admin' ? targetVendorId : undefined);
-  
+
   if (!effectiveVendorId) {
-    // In dev/demo, default to curated Pune studio
+    if (!demoModeEnabled()) throw new Error('विक्रेता सत्र आवश्यक आहे.');
     return { session: getDemoSession('vendor'), vendorId: targetVendorId ?? 'vnd_pune_kulkarni_studio' };
   }
 

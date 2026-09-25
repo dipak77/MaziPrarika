@@ -287,7 +287,7 @@ export function priceQuote(quote: Quote, opts: { commissionRate?: number; discou
   const subtotal = quote.items
     .filter((i) => !i.optional)
     .reduce((sum, item) => sum + Math.round(item.quantity * item.unitPricePaise), 0);
-  const discount = Math.min(quote.discountPaise, subtotal);
+  const discount = Math.min(Math.max(0, Math.trunc(quote.discountPaise) || 0), subtotal);
   const taxable = subtotal - discount;
   const gst = Math.round(taxable * GST_RATE);
   const customerTotal = taxable + gst;
@@ -585,7 +585,7 @@ export function rankForDiscovery(args: {
   const scored = args.vendors.map((v) => {
     const { organicScore } = trustBadges(v.signals);
     const organic = organicScore * 0.55 + v.relevance * 0.3 + Math.max(0, 1 - v.distanceKm / 40) * 100 * 0.15;
-    const sponsoredEligible = (v.sponsoredBidPaise ?? 0) > 0 && organicScore >= minOrganic;
+    const sponsoredEligible = (v.sponsoredBidPaise ?? 0) > 0 && organicScore >= minOrganic && v.signals.disputeCount === 0;
     const sponsoredScore = sponsoredEligible
       ? 100 + (v.sponsoredBidPaise ?? 0) / 10_000 + v.relevance * 0.2 + organicScore * 0.2
       : 0;

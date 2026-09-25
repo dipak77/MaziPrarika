@@ -72,7 +72,7 @@ export default async function ConsolePage() {
           amt: devRupees(b.totalPaise),
           st: isSettled ? 'सेटलमेंट ✓' : isConfirmed ? 'बुक ✓' : isRefunded ? 'रिफंड' : isDisputed ? 'वाद' : 'प्रलंबित',
           cls: isSettled
-            ? 'bg-leaf-600/15 text-leaf-800'
+            ? 'bg-leaf-600/15 text-leaf-700'
             : isConfirmed
             ? 'bg-leaf-600/10 text-leaf-700'
             : isRefunded
@@ -187,7 +187,7 @@ export default async function ConsolePage() {
             </div>
             <div className="divide-y divide-ivory-200">
               {renderedBookings.map((b) => (
-                <div key={b.fullId} className="flex items-center justify-between gap-4 px-6 py-3.5 text-[13px]">
+                <div key={b.fullId} className="flex flex-wrap items-center justify-between gap-4 px-6 py-3.5 text-[13px]">
                   <div>
                     <span className="font-mono text-[11px] text-ink-400">{b.id} · </span>
                     <span className="font-bold text-ink-900">{b.ev}</span>

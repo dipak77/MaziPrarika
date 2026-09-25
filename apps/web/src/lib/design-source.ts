@@ -17,7 +17,7 @@ import { getStore } from '@/lib/store';
  * Returns `undefined` when neither path can produce a document — the caller turns
  * that into a 404 rather than into a broken SVG.
  */
-export type ResolvedDesign = { design: DesignDocument; source: 'stored' | 'rebuilt'; designId: string };
+export type ResolvedDesign = { design: DesignDocument; source: 'stored' | 'rebuilt'; designId: string; version: number };
 
 function isRenderable(doc: unknown): doc is DesignDocument {
   if (!doc || typeof doc !== 'object') return false;
@@ -29,12 +29,14 @@ export function resolveDesign(id: string, searchParams: URLSearchParams): Resolv
   const store = getStore();
   const record = store.designs.byId(id);
 
-  if (isRenderable(record?.doc)) {
-    return { design: record.doc, source: 'stored', designId: id };
+  if (record && isRenderable(record.doc)) {
+    return { design: record.doc, source: 'stored', designId: id, version: record.version };
   }
 
   const event = record?.eventId ? store.events.byId(record.eventId) : undefined;
-  const slug = searchParams.get('slug') ?? event?.slug;
+  const requested = searchParams.get('slug');
+  const slug = event?.slug ?? requested;
+  if (event && requested && requested !== event.slug) return undefined;
   if (!slug) return undefined;
 
   const rebuilt = designForEvent({
@@ -47,5 +49,5 @@ export function resolveDesign(id: string, searchParams: URLSearchParams): Resolv
     includeQr: searchParams.get('qr') !== '0',
   });
 
-  return { design: rebuilt.design, source: 'rebuilt', designId: id };
+  return { design: rebuilt.design, source: 'rebuilt', designId: id, version: record?.version ?? 0 };
 }

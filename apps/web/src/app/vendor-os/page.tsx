@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Chip, Icon, VerifiedBadge, type IconName } from "@/components/ui";
 import { getStore } from "@/lib/store";
 import type { Lead } from "@mazi/store";
@@ -55,7 +57,9 @@ export default async function VendorOsPage() {
   const total = vendorLeads.length;
   const booked = vendorLeads.filter((l: Lead) => l.status === "won").length;
   const pipeline = vendorLeads.filter((l: Lead) => (["new", "quoted", "contacted"] as string[]).includes(l.status)).length;
-  const revenue = 482000;
+  const revenue = Math.round(
+    store.bookings.list({ vendorId: vendor.id, limit: 50 }).reduce((sum, booking) => sum + booking.totalPaise, 0) / 100,
+  );
 
   const sidebar: { icon: IconName; t: string; active?: boolean }[] = [
     { icon: "chart", t: "डॅशबोर्ड", active: true },
@@ -82,15 +86,16 @@ export default async function VendorOsPage() {
             </div>
             <nav className="p-3">
               {sidebar.map((s) => (
-                <span
+                <Link
                   key={s.t}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl px-4 py-2.5 text-[13.5px] font-bold transition ${
+                  href="/vendor"
+                  className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-[13.5px] font-bold transition ${
                     s.active ? "bg-maroon-800 text-ivory-100 shadow-luxe" : "text-ink-500 hover:bg-ivory-100"
                   }`}
                 >
                   <Icon name={s.icon} className={`h-4.5 w-4.5 ${s.active ? "text-gold-300" : ""}`} />
                   {s.t}
-                </span>
+                </Link>
               ))}
             </nav>
             <div className="border-t border-ivory-300 p-4">
@@ -119,7 +124,7 @@ export default async function VendorOsPage() {
 
           {/* KPIs */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Kpi icon="bell" label="एकूण चौकशा (३० दिवस)" value={String(Math.max(total, 42))} delta="+१८%" up />
+            <Kpi icon="bell" label="एकूण चौकशा (३० दिवस)" value={String(total)} delta={`${booked} जिंकल्या`} up />
             <Kpi icon="checklist" label="पाइपलाइनमध्ये" value={String(pipeline)} delta={`${booked} बुकिंग्स`} />
             <Kpi icon="wallet" label="बुकिंग मूल्य (महिना)" value={formatLakh(revenue)} delta="+२४%" up />
             <Kpi icon="star" label="रेटिंग" value={`★ ${vendor.rating.toFixed(1)}`} delta="२८ सत्य रिव्ह्यू" />

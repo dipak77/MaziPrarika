@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { TEMPLATE_PRESETS } from '@mazi/design-schema';
+import { TEMPLATE_PRESETS, type DesignDocument } from '@mazi/design-schema';
 import { formatMarathiDate, toDevanagariDigits, vendorCategoryLabel } from '@mazi/marathi';
 import { renderSvg } from '@mazi/renderer';
 
@@ -62,8 +62,15 @@ export default async function PublicEventPage({
 
   const date = event.eventDate ?? new Date().toISOString().slice(0, 10);
   const panchang = panchangFor(event.city, new Date(`${date}T00:00:00Z`));
-  const { design } = designForEvent({ slug, templateId: TEMPLATE_PRESETS[0]!.id, schemeId: 'paithani' });
+  const saved = store.designs.list({ eventId: event.id, limit: 8 }).find((row) => {
+    const doc = row.doc as Partial<DesignDocument> | undefined;
+    return Boolean(doc?.page?.widthMm && Array.isArray(doc.elements) && doc.elements.length);
+  });
+  const built = saved ? undefined : designForEvent({ slug, templateId: TEMPLATE_PRESETS[0]!.id, schemeId: 'paithani' });
+  const design = (saved?.doc as DesignDocument | undefined) ?? built!.design;
+  const designVersion = saved?.version ?? 1;
   const heroSvg = renderSvg(design, { print: false });
+  const inviteCode = typeof query.code === 'string' ? query.code.slice(0, 40) : undefined;
 
   const confirmedVendors = bookings
     .filter((booking) => booking.state !== 'CANCELLED')
@@ -78,7 +85,7 @@ export default async function PublicEventPage({
       <div className="paithani-edge h-2" aria-hidden />
 
       <header className="shell py-8 text-center">
-        <p className="font-ui text-xs uppercase tracking-[0.2em] text-gold">॥ श्री गणेशाय नमः ॥</p>
+        <p className="font-ui text-xs uppercase tracking-[0.2em] text-gold-ink">॥ श्री गणेशाय नमः ॥</p>
         <h1 className="mt-3 font-display text-3xl font-bold text-maroon sm:text-4xl">{event.title}</h1>
         <p className="mt-2 text-charcoal-soft">
           {formatMarathiDate(event.eventDate ?? date, 'long')} • {event.city}
@@ -97,7 +104,7 @@ export default async function PublicEventPage({
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gold/25 px-5 py-3 text-xs text-charcoal-soft">
               <span>पत्रिका डिजिटल स्वरूपात — छपाईची प्रत जशीच्या तशी.</span>
               <a
-                href={`/api/designs/${design.id}/svg?slug=${encodeURIComponent(slug)}&download=1`}
+                href={`/api/designs/${(saved?.id ?? design.id)}/svg?slug=${encodeURIComponent(slug)}&v=${designVersion}&download=1`}
                 className="font-semibold text-maroon"
               >
                 पत्रिका डाउनलोड करा (SVG) ↓
@@ -189,7 +196,7 @@ export default async function PublicEventPage({
                 धन्यवाद! तुमची नोंद झाली.
               </p>
             ) : null}
-            <RsvpForm slug={slug} />
+            <RsvpForm slug={slug} code={inviteCode} />
           </section>
 
           <section className="surface p-5">
@@ -226,7 +233,7 @@ export default async function PublicEventPage({
           <section className="surface p-5">
             <h2 className="font-display text-lg font-bold text-charcoal">प्लॅटफॉर्म माहिती</h2>
             <ul className="mt-2 space-y-1 text-xs text-charcoal-soft">
-              <li>पत्रिका आवृत्ती {toDevanagariDigits(design.version)} • रेंडरर सर्व्हर-साइड</li>
+              <li>पत्रिका आवृत्ती {toDevanagariDigits(designVersion)} • रेंडरर सर्व्हर-साइड</li>
               <li>पंचांग: {panchang.method.ephemeris} ({toDevanagariDigits(panchang.method.ayanamsa)})</li>
               <li>एकूण पाहुणे नोंदी {toDevanagariDigits(guests.length)}</li>
               <li>अंदाजे कार्यक्रम खर्च प्रकट केलेला नाही — कुटुंबाने निवडल्यासच दिसेल</li>

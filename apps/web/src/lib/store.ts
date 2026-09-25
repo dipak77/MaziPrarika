@@ -27,17 +27,21 @@ export function getStore(): Store {
   const filename = databasePath();
   const store = openStore({ filename });
 
-  // A fresh checkout gets a working demo without a second command: if the
-  // database has no vendors yet, load the curated marketplace.
-  try {
-    const vendorCount = store.db.prepare('SELECT COUNT(*) AS c FROM vendors').get();
-    if (Number(vendorCount?.c ?? 0) === 0) seedStore(store);
-  } catch {
-    // Seeding is best-effort — a read-only or partially migrated database still
-    // serves whatever it has instead of taking the site down.
+  // A fresh checkout gets a working demo without a second command. Production
+  // never seeds itself — `npm run db:reset` is the only way data arrives there,
+  // unless a pilot sets SEED_ON_BOOT=1 on purpose.
+  const seedOnBoot = process.env.NODE_ENV !== 'production' || process.env.SEED_ON_BOOT === '1';
+  if (seedOnBoot) {
+    try {
+      const vendorCount = store.db.prepare('SELECT COUNT(*) AS c FROM vendors').get();
+      if (Number(vendorCount?.c ?? 0) === 0) seedStore(store);
+    } catch {
+      // Seeding is best-effort — a read-only or partially migrated database still
+      // serves whatever it has instead of taking the site down.
+    }
   }
 
-  if (process.env.NODE_ENV !== 'production') globalRef.__maziStore = store;
+  globalRef.__maziStore = store;
   return store;
 }
 

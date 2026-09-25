@@ -75,7 +75,7 @@ export default async function StudioPage({ params }: { params: Promise<{ slug: s
           <Link href={`/studio/${slug}/invitation`} className="btn-base btn-maroon px-5 text-sm">
             पत्रिका स्टुडिओ
           </Link>
-          <Link href={`/studio/${slug}/print`} className="btn-base border border-maroon/30 px-5 text-sm font-semibold text-maroon hover:bg-maroon/5">
+          <Link href={`/studio/${slug}/invitation`} className="btn-base btn-outline px-5 text-sm">
             छपाई ऑर्डर
           </Link>
           <Link href={`/e/${slug}`} className="btn-base btn-outline px-5 text-sm">

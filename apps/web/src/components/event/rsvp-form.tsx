@@ -11,7 +11,7 @@ import { rsvpAction } from '@/app/e/[slug]/actions';
  * big targets, no required account, and an optimistic confirmation so the guest
  * never wonders whether the reply was received.
  */
-export function RsvpForm({ slug }: { slug: string }) {
+export function RsvpForm({ slug, code }: { slug: string; code?: string }) {
   const [pending, startTransition] = useTransition();
   const [state, setState] = useState<'idle' | 'yes' | 'no' | 'maybe'>('yes');
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
@@ -25,10 +25,12 @@ export function RsvpForm({ slug }: { slug: string }) {
           setResult(outcome);
         });
       }}
-      className="mt-4 space-y-3"
+      className="relative mt-4 space-y-3"
     >
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="status" value={state} />
+      {code ? <input type="hidden" name="code" value={code} /> : null}
+      <input type="text" name="_hp_family_name" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" />
 
       <div className="flex gap-2">
         {(

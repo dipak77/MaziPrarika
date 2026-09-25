@@ -27,7 +27,7 @@ export const metadata = {
  */
 export default async function VendorDeskPage() {
   const store = getStore();
-  const vendorId = vendorDeskId();
+  const vendorId = await vendorDeskId();
   const vendor = store.vendors.byId(vendorId);
   if (!vendor) {
     return (

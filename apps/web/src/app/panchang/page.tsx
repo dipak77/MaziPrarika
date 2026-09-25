@@ -36,7 +36,16 @@ export default async function PanchangPage({
   const store = getStore();
 
   const monthStart = `${date.slice(0, 7)}-01`;
-  const monthEnd = new Date(new Date(`${monthStart}T00:00:00Z`).getTime() + 32 * 86_400_000).toISOString().slice(0, 10);
+  const [monthYear, monthIndex] = monthStart.split('-').map(Number) as [number, number];
+  const monthEnd = new Date(Date.UTC(monthYear, monthIndex, 0)).toISOString().slice(0, 10);
+  const monthMuhurats = findMuhurats({
+    eventType,
+    location: { city, latitude: location.latitude, longitude: location.longitude, tzOffsetHours: location.tzOffsetHours },
+    from: monthStart,
+    to: monthEnd,
+    limit: 31,
+    minScore: 0,
+  });
   const muhurats = findMuhurats({
     eventType,
     location: { city, latitude: location.latitude, longitude: location.longitude, tzOffsetHours: location.tzOffsetHours },
@@ -180,7 +189,7 @@ export default async function PanchangPage({
               nakshatra: day.nakshatra.name,
               isPurnima: day.tithi.isPurnima,
               isAmavasya: day.tithi.isAmavasya,
-              muhuratScore: muhurats.find((entry) => entry.date === day.date)?.score ?? null,
+              muhuratScore: monthMuhurats.find((entry) => entry.date === day.date)?.score ?? null,
             }))}
           />
 

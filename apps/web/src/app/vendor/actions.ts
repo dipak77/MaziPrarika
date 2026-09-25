@@ -312,7 +312,10 @@ export async function acceptQuoteAsCustomerAction(formData: FormData): Promise<v
 
 export async function setVacationAction(formData: FormData): Promise<void> {
   const store = getStore();
-  const vendorId = String(formData.get('vendorId') ?? vendorDeskId()).slice(0, 80);
+  const deskId = await vendorDeskId();
+  const session = await getSession();
+  const requested = String(formData.get('vendorId') ?? deskId).slice(0, 80);
+  const vendorId = session?.role === 'admin' ? requested : deskId;
   const vendor = store.vendors.byId(vendorId);
   if (!vendor) throw new Error('विक्रेता सापडला नाही');
   const from = String(formData.get('from') ?? '');
@@ -372,21 +375,24 @@ export async function settleBookingAction(formData: FormData): Promise<void> {
   });
 
   const at = new Date().toISOString();
+  const actorFor = (state: string): 'vendor' | 'admin' | 'system' => {
+    if (state === 'SETTLEMENT') return session.role === 'admin' ? 'admin' : 'system';
+    return session.role === 'admin' ? 'admin' : 'vendor';
+  };
+  const steps: string[] =
+    booking.state === 'BOOKING_CONFIRMED'
+      ? ['SERVICE_SCHEDULED', 'SERVICE_COMPLETED', 'SETTLEMENT']
+      : booking.state === 'SERVICE_SCHEDULED'
+        ? ['SERVICE_COMPLETED', 'SETTLEMENT']
+        : booking.state === 'SERVICE_COMPLETED'
+          ? ['SETTLEMENT']
+          : [];
+  if (steps.length === 0) throw new Error('या स्थितीतून सेटलमेंट शक्य नाही.');
 
   store.transaction(() => {
-    if (booking.state !== 'SERVICE_COMPLETED' && booking.state === 'BOOKING_CONFIRMED') {
-      store.bookings.updateState(bookingId, {
-        state: 'SERVICE_COMPLETED',
-        actor: session.role === 'admin' ? 'admin' : 'vendor',
-        at,
-      });
+    for (const state of steps) {
+      store.bookings.updateState(bookingId, { state, actor: actorFor(state), at });
     }
-
-    store.bookings.updateState(bookingId, {
-      state: 'SETTLEMENT',
-      actor: session.role === 'admin' ? 'admin' : 'system',
-      at,
-    });
 
     const settlementPosting = postingForSettlement({ orderId: bookingId, breakdown, at });
     store.bookings.appendLedger(
@@ -419,7 +425,7 @@ export async function settleBookingAction(formData: FormData): Promise<void> {
 export async function refundBookingAction(formData: FormData): Promise<void> {
   const store = getStore();
   const session = await getSession();
-  if (session.role !== 'admin') {
+  if (!session || session.role !== 'admin') {
     throw new Error('परतावा प्रक्रिया केवळ ॲडमिन करू शकतात');
   }
 
@@ -435,6 +441,7 @@ export async function refundBookingAction(formData: FormData): Promise<void> {
   const quote = booking.quoteId ? store.marketplace.quoteById(booking.quoteId) : undefined;
   const lead = booking.leadId ? store.marketplace.leadById(booking.leadId) : undefined;
   if (!quote || !lead) throw new Error('बुकिंगशी संबंधित तपशील सापडले नाहीत');
+  if (booking.state === 'REFUNDED') return;
 
   const breakdown = priceQuote({
     id: quote.id,
@@ -470,6 +477,7 @@ export async function refundBookingAction(formData: FormData): Promise<void> {
       orderId: bookingId,
       breakdown,
       refundPaise,
+      refundId: 'full',
       at,
     });
 
@@ -492,7 +500,7 @@ export async function refundBookingAction(formData: FormData): Promise<void> {
       providerRef: `refund_${bookingId}_${Date.now()}`,
       amountPaise: refundPaise,
       status: 'captured',
-      idempotencyKey: `${bookingId}:pay:refund:${Date.now()}`,
+      idempotencyKey: `${bookingId}:pay:refund`,
       raw: { reason, initiatedBy: session.userId },
       createdAt: at,
     });
@@ -515,6 +523,7 @@ export async function refundBookingAction(formData: FormData): Promise<void> {
 export async function disputeBookingAction(formData: FormData): Promise<void> {
   const store = getStore();
   const session = await getSession();
+  if (!session) throw new Error('सत्र आवश्यक आहे.');
   const bookingId = String(formData.get('bookingId') ?? '').slice(0, 80);
   const booking = store.bookings.byId(bookingId);
   if (!booking) throw new Error('बुकिंग सापडली नाही');

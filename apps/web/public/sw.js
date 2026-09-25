@@ -11,7 +11,7 @@
  * Navigations are never served stale-on-purpose, so a family always sees the
  * latest RSVP or invitation edit the moment they have signal.
  */
-const VERSION = 'mazi-v1';
+const VERSION = 'mazi-v2';
 const ASSET_CACHE = `${VERSION}-assets`;
 const PAGE_CACHE = `${VERSION}-pages`;
 const PRECACHE = ['/offline', '/icons/icon-192.png', '/icons/icon.svg'];
@@ -32,6 +32,7 @@ self.addEventListener('activate', (event) => {
 const isAsset = (url) =>
   url.pathname.startsWith('/fonts/') ||
   url.pathname.startsWith('/icons/') ||
+  url.pathname.startsWith('/art/') ||
   url.pathname.startsWith('/_next/static/');
 
 self.addEventListener('fetch', (event) => {
@@ -56,13 +57,7 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      Promise.race([
-        fetch(request).then((response) => {
-          if (response.ok) caches.open(PAGE_CACHE).then((cache) => cache.put(request, response.clone()));
-          return response;
-        }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000)),
-      ]).catch(async () => (await caches.match(request)) ?? (await caches.match('/offline')) ?? Response.error()),
+      fetch(request).catch(async () => (await caches.match('/offline')) ?? Response.error()),
     );
   }
 });

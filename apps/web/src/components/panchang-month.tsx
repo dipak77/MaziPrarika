@@ -63,16 +63,16 @@ export function PanchangMonth({
               key={day.date}
               type="button"
               onClick={() => setSelected(day.date)}
-              className={`min-h-[3rem] rounded-xl border px-1 py-2 text-center text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-bright sm:min-h-[3.5rem] ${
+              className={`min-h-[3rem] min-w-0 overflow-hidden rounded-xl border px-1 py-2 text-center text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-bright sm:min-h-[3.5rem] ${
                 isSelected ? 'border-maroon ring-2 ring-maroon' : ''
               } ${tint}`}
               aria-pressed={isSelected}
               aria-label={`${day.date} — ${day.weekday}, अनुकूलता ${day.muhuratScore ?? '—'}`}
             >
               <span className="block font-semibold text-charcoal">{toDevanagariDigits(day.date.slice(-2))}</span>
-              <span className="block font-ui text-xs text-charcoal-soft">{day.weekday.slice(0, 3)}</span>
+              <span className="block truncate font-ui text-xs text-charcoal-soft">{day.weekday.slice(0, 3)}</span>
               {day.muhuratScore !== null ? (
-                <span className="block font-ui text-xs font-semibold text-charcoal">{toDevanagariDigits(day.muhuratScore)}</span>
+                <span className="hidden font-ui text-xs font-semibold text-charcoal sm:block">{toDevanagariDigits(day.muhuratScore)}</span>
               ) : null}
             </button>
           );

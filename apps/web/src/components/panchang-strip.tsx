@@ -23,7 +23,7 @@ export function PanchangStrip({
       <div className="paithani-edge h-1.5" />
       <div className="grid gap-6 p-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
-          <p className="font-ui text-xs uppercase tracking-[0.16em] text-gold">आजचे पंचांग</p>
+          <p className="font-ui text-xs uppercase tracking-[0.16em] text-gold-ink">आजचे पंचांग</p>
           <h2 id={headingId} className="mt-2 font-display text-2xl font-bold text-maroon">
             {panchang.weekdayName}, {toDevanagariDigits(panchang.date.split('-')[2] ?? '')}
           </h2>

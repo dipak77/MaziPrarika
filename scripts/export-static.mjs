@@ -56,6 +56,27 @@ async function exportStatic() {
     '/events',
     '/vendors',
     '/panchang',
+    '/vendor',
+    '/admin',
+    // Public digital event invitations (QR landing pages)
+    '/e/patil-patil-vivah-2027',
+    '/e/deshmukh-gruhapravesh',
+    '/e/advait-vadhdivas',
+    '/e/joshi-namkaran',
+    '/e/kale-satyanarayan-puja',
+    // Key verified vendor profiles
+    '/vendors/vnd_pune_kulkarni_studio',
+    '/vendors/vnd_chinchwad_mangal',
+    '/vendors/vnd_pune_annapurna_caterers',
+    '/vendors/vnd_pune_shubhmangal_printers',
+    '/vendors/vnd_kolhapur_patil_decors',
+    '/vendors/vnd_mumbai_shree_dhol',
+    '/vendors/vnd_pune_shubh_purohit',
+    '/vendors/vnd_pune_mehendi_art',
+    '/vendors/vnd_pune_swar_dj',
+    '/vendors/vnd_pune_aaiji_cakes',
+    '/vendors/vnd_nashik_sai_makeup',
+    '/vendors/vnd_satara_gauri_lighting',
   ];
 
   for (const route of dynamicRoutes) {

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+import { safeEventSlug } from '@/lib/rsvp-match';
+
 import { rsvpAction } from '../actions';
 
 /**
@@ -24,9 +26,17 @@ export async function POST(request: Request) {
   // slug (a hand-rolled POST), fall back to the referrer's path rather than
   // building a broken `/e/null` URL.
   const url = new URL(request.url);
-  const slug = String(form.get('slug') ?? '').trim();
-  const referrer = request.headers.get('referer');
-  const fallbackPath = referrer ? new URL(referrer).pathname : '/events';
+  const slug = safeEventSlug(String(form.get('slug') ?? ''));
+  let fallbackPath = '/events';
+  try {
+    const referrer = request.headers.get('referer');
+    if (referrer) {
+      const path = new URL(referrer).pathname;
+      if (path.startsWith('/') && !path.startsWith('//') && !path.includes('\\')) fallbackPath = path;
+    }
+  } catch {
+    fallbackPath = '/events';
+  }
   const target = slug ? `/e/${slug}` : fallbackPath;
   return NextResponse.redirect(new URL(`${target}?rsvp=${result.ok ? 'ok' : 'error'}#rsvp`, url.origin), {
     status: 303,

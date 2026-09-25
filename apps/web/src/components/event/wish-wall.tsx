@@ -44,9 +44,10 @@ export function WishWall({
               }
             });
           }}
-          className="mt-4 grid gap-2 sm:grid-cols-[1fr_2fr_auto]"
+          className="relative mt-4 grid gap-2 sm:grid-cols-[1fr_2fr_auto]"
         >
           <input type="hidden" name="slug" value={slug} />
+          <input type="text" name="_hp_family_name" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" />
           <input name="name" maxLength={80} placeholder="तुमचे नाव" className="min-h-11 rounded-xl border border-gold/30 bg-white px-3 py-2.5 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon/50 focus:ring-2 focus:ring-maroon/10" />
           <input name="body" required maxLength={500} placeholder="शुभेच्छा — उदा. नवदांपत्याला खूप खूप शुभेच्छा!" className="min-h-11 rounded-xl border border-gold/30 bg-white px-3 py-2.5 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon/50 focus:ring-2 focus:ring-maroon/10" />
           <button type="submit" disabled={pending} className="btn-base btn-maroon px-5 text-sm disabled:opacity-60">

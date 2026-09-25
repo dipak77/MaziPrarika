@@ -151,18 +151,20 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4 {
-  font-family: var(--font-display);
-  line-height: 1.22;
-  letter-spacing: -0.02em;
-  text-wrap: balance;
-  font-variant-ligatures: common-ligatures;
+@layer base {
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    line-height: 1.22;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    font-variant-ligatures: common-ligatures;
+  }
+
+  h1 { font-size: clamp(1.9rem, 4.2vw, 3.6rem); }
+  h2 { font-size: clamp(1.45rem, 2.8vw, 2.15rem); }
+
+  p { text-wrap: pretty; }
 }
-
-h1 { font-size: clamp(1.9rem, 4.2vw, 3.6rem); }
-h2 { font-size: clamp(1.45rem, 2.8vw, 2.15rem); }
-
-p { text-wrap: pretty; }
 
 ::selection {
   background: color-mix(in oklab, var(--color-gold-bright) 32%, transparent);

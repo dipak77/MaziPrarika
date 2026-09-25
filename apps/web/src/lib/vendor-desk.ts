@@ -1,17 +1,28 @@
 import 'server-only';
 
+import { cookies } from 'next/headers';
+
 import { getStore } from '@/lib/store';
+import { verifySession } from '@/lib/session';
 
 /**
  * Which vendor the desk is signed in as.
  *
- * Demo runs as one curated vendor (a Pune photography studio with real history in
- * the seed); production resolves this from the session. Kept out of the
- * `actions.ts` module so it can stay a plain synchronous helper.
+ * A signed vendor session wins. The seeded walkthrough otherwise opens the
+ * Pune photography studio that has history in the database.
  */
 const DEMO_VENDOR = 'vnd_pune_kulkarni_studio';
 
-export function vendorDeskId(): string {
+export async function vendorDeskId(): Promise<string> {
   const store = getStore();
+  try {
+    const raw = (await cookies()).get('mazi_session')?.value;
+    if (raw) {
+      const session = verifySession(raw);
+      if (session?.vendorId && store.vendors.byId(session.vendorId)) return session.vendorId;
+    }
+  } catch {
+    // cookies() is unavailable outside a request; the demo desk still opens.
+  }
   return store.vendors.byId(DEMO_VENDOR) ? DEMO_VENDOR : (store.vendors.search({ limit: 1 })[0]?.id ?? DEMO_VENDOR);
 }

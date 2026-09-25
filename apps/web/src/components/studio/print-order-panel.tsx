@@ -28,6 +28,8 @@ export function PrintOrderPanel({
   eventDateLabel,
   printerLabel,
   expressDefault,
+  paper,
+  finishing,
 }: {
   slug: string;
   designId: string;
@@ -36,6 +38,8 @@ export function PrintOrderPanel({
   eventDateLabel: string;
   printerLabel: string;
   expressDefault: boolean;
+  paper: string;
+  finishing: string[];
 }) {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
@@ -93,6 +97,10 @@ export function PrintOrderPanel({
             <input type="hidden" name="slug" value={slug} />
             <input type="hidden" name="designId" value={designId} />
             <input type="hidden" name="quantity" value={quote.quantity} />
+            <input type="hidden" name="paper" value={paper} />
+            {finishing.map((code) => (
+              <input key={code} type="hidden" name="finishing" value={code} />
+            ))}
             <label className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-xl border border-gold/20 bg-white px-3 py-2 text-sm font-medium text-charcoal-soft shadow-2xs">
               <input type="checkbox" name="express" defaultChecked={expressDefault} className="size-4 rounded accent-[var(--color-maroon)]" />
               एक्स्प्रेस छपाई (३ दिवसांत) — विवाहापूर्वी {eventDateLabel}

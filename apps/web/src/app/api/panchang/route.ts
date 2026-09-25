@@ -29,18 +29,24 @@ export async function GET(request: Request) {
   const to = url.searchParams.get('to');
 
   if (from && to) {
-    const ALLOWED_EVENT_TYPES = new Set([
-      'wedding',
-      'engagement',
-      'mundan',
-      'namkaran',
-      'vastu',
-      'upanayan',
-      'satyanarayan',
-      'other',
-    ]);
+    const EVENT_TYPE_ALIASES: Record<string, string> = {
+      wedding: 'wedding',
+      engagement: 'engagement',
+      sakharpuda: 'sakharpuda',
+      mundan: 'mundan',
+      naming: 'naming',
+      namkaran: 'naming',
+      annaprashan: 'annaprashan',
+      gruhapravesh: 'gruhapravesh',
+      vastu: 'gruhapravesh',
+      bhoomipujan: 'bhoomipujan',
+      thread: 'thread',
+      upanayan: 'thread',
+      satyanarayan: 'satyanarayan',
+      other: 'other',
+    };
     const rawEventType = url.searchParams.get('eventType') ?? 'other';
-    const eventType = ALLOWED_EVENT_TYPES.has(rawEventType) ? rawEventType : 'other';
+    const eventType = EVENT_TYPE_ALIASES[rawEventType] ?? 'other';
     const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
     if (!DATE_RE.test(from) || !DATE_RE.test(to)) {
       return NextResponse.json({ error: 'अवैध दिनांक श्रेणी.' }, { status: 400 });

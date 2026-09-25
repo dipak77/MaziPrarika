@@ -69,7 +69,7 @@ export function SiteHeader() {
               <span className="flex items-center gap-1.5">
                 {item.label}
                 {item.badge ? (
-                  <span className="rounded-full bg-maroon/10 px-1.5 py-0.2 text-xs font-bold text-maroon border border-maroon/20">
+                  <span className="rounded-full bg-maroon/10 px-1.5 py-0.5 text-xs font-bold text-maroon border border-maroon/20">
                     {item.badge}
                   </span>
                 ) : null}
@@ -83,7 +83,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-2.5">
           <Link
             href="/vendor"
-            className="hidden min-h-11 items-center rounded-full border border-gold/45 bg-ivory px-3.5 text-xs font-semibold text-charcoal-soft transition hover:border-gold hover:bg-ivory-deep hover:text-maroon sm:inline-flex"
+            className="inline-flex min-h-11 items-center rounded-full border border-gold/45 bg-ivory px-3.5 text-xs font-semibold text-charcoal-soft transition hover:border-gold hover:bg-ivory-deep hover:text-maroon"
           >
             विक्रेता प्रवेश
           </Link>

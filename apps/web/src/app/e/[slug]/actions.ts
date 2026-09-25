@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 
+import { matchGuestForRsvp, safeEventSlug } from '@/lib/rsvp-match';
+import { verifyHoneypot } from '@/lib/session';
 import { getStore } from '@/lib/store';
 
 /**
@@ -24,6 +26,18 @@ const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const submissions = new Map<string, number[]>();
 
+function hitBucket(key: string, limit: number): boolean {
+  const now = Date.now();
+  const recent = (submissions.get(key) ?? []).filter((at) => now - at < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= limit) {
+    submissions.set(key, recent);
+    return true;
+  }
+  recent.push(now);
+  submissions.set(key, recent);
+  return false;
+}
+
 async function rateLimited(): Promise<boolean> {
   const headerStore = await headers();
   const ip = headerStore.get('x-forwarded-for')?.split(',')[0]?.trim() || 'anon';
@@ -44,8 +58,10 @@ async function rateLimited(): Promise<boolean> {
 }
 
 export async function rsvpAction(formData: FormData): Promise<RsvpState> {
+  if (!verifyHoneypot(formData)) return { ok: true, message: 'धन्यवाद, नोंद झाली.' };
   if (await rateLimited()) return { ok: false, message: 'कृपया थोडे वाट पहा.' };
-  const slug = String(formData.get('slug') ?? '').slice(0, 120);
+  const slug = safeEventSlug(String(formData.get('slug') ?? ''));
+  if (!slug) return { ok: false, message: 'कार्यक्रम सापडला नाही.' };
   const store = getStore();
   const event = store.events.bySlug(slug);
   if (!event) return { ok: false, message: 'कार्यक्रम सापडला नाही.' };
@@ -54,20 +70,23 @@ export async function rsvpAction(formData: FormData): Promise<RsvpState> {
   const status: 'yes' | 'no' | 'maybe' = rawStatus === 'no' ? 'no' : rawStatus === 'maybe' ? 'maybe' : 'yes';
   const name = String(formData.get('name') ?? '').trim().slice(0, 120);
   const phone = String(formData.get('phone') ?? '').trim().slice(0, 15);
-  const code = String(formData.get('code') ?? '').trim();
+  const code = String(formData.get('code') ?? '').trim().slice(0, 40);
   const heads = Math.max(1, Math.min(20, Number(formData.get('heads') ?? 1) || 1));
 
   if (!name) return { ok: false, message: 'कृपया नाव लिहा.' };
   if (phone && !/^[0-9+\-\s]{8,15}$/.test(phone)) return { ok: false, message: 'मोबाइल क्रमांक तपासा.' };
+  if (hitBucket(`rsvp:${slug}:${name}`, 4)) return { ok: false, message: 'कृपया थोडे वाट पहा.' };
 
-  // A guest arriving through a personal link keeps the family's own naming; a
-  // guest without one may still submit twice (slow phone, a refresh, a forwarded
-  // link), so the name they typed — plus the phone if they shared it — is matched
-  // against the list instead of growing it with duplicates.
-  const byCode = code ? store.events.guestByCode(code) : undefined;
-  const existing = byCode && byCode.eventId === event.id
-    ? byCode
-    : store.events.guests(event.id).find((guest) => guest.name === name && (!phone || !guest.phone || guest.phone === phone));
+  // A personal code updates that guest only. A walk-in may update their own
+  // earlier reply when the phone matches. A blank phone never overwrites a
+  // guest who already left one.
+  const matched = matchGuestForRsvp(store.events.guests(event.id), event.id, {
+    name,
+    ...(phone ? { phone } : {}),
+    ...(code ? { code } : {}),
+  });
+  if (matched.kind === 'invalid-code') return { ok: false, message: 'निमंत्रण कोड जुळला नाही.' };
+  const existing = matched.kind === 'update' ? matched.guest : undefined;
 
   if (existing && existing.eventId === event.id) {
     store.events.updateGuest(existing.id, {
@@ -119,8 +138,10 @@ export async function rsvpAction(formData: FormData): Promise<RsvpState> {
 }
 
 export async function wishAction(formData: FormData): Promise<{ ok: boolean; message: string }> {
+  if (!verifyHoneypot(formData)) return { ok: true, message: 'शुभेच्छा नोंदवल्या — धन्यवाद!' };
   if (await rateLimited()) return { ok: false, message: 'कृपया थोडे वाट पहा.' };
-  const slug = String(formData.get('slug') ?? '').slice(0, 120);
+  const slug = safeEventSlug(String(formData.get('slug') ?? ''));
+  if (!slug) return { ok: false, message: 'कार्यक्रम सापडला नाही.' };
   const body = String(formData.get('body') ?? '').trim().slice(0, 500);
   const name = String(formData.get('name') ?? '').trim().slice(0, 80);
   if (!body) return { ok: false, message: 'शुभेच्छा लिहा.' };
