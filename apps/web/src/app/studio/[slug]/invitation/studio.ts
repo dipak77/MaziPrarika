@@ -33,6 +33,9 @@ export const STUDIO_SCHEMES: StudioScheme[] = [
   { id: 'ratri', label: 'रात्री', palette: { primary: '#1B1B2F', accent: '#E0B75B', surface: '#101024', text: '#F4EAD8' }, style: 'modern' },
   { id: 'mor', label: 'मोर', palette: { primary: '#12403A', accent: '#C9A227', surface: '#F3F8F5', text: '#1B2C29' }, style: 'royal' },
   { id: 'rajwada', label: 'राजवाडा', palette: { primary: '#5A2A82', accent: '#D9B44A', surface: '#F9F5FF', text: '#2B2136' }, style: 'royal' },
+  { id: 'hirva', label: 'हिरवा', palette: { primary: '#1E6B34', accent: '#C9A227', surface: '#F1F7E9', text: '#1D2B1F' }, style: 'traditional' },
+  { id: 'tambda', label: 'तांबडा', palette: { primary: '#8C1D18', accent: '#E8B33C', surface: '#FFF3EC', text: '#3A1E1B' }, style: 'royal' },
+  { id: 'nilkamal', label: 'निळकमळ', palette: { primary: '#1E3A7A', accent: '#D9B44A', surface: '#EEF3FF', text: '#1E2438' }, style: 'maharashtrian' },
 ];
 
 export function schemeById(id: string): StudioScheme {

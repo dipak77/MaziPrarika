@@ -3,11 +3,13 @@
 import { revalidatePath } from 'next/cache';
 
 import { TEMPLATE_PRESETS } from '@mazi/design-schema';
+import { postingForPayment } from '@mazi/commerce';
 import { composeInvitation } from '@mazi/marathi';
 import { renderSvg } from '@mazi/renderer';
 
 import { newId } from '@mazi/store';
 
+import { createOrder, paymentAdapter, printBreakdown } from '@/lib/payments/gateway';
 import { getStore } from '@/lib/store';
 
 import { designForEvent, printQuote, STUDIO_SCHEMES } from './studio';
@@ -144,9 +146,14 @@ export async function placePrintOrderAction(formData: FormData): Promise<void> {
   const quote = printQuote({ designId, quantity, paper, finishing, express });
 
   const printer = store.vendors.search({ category: 'printer', limit: 1 })[0];
+  const at = new Date().toISOString();
+  const orderId = newId('prt');
+  const bookingId = `bk_${orderId}`;
+  const adapter = paymentAdapter();
+  const gatewayOrder = printer ? await createOrder({ bookingId, amountPaise: quote.totalPaise }) : null;
   store.transaction(() => {
     const order = store.designs.createPrintOrder({
-      id: newId('prt'),
+      id: orderId,
       eventId: event.id,
       designId: design.id,
       ...(printer ? { vendorId: printer.id } : {}),
@@ -160,6 +167,55 @@ export async function placePrintOrderAction(formData: FormData): Promise<void> {
       totalPaise: quote.totalPaise,
       proofUrl: `/api/designs/${design.id}/print?proof=1`,
     });
+    if (printer && gatewayOrder) {
+      const breakdown = printBreakdown(quote);
+      store.bookings.create({
+        id: bookingId,
+        eventId: event.id,
+        vendorId: printer.id,
+        state: 'PAYMENT_PENDING',
+        eventDate: event.eventDate ?? at.slice(0, 10),
+        totalPaise: quote.totalPaise,
+        advancePaise: quote.totalPaise,
+        commissionPaise: quote.commissionPaise,
+        history: [],
+        createdAt: at,
+      });
+      store.bookings.appendLedger(
+        postingForPayment({ orderId: bookingId, breakdown, at }).entries.map((entry) => ({
+          id: entry.id,
+          bookingId,
+          account: entry.account,
+          amountPaise: entry.amountPaise,
+          memo: entry.memo,
+          idempotencyKey: entry.idempotencyKey,
+          createdAt: entry.at,
+        })),
+      );
+      const prepaid = adapter === 'simulated';
+      store.bookings.recordPayment({
+        bookingId,
+        kind: 'advance',
+        provider: adapter,
+        providerRef: gatewayOrder.orderId,
+        amountPaise: quote.totalPaise,
+        status: prepaid ? 'captured' : 'created',
+        idempotencyKey: `${bookingId}:pay:advance`,
+        raw: { orderId, quantity: quote.quantity, paper, via: 'print-studio' },
+        createdAt: at,
+      });
+      if (prepaid) {
+        store.bookings.updateState(bookingId, { state: 'BOOKING_CONFIRMED', actor: 'system', at });
+      }
+      store.audit.record({
+        actor: design.ownerUserId,
+        action: prepaid ? 'payment.captured' : 'payment.created',
+        entity: 'payment',
+        entityId: `${bookingId}:pay:advance`,
+        after: { amountPaise: quote.totalPaise, kind: 'advance', provider: adapter, orderId },
+        at,
+      });
+    }
     store.designs.save(design.id, design.doc, { status: 'printing', name: design.name });
     store.audit.record({
       actor: design.ownerUserId,
@@ -169,6 +225,7 @@ export async function placePrintOrderAction(formData: FormData): Promise<void> {
       after: {
         designId: design.id, quantity: quote.quantity, paper, finishing,
         totalPaise: quote.totalPaise, commissionPaise: quote.commissionPaise,
+        ...(printer && gatewayOrder ? { bookingId, provider: adapter } : {}),
       },
     });
   });

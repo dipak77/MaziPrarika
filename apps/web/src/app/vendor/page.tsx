@@ -205,6 +205,21 @@ export default async function VendorDeskPage() {
             <p className="mt-3 text-xs text-charcoal-soft">
               कमिशन श्रेणीनुसार (छायाचित्रण १२%) — आगाऊ रक्कम मिळाल्यावरच लागू, आणि तक्रार असेल तर सेटलमेंट थांबते.
             </p>
+            {settlements.length ? (
+              <ul className="mt-3 space-y-2 text-sm">
+                {settlements.slice(0, 8).map((settlement) => (
+                  <li key={settlement.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold/25 bg-ivory px-3 py-2">
+                    <span className="text-charcoal">
+                      {settlement.bookingId.slice(0, 14)} • {settlement.status}
+                      {settlement.utr ? ` • UTR ${settlement.utr}` : ''}
+                    </span>
+                    <span className="font-semibold text-charcoal">{devRupees(settlement.amountPaise)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-xs text-charcoal-soft">अजून सेटलमेंट नोंद नाही.</p>
+            )}
           </section>
 
           <VendorCalendar vendorId={vendor.id} bookings={upcoming.map((booking) => ({ id: booking.id, eventDate: booking.eventDate, state: booking.state }))} />
@@ -239,14 +254,22 @@ export default async function VendorDeskPage() {
             <h2 className="font-display text-lg font-bold text-charcoal">तक्रारी व जोखीम</h2>
             {disputes.length ? (
               <ul className="mt-2 space-y-2 text-sm">
-                {disputes.map((dispute) => (
-                  <li key={dispute.id} className="rounded-xl border border-maroon/30 bg-maroon/5 p-3">
-                    <p className="font-semibold text-maroon">{dispute.reason}</p>
-                    <p className="text-xs text-charcoal-soft">
-                      स्थिती: {dispute.status} • उघडले {formatMarathiDateTime(dispute.createdAt)}
-                    </p>
-                  </li>
-                ))}
+                {disputes.map((dispute) => {
+                  const booking = bookings.find((b) => b.id === dispute.bookingId);
+                  return (
+                    <li key={dispute.id} className="rounded-xl border border-maroon/30 bg-maroon/5 p-3">
+                      <p className="font-semibold text-maroon">{dispute.reason}</p>
+                      <p className="text-xs text-charcoal-soft">
+                        स्थिती: {dispute.status} • उघडले {formatMarathiDateTime(dispute.createdAt)} • बुकिंग {dispute.bookingId.slice(0, 14)}
+                      </p>
+                      {booking?.leadId ? (
+                        <Link href={`/vendor/leads/${booking.leadId}`} className="mt-1 inline-block text-xs font-semibold text-maroon">
+                          लीड पाहा →
+                        </Link>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="mt-2 text-sm text-charcoal-soft">

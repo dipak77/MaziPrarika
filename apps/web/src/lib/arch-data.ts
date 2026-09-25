@@ -117,6 +117,35 @@ export const mrDateShort = (iso?: string | null) => {
   }
 };
 
+export const enDate = (iso?: string | null) => {
+  if (!iso) return "Date to be announced";
+  const d = new Date(iso + (iso.length === 10 ? "T00:00:00" : ""));
+  try {
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      weekday: "long",
+    }).format(d);
+  } catch {
+    return iso;
+  }
+};
+
+export const enDateShort = (iso?: string | null) => {
+  if (!iso) return "—";
+  const d = new Date(iso + (iso.length === 10 ? "T00:00:00" : ""));
+  try {
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(d);
+  } catch {
+    return iso;
+  }
+};
+
 export const daysUntil = (iso?: string | null) => {
   if (!iso) return null;
   const d = new Date(iso + "T00:00:00");
@@ -170,6 +199,13 @@ export const BLESSINGS = [
   "अथ श्रीविवाहकलशं पूजयिष्ये",
 ];
 
+export const BLESSINGS_EN = [
+  "॥ Shri Ganeshaya Namah ॥",
+  "॥ Shree Swami Samarth ॥",
+  "॥ Shubham Bhavatu ॥",
+  "॥ With Divine Blessings ॥",
+];
+
 export type DesignData = {
   template: TemplateId;
   eventType: string;
@@ -181,6 +217,7 @@ export type DesignData = {
   city: string;
   host: string;
   blessing: string;
+  lang?: "mr" | "en";
 };
 
 export const DEFAULT_DESIGN: DesignData = {
@@ -194,4 +231,5 @@ export const DEFAULT_DESIGN: DesignData = {
   city: "पुणे",
   host: "श्री. देशमुख व श्री. कुलकर्णी कुटुंबीय",
   blessing: "श्री गणेशाय नमः",
+  lang: "mr",
 };

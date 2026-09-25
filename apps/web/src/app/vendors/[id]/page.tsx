@@ -90,9 +90,36 @@ export default async function VendorProfilePage({
     ? store.marketplace.leadsForEvent(event.id).find((item) => item.vendorId === vendor.id)
     : undefined;
   const quotes = lead ? store.marketplace.quotesForLead(lead.id) : [];
+  const vendorPhone = (vendor as unknown as { phone?: string }).phone;
+  const vendorJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: vendor.name,
+    description: vendor.about,
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: vendor.city,
+      postalCode: vendor.pincode,
+      addressCountry: 'IN',
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: vendor.latitude,
+      longitude: vendor.longitude,
+    },
+    ...(vendorPhone ? { telephone: vendorPhone } : {}),
+    priceRange: `₹${Math.round(vendor.startingPricePaise / 100).toLocaleString('en-IN')}+`,
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: vendor.rating,
+      reviewCount: vendor.reviewCount,
+    },
+    url: `/vendors/${vendor.id}`,
+  };
 
   return (
     <div className="shell py-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(vendorJsonLd) }} />
       <nav aria-label="ब्रेडक्रम्ब" className="font-ui text-xs text-charcoal-soft">
         <Link href="/vendors" className="underline decoration-gold underline-offset-4">
           विक्रेते

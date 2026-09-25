@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 
 import { toDevanagariDigits } from '@mazi/marathi';
 
@@ -43,7 +43,29 @@ export function PrintOrderPanel({
 }) {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [receipt, setReceipt] = useState<{
+    order: { id: string; totalPaise: number; status: string; createdAt: string };
+    payment: { status: string; amountPaise: number; provider: string } | null;
+  } | null>(null);
   const current = history.find((entry) => entry.id === designId);
+
+  useEffect(() => {
+    let live = true;
+    fetch(`/api/payments/receipt?designId=${encodeURIComponent(designId)}`, { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: unknown) => {
+        if (!live || !data || typeof data !== 'object') return;
+        const payload = data as {
+          order?: { id: string; totalPaise: number; status: string; createdAt: string } | null;
+          payment?: { status: string; amountPaise: number; provider: string } | null;
+        };
+        if (payload.order) setReceipt({ order: payload.order, payment: payload.payment ?? null });
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [designId, result]);
 
   return (
     <>
@@ -66,6 +88,17 @@ export function PrintOrderPanel({
               <Row label="एकूण देय" value={devRupees(quote.totalPaise)} strong />
             </div>
           </dl>
+
+          {receipt && receipt.payment ? (
+            <p
+              role="status"
+              className={`mt-3 rounded-xl border px-3.5 py-2.5 text-xs font-medium ${receipt.payment.status === 'captured' ? 'border-paithani/30 bg-paithani-soft text-paithani' : 'border-gold/30 bg-ivory-deep text-charcoal-soft'}`}
+            >
+              {receipt.payment.status === 'captured'
+                ? `पेमेंट प्राप्त ${devRupees(receipt.payment.amountPaise)} • पावती तयार`
+                : 'पेमेंट प्रलंबित — पैसे भरल्यावर पावती येईल'}
+            </p>
+          ) : null}
 
           <details className="mt-4 rounded-2xl border border-gold/15 bg-ivory-deep/40 px-4 py-3 text-xs leading-relaxed text-charcoal-soft">
             <summary className="cursor-pointer font-bold text-charcoal">पारदर्शकता — रकमेचा प्रवाह</summary>

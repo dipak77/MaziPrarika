@@ -365,6 +365,7 @@ export interface VendorsRepository {
   addPackage(pkg: Omit<VendorPackage, 'sortOrder'> & { sortOrder?: number }): VendorPackage;
   availability(vendorId: string, from?: string, to?: string): Availability[];
   setAvailability(input: Omit<Availability, 'id' | 'updatedAt'> & { id?: string; updatedAt?: string }): Availability;
+  incrementBookedTeams(input: { vendorId: string; date: string; delta?: number; teamCapacity?: number; notes?: string }): Availability;
   reviews(vendorId: string): Review[];
   addReview(review: Omit<Review, 'id' | 'createdAt'> & { id?: string; createdAt?: string }): Review;
   recomputeRating(vendorId: string): { rating: number; reviewCount: number };
@@ -757,24 +758,126 @@ export function openStore(options: OpenStoreOptions = {}): Store {
       }));
     },
     setAvailability(input) {
-      const record: Availability = {
-        id: input.id ?? newId('avail'), vendorId: input.vendorId, date: input.date, status: input.status,
-        ...(input.holdExpiresAt ? { holdExpiresAt: input.holdExpiresAt } : {}),
-        teamCapacity: input.teamCapacity, bookedTeamCount: input.bookedTeamCount,
-        ...(input.notes ? { notes: input.notes } : {}), updatedAt: input.updatedAt ?? now(),
-      };
-      const existing = db.prepare('SELECT id FROM vendor_availability WHERE vendor_id = ? AND date = ? AND status = ? AND COALESCE(notes, \'\') = COALESCE(?, \'\')')
-        .get(record.vendorId, record.date, record.status, record.notes ?? null);
-      if (existing) {
-        db.prepare('UPDATE vendor_availability SET hold_expires_at = ?, team_capacity = ?, booked_team_count = ?, updated_at = ? WHERE id = ?')
-          .run(record.holdExpiresAt ?? null, record.teamCapacity, record.bookedTeamCount, record.updatedAt, String(existing.id));
-        return { ...record, id: String(existing.id) };
-      }
-      db.prepare(
-        `INSERT INTO vendor_availability (id, vendor_id, date, status, hold_expires_at, team_capacity, booked_team_count, notes, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(record.id, record.vendorId, record.date, record.status, record.holdExpiresAt ?? null, record.teamCapacity, record.bookedTeamCount, record.notes ?? null, record.updatedAt);
-      return record;
+      return store.transaction(() => {
+        const teamCapacity = Number.isFinite(input.teamCapacity) ? Math.max(0, Math.round(input.teamCapacity)) : 0;
+        const bookedTeamCount = Number.isFinite(input.bookedTeamCount) ? Math.max(0, Math.round(input.bookedTeamCount)) : 0;
+        if (bookedTeamCount > teamCapacity) {
+          throw new Error(`क्षमता ओलांडली: ${bookedTeamCount}/${teamCapacity} (${input.vendorId} ${input.date})`);
+        }
+        const record: Availability = {
+          id: input.id ?? newId('avail'), vendorId: input.vendorId, date: input.date, status: input.status,
+          ...(input.holdExpiresAt ? { holdExpiresAt: input.holdExpiresAt } : {}),
+          teamCapacity, bookedTeamCount,
+          ...(input.notes ? { notes: input.notes } : {}), updatedAt: input.updatedAt ?? now(),
+        };
+        if (record.status === 'booked') {
+          const rows = db.prepare(
+            `SELECT id, team_capacity, booked_team_count, COALESCE(notes, '') AS notes FROM vendor_availability
+             WHERE vendor_id = ? AND date = ? AND status = 'booked'`,
+          ).all(record.vendorId, record.date);
+          const matchKey = record.notes ?? '';
+          const existingBooked = rows.find((r) => String(r.notes ?? '') === matchKey);
+          const othersTotal = rows
+            .filter((r) => !existingBooked || String(r.id) !== String(existingBooked.id))
+            .reduce((sum, r) => sum + Number(r.booked_team_count ?? 0), 0);
+          const effectiveCapacity = Math.max(record.teamCapacity, ...rows.map((r) => Number(r.team_capacity ?? 0)));
+          if (othersTotal + record.bookedTeamCount > effectiveCapacity) {
+            throw new Error(`या दिवशी ${othersTotal}/${effectiveCapacity} संघ बुक झाले आहेत — आणखी जागा नाही`);
+          }
+          if (existingBooked) {
+            db.prepare('UPDATE vendor_availability SET hold_expires_at = ?, team_capacity = ?, booked_team_count = ?, updated_at = ? WHERE id = ?')
+              .run(record.holdExpiresAt ?? null, record.teamCapacity, record.bookedTeamCount, record.updatedAt, String(existingBooked.id));
+            return { ...record, id: String(existingBooked.id) };
+          }
+          db.prepare(
+            `INSERT INTO vendor_availability (id, vendor_id, date, status, hold_expires_at, team_capacity, booked_team_count, notes, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ).run(record.id, record.vendorId, record.date, record.status, record.holdExpiresAt ?? null, record.teamCapacity, record.bookedTeamCount, record.notes ?? null, record.updatedAt);
+          return record;
+        }
+        const existing = db.prepare('SELECT id FROM vendor_availability WHERE vendor_id = ? AND date = ? AND status = ? AND COALESCE(notes, \'\') = COALESCE(?, \'\')')
+          .get(record.vendorId, record.date, record.status, record.notes ?? null);
+        if (existing) {
+          db.prepare('UPDATE vendor_availability SET hold_expires_at = ?, team_capacity = ?, booked_team_count = ?, updated_at = ? WHERE id = ?')
+            .run(record.holdExpiresAt ?? null, record.teamCapacity, record.bookedTeamCount, record.updatedAt, String(existing.id));
+          return { ...record, id: String(existing.id) };
+        }
+        db.prepare(
+          `INSERT INTO vendor_availability (id, vendor_id, date, status, hold_expires_at, team_capacity, booked_team_count, notes, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ).run(record.id, record.vendorId, record.date, record.status, record.holdExpiresAt ?? null, record.teamCapacity, record.bookedTeamCount, record.notes ?? null, record.updatedAt);
+        return record;
+      });
+    },
+    incrementBookedTeams(input) {
+      return store.transaction(() => {
+        const step = input.delta ?? 1;
+        if (!Number.isFinite(step) || Math.round(step) <= 0) {
+          throw new Error(`चुकीची वाढ: ${String(step)}`);
+        }
+        const delta = Math.round(step);
+        const blocked = db.prepare(`SELECT id FROM vendor_availability WHERE vendor_id = ? AND date = ? AND status = 'blocked' LIMIT 1`)
+          .get(input.vendorId, input.date);
+        if (blocked) {
+          throw new Error(`विक्रेत्याने हा दिवस राखीव ठेवला आहे (${input.vendorId} ${input.date})`);
+        }
+        const stamp = now();
+        const row = db.prepare(`SELECT * FROM vendor_availability WHERE vendor_id = ? AND date = ? AND status = 'booked' ORDER BY id LIMIT 1`)
+          .get(input.vendorId, input.date);
+        if (row) {
+          const capacity = input.teamCapacity !== undefined
+            ? Math.max(0, Math.round(input.teamCapacity))
+            : Number(row.team_capacity ?? 0);
+          const effective = Math.max(capacity, Number(row.team_capacity ?? 0));
+          if (input.notes !== undefined && row.notes !== null && String(row.notes) !== input.notes) {
+            const dayTotal = Number(db.prepare(`SELECT COALESCE(SUM(booked_team_count), 0) AS total FROM vendor_availability WHERE vendor_id = ? AND date = ? AND status = 'booked'`).get(input.vendorId, input.date)?.total ?? 0);
+            if (dayTotal + delta > effective) {
+              throw new Error(`या दिवशी ${dayTotal}/${effective} संघ बुक झाले आहेत — आणखी जागा नाही`);
+            }
+            const nid = newId('avail');
+            db.prepare(
+              `INSERT INTO vendor_availability (id, vendor_id, date, status, hold_expires_at, team_capacity, booked_team_count, notes, updated_at)
+               VALUES (?, ?, ?, 'booked', NULL, ?, ?, ?, ?)`,
+            ).run(nid, input.vendorId, input.date, effective, delta, input.notes, stamp);
+            return {
+              id: nid, vendorId: input.vendorId, date: input.date, status: 'booked' as const,
+              teamCapacity: effective, bookedTeamCount: delta, notes: input.notes, updatedAt: stamp,
+            };
+          }
+          const info = db.prepare(
+            `UPDATE vendor_availability SET team_capacity = ?, booked_team_count = booked_team_count + ?, updated_at = ?
+             WHERE id = ? AND booked_team_count + ? <= ?`,
+          ).run(effective, delta, stamp, String(row.id), delta, effective);
+          if (Number(info.changes) === 0) {
+            throw new Error(`या दिवशी क्षमता पूर्ण झाली आहे (${input.vendorId} ${input.date})`);
+          }
+          const updated = db.prepare('SELECT * FROM vendor_availability WHERE id = ?').get(String(row.id));
+          if (!updated) throw new Error(`उपलब्धता सापडली नाही (${input.vendorId} ${input.date})`);
+          return {
+            id: String(updated.id), vendorId: String(updated.vendor_id), date: String(updated.date),
+            status: String(updated.status) as Availability['status'],
+            ...(updated.hold_expires_at ? { holdExpiresAt: String(updated.hold_expires_at) } : {}),
+            teamCapacity: Number(updated.team_capacity), bookedTeamCount: Number(updated.booked_team_count),
+            ...(updated.notes ? { notes: String(updated.notes) } : {}), updatedAt: String(updated.updated_at),
+          };
+        }
+        const capacity = input.teamCapacity !== undefined
+          ? Math.max(0, Math.round(input.teamCapacity))
+          : 1;
+        if (delta > capacity) {
+          throw new Error(`क्षमता ओलांडली: ${delta}/${capacity} (${input.vendorId} ${input.date})`);
+        }
+        const nid = newId('avail');
+        db.prepare(
+          `INSERT INTO vendor_availability (id, vendor_id, date, status, hold_expires_at, team_capacity, booked_team_count, notes, updated_at)
+           VALUES (?, ?, ?, 'booked', NULL, ?, ?, ?, ?)`,
+        ).run(nid, input.vendorId, input.date, capacity, delta, input.notes ?? null, stamp);
+        return {
+          id: nid, vendorId: input.vendorId, date: input.date, status: 'booked' as const,
+          teamCapacity: capacity, bookedTeamCount: delta,
+          ...(input.notes ? { notes: input.notes } : {}), updatedAt: stamp,
+        };
+      });
     },
     reviews(vendorId) {
       return db.prepare('SELECT * FROM reviews WHERE vendor_id = ? ORDER BY created_at DESC').all(vendorId)
@@ -1270,13 +1373,18 @@ export function openStore(options: OpenStoreOptions = {}): Store {
     },
     appendLedger(entries) {
       return store.transaction(() => {
+        const clamped = entries.map((entry) => (Number.isFinite(entry.amountPaise) ? Math.round(entry.amountPaise) : 0));
+        const total = clamped.reduce((sum, amount) => sum + amount, 0);
+        if (total !== 0) {
+          throw new Error(`लेजर पोस्टिंग असंतुलित आहे (बेरीज ${total} ≠ 0) — व्यवहार नाकारला`);
+        }
         const insert = db.prepare('INSERT OR IGNORE INTO ledger_entries (id, booking_id, account, amount_paise, memo, idempotency_key, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
         const byKey = db.prepare('SELECT * FROM ledger_entries WHERE idempotency_key = ?');
         const byId = db.prepare('SELECT id FROM ledger_entries WHERE id = ?');
         const stored: LedgerRow[] = [];
-        for (const entry of entries) {
-          const clampedAmount = Number.isFinite(entry.amountPaise) ? Math.round(entry.amountPaise) : 0;
-          const record = { ...entry, amountPaise: clampedAmount, id: entry.id ?? newId('led'), createdAt: entry.createdAt ?? now() };
+        for (let index = 0; index < entries.length; index += 1) {
+          const entry = entries[index]!;
+          const record = { ...entry, amountPaise: clamped[index]!, id: entry.id ?? newId('led'), createdAt: entry.createdAt ?? now() };
           const info = insert.run(record.id, record.bookingId, record.account, record.amountPaise, record.memo.slice(0, 400), record.idempotencyKey.slice(0, 160), record.createdAt);
           if (Number(info.changes) === 0) {
             const replay = byKey.get(record.idempotencyKey);
@@ -1308,18 +1416,30 @@ export function openStore(options: OpenStoreOptions = {}): Store {
       return totals;
     },
     recordPayment(payment) {
-      const existing = db.prepare('SELECT id FROM payments WHERE idempotency_key = ?').get(payment.idempotencyKey);
-      if (existing) return { id: String(existing.id), duplicate: true };
-      const id = payment.id ?? newId('pay');
-      db.prepare(
-        `INSERT INTO payments (id, booking_id, kind, provider, provider_ref, amount_paise, status, idempotency_key, raw, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        id, payment.bookingId, payment.kind, payment.provider ?? 'simulated', payment.providerRef ?? null,
-        payment.amountPaise, payment.status ?? 'created', payment.idempotencyKey,
-        payment.raw ? JSON.stringify(payment.raw) : null, payment.createdAt ?? now(),
-      );
-      return { id, duplicate: false };
+      return store.transaction(() => {
+        const existing = db.prepare('SELECT id FROM payments WHERE idempotency_key = ?').get(payment.idempotencyKey);
+        if (existing) return { id: String(existing.id), duplicate: true };
+        const amountPaise = Number.isFinite(payment.amountPaise) ? Math.round(payment.amountPaise) : 0;
+        if (!Number.isInteger(amountPaise) || amountPaise <= 0 || amountPaise > 100_000_000_00) {
+          throw new Error(`चुकीची पेमेंट रक्कम: ${String(payment.amountPaise)}`);
+        }
+        const id = payment.id ?? newId('pay');
+        try {
+          db.prepare(
+            `INSERT INTO payments (id, booking_id, kind, provider, provider_ref, amount_paise, status, idempotency_key, raw, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ).run(
+            id, payment.bookingId, payment.kind, payment.provider ?? 'simulated', payment.providerRef ?? null,
+            amountPaise, payment.status ?? 'created', payment.idempotencyKey,
+            payment.raw ? JSON.stringify(payment.raw) : null, payment.createdAt ?? now(),
+          );
+        } catch (error) {
+          const replay = db.prepare('SELECT id FROM payments WHERE idempotency_key = ?').get(payment.idempotencyKey);
+          if (replay) return { id: String(replay.id), duplicate: true };
+          throw error;
+        }
+        return { id, duplicate: false };
+      });
     },
     payments(bookingId) {
       return db.prepare('SELECT * FROM payments WHERE booking_id = ? ORDER BY created_at').all(bookingId).map((r) => ({
@@ -1329,10 +1449,21 @@ export function openStore(options: OpenStoreOptions = {}): Store {
       }));
     },
     createSettlement(settlement) {
-      const record: SettlementRow = { ...settlement, id: settlement.id ?? newId('stl'), status: settlement.status ?? 'pending', createdAt: now() };
-      db.prepare('INSERT INTO settlements (id, booking_id, vendor_id, amount_paise, status, utr, created_at, paid_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-        .run(record.id, record.bookingId, record.vendorId, record.amountPaise, record.status, record.utr ?? null, record.createdAt, record.paidAt ?? null);
-      return record;
+      return store.transaction(() => {
+        const active = db.prepare(`SELECT id FROM settlements WHERE booking_id = ? AND status IN ('pending', 'processing') LIMIT 1`)
+          .get(settlement.bookingId);
+        if (active) {
+          throw new Error(`या बुकिंगसाठी सेटलमेंट आधीच प्रलंबित आहे: ${settlement.bookingId}`);
+        }
+        const amountPaise = Number.isFinite(settlement.amountPaise) ? Math.round(settlement.amountPaise) : 0;
+        if (!Number.isInteger(amountPaise) || amountPaise < 0 || amountPaise > 100_000_000_00) {
+          throw new Error(`चुकीची सेटलमेंट रक्कम: ${String(settlement.amountPaise)}`);
+        }
+        const record: SettlementRow = { ...settlement, amountPaise, id: settlement.id ?? newId('stl'), status: settlement.status ?? 'pending', createdAt: now() };
+        db.prepare('INSERT INTO settlements (id, booking_id, vendor_id, amount_paise, status, utr, created_at, paid_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+          .run(record.id, record.bookingId, record.vendorId, record.amountPaise, record.status, record.utr ?? null, record.createdAt, record.paidAt ?? null);
+        return record;
+      });
     },
     settlements(args = {}) {
       const where: string[] = [];
@@ -1354,18 +1485,35 @@ export function openStore(options: OpenStoreOptions = {}): Store {
         }));
     },
     markSettlementPaid(id, utr, at) {
-      db.prepare('UPDATE settlements SET status = ?, utr = ?, paid_at = ? WHERE id = ?').run('paid', utr, at ?? now(), id);
-      const row = db.prepare('SELECT * FROM settlements WHERE id = ?').get(id);
-      if (!row) throw new Error(`सेटलमेंट सापडले नाही: ${id}`);
-      return {
-        id: String(row.id), bookingId: String(row.booking_id), vendorId: String(row.vendor_id),
-        amountPaise: Number(row.amount_paise), status: String(row.status) as SettlementRow['status'],
-        ...(row.utr ? { utr: String(row.utr) } : {}), createdAt: String(row.created_at),
-        ...(row.paid_at ? { paidAt: String(row.paid_at) } : {}),
-      };
+      return store.transaction(() => {
+        const current = db.prepare('SELECT * FROM settlements WHERE id = ?').get(id);
+        if (!current) throw new Error(`सेटलमेंट सापडले नाही: ${id}`);
+        const cleanUtr = typeof utr === 'string' ? utr.trim().slice(0, 64) : '';
+        if (!cleanUtr) throw new Error(`सेटलमेंटसाठी UTR आवश्यक आहे: ${id}`);
+        if (String(current.status) === 'paid') {
+          return {
+            id: String(current.id), bookingId: String(current.booking_id), vendorId: String(current.vendor_id),
+            amountPaise: Number(current.amount_paise), status: String(current.status) as SettlementRow['status'],
+            ...(current.utr ? { utr: String(current.utr) } : {}), createdAt: String(current.created_at),
+            ...(current.paid_at ? { paidAt: String(current.paid_at) } : {}),
+          };
+        }
+        db.prepare('UPDATE settlements SET status = ?, utr = ?, paid_at = ? WHERE id = ?').run('paid', cleanUtr, at ?? now(), id);
+        const row = db.prepare('SELECT * FROM settlements WHERE id = ?').get(id);
+        if (!row) throw new Error(`सेटलमेंट सापडले नाही: ${id}`);
+        return {
+          id: String(row.id), bookingId: String(row.booking_id), vendorId: String(row.vendor_id),
+          amountPaise: Number(row.amount_paise), status: String(row.status) as SettlementRow['status'],
+          ...(row.utr ? { utr: String(row.utr) } : {}), createdAt: String(row.created_at),
+          ...(row.paid_at ? { paidAt: String(row.paid_at) } : {}),
+        };
+      });
     },
     openDispute(dispute) {
-      const record: DisputeRow = { ...dispute, id: dispute.id ?? newId('disp'), status: 'open', createdAt: now() };
+      const evidence = Array.isArray(dispute.evidence) ? dispute.evidence.slice(0, 20) : [];
+      const reason = typeof dispute.reason === 'string' ? dispute.reason.slice(0, 1000) : '';
+      if (!reason.trim()) throw new Error('तक्रारीचे कारण आवश्यक आहे');
+      const record: DisputeRow = { ...dispute, reason, evidence, id: dispute.id ?? newId('disp'), status: 'open', createdAt: now() };
       store.transaction(() => {
         db.prepare('INSERT INTO disputes (id, booking_id, raised_by, reason, evidence, status, resolution, created_at, resolved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
           .run(record.id, record.bookingId, record.raisedBy, record.reason, JSON.stringify(record.evidence), record.status, null, record.createdAt, null);
@@ -1388,10 +1536,19 @@ export function openStore(options: OpenStoreOptions = {}): Store {
       }));
     },
     resolveDispute(id, resolution, status, at) {
-      db.prepare('UPDATE disputes SET status = ?, resolution = ?, resolved_at = ? WHERE id = ?').run(status, resolution, at ?? now(), id);
-      const found = bookings.disputes().find((d) => d.id === id);
-      if (!found) throw new Error(`वाद सापडला नाही: ${id}`);
-      return found;
+      return store.transaction(() => {
+        const current = db.prepare('SELECT * FROM disputes WHERE id = ?').get(id);
+        if (!current) throw new Error(`वाद सापडला नाही: ${id}`);
+        db.prepare('UPDATE disputes SET status = ?, resolution = ?, resolved_at = ? WHERE id = ?').run(status, resolution, at ?? now(), id);
+        const row = db.prepare('SELECT * FROM disputes WHERE id = ?').get(id);
+        if (!row) throw new Error(`वाद सापडला नाही: ${id}`);
+        return {
+          id: String(row.id), bookingId: String(row.booking_id), raisedBy: String(row.raised_by) as DisputeRow['raisedBy'],
+          reason: String(row.reason), evidence: json<string[]>(row.evidence, []), status: String(row.status) as DisputeRow['status'],
+          ...(row.resolution ? { resolution: String(row.resolution) } : {}), createdAt: String(row.created_at),
+          ...(row.resolved_at ? { resolvedAt: String(row.resolved_at) } : {}),
+        };
+      });
     },
   };
 

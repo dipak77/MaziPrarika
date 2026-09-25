@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LangToggle } from '@/components/lang-toggle';
 
 const NAV = [
   { href: '/studio', label: 'क्रिएट स्टुडिओ', badge: '६० FPS' },
@@ -79,17 +80,18 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        {/* CTA Buttons */}
-        <div className="flex items-center gap-2.5">
+        {/* CTA Buttons & Language Switcher */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <LangToggle compact />
           <Link
             href="/vendor"
-            className="inline-flex min-h-11 items-center rounded-full border border-gold/45 bg-ivory px-3.5 text-xs font-semibold text-charcoal-soft transition hover:border-gold hover:bg-ivory-deep hover:text-maroon"
+            className="hidden sm:inline-flex min-h-11 items-center rounded-full border border-gold/45 bg-ivory px-3.5 text-xs font-semibold text-charcoal-soft transition hover:border-gold hover:bg-ivory-deep hover:text-maroon"
           >
             विक्रेता प्रवेश
           </Link>
           <Link
             href="/create"
-            className="btn-base btn-gold px-5 text-xs sm:text-sm"
+            className="btn-base btn-gold px-3.5 sm:px-5 text-xs sm:text-sm"
           >
             <span className="flex items-center gap-1.5">
               <span>पत्रिका बनवा</span>

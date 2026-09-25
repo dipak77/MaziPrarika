@@ -64,6 +64,44 @@ export default async function PanchangPage({
 
   const topMuhurats = muhurats.filter((entry) => entry.score >= 70).slice(0, 8);
   const spec = getEventType(eventType);
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'मुहूर्त म्हणजे काय आणि तो कसा ठरवला जातो?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'मुहूर्त ही तिथी, नक्षत्र, योग, करण, चौघडिया आणि राहुकाळ यांच्या एकत्रित अनुकूलतेची गणना आहे. माझी पत्रिका शहराच्या अक्षांश-रेखांशावरून सूर्योदय काढून लाहिरी अयनांशाने प्रत्येक दिवसाचे गुणांकन करते.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'माझ्या शहरासाठी मुहूर्त वेगळा का दिसतो?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'महाराष्ट्रात सूर्योदय २० मिनिटांपर्यंत बदलतो आणि तिथीची सीमा सूर्योदयावर ठरते. त्यामुळे पुणे, मुंबई, नाशिक किंवा नागपूरसाठी गणना शहरानुसार वेगळी येते.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'पत्रिका छपाईसाठी किती दिवस आधी ऑर्डर द्यावी?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'किमान २०० पत्रिकांची ऑर्डर ७२ तासांत प्रूफसह तयार होते. मुहूर्त ठरल्यावर लगेच मजकूर निश्चित करा, जेणेकरून गोल्ड फॉइल आणि एम्बॉसिंगसाठी पुरेसा वेळ मिळेल.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'शुभ गुण नसलेल्या दिवशी कार्यक्रम करता येतो का?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'ही अनुकूलता गणना आहे, शुभ-अशुभचा ठोकळ निर्णय नाही. गुण कमी असला तरी कुटुंब आणि गुरुजींच्या सल्ल्याने वेळ निवडा. राहुकाळ आणि यमगंड टाळून अभिजित किंवा गोधुळी मुहूर्त घेता येतो.',
+        },
+      },
+    ],
+  };
 
   const festivalNotes = monthDays
     .filter((day) => day.tithi.isPurnima || day.tithi.isAmavasya)
@@ -71,6 +109,7 @@ export default async function PanchangPage({
 
   return (
     <div className="shell py-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <header className="max-w-3xl">
         <Kicker>Panchang Engine</Kicker>
         <h1 className="mt-1 font-display text-4xl font-bold text-maroon">पंचांग व मुहूर्त</h1>

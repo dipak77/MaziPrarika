@@ -5,7 +5,7 @@ import { TEMPLATE_PRESETS } from '@mazi/design-schema';
 import { formatMarathiDate, toDevanagariDigits, vendorCategoryLabel } from '@mazi/marathi';
 import { renderSvg } from '@mazi/renderer';
 
-import { InvitationCanvas } from '@/components/studio/invitation-canvas';
+import { ComposedCopyButtons, InvitationCanvas, QualityRing } from '@/components/studio/invitation-canvas';
 import { PrintOrderPanel } from '@/components/studio/print-order-panel';
 import { getStore } from '@/lib/store';
 import { devRupees } from '@/lib/format';
@@ -61,6 +61,7 @@ export default async function InvitationStudioPage({
   const includePanchang = query.panchang !== '0';
   const includeQr = query.qr !== '0';
   const note = first<string>(query.note, '');
+  const activeDesignId = first<string>(query.design, '');
 
   const { design, composed, preset, scheme } = designForEvent({
     slug,
@@ -88,14 +89,58 @@ export default async function InvitationStudioPage({
   const quote = printQuote({ designId: design.id, quantity, paper, finishing, express });
   const designs = store.designs.list({ eventId: event.id, limit: 10 });
 
+  const toParams = () => {
+    const p = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value === undefined) continue;
+      if (Array.isArray(value)) {
+        for (const item of value) p.append(key, item);
+      } else {
+        p.set(key, value);
+      }
+    }
+    return p;
+  };
+  const mrParams = toParams();
+  mrParams.set('english', '0');
+  const enParams = toParams();
+  enParams.set('english', '1');
+
   return (
-    <div className="shell py-8">
+    <div className="shell py-8 pb-24 lg:pb-8">
       <nav aria-label="ब्रेडक्रम्ब" className="font-ui text-xs text-charcoal-soft">
         <Link href={`/studio/${slug}`} className="underline decoration-gold underline-offset-4">
           {event.title}
         </Link>{' '}
         / पत्रिका स्टुडिओ
       </nav>
+
+      <div role="group" aria-label="मराठी ⇄ English" className="mt-4 inline-flex overflow-hidden rounded-full border border-gold/40 bg-white shadow-2xs">
+        <a
+          href={`/studio/${slug}/invitation?${mrParams.toString()}`}
+          aria-current={includeEnglish ? undefined : 'true'}
+          aria-label="मराठीत पहा"
+          className={
+            includeEnglish
+              ? 'inline-flex min-h-11 min-w-11 items-center justify-center px-4 py-2 text-sm font-bold text-charcoal-soft hover:text-maroon'
+              : 'inline-flex min-h-11 min-w-11 items-center justify-center bg-maroon px-4 py-2 text-sm font-bold text-ivory'
+          }
+        >
+          मराठी
+        </a>
+        <a
+          href={`/studio/${slug}/invitation?${enParams.toString()}`}
+          aria-current={includeEnglish ? 'true' : undefined}
+          aria-label="View in English"
+          className={
+            includeEnglish
+              ? 'inline-flex min-h-11 min-w-11 items-center justify-center bg-maroon px-4 py-2 text-sm font-bold text-ivory'
+              : 'inline-flex min-h-11 min-w-11 items-center justify-center px-4 py-2 text-sm font-bold text-charcoal-soft hover:text-maroon'
+          }
+        >
+          English
+        </a>
+      </div>
 
       <header className="mt-3 flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -104,11 +149,16 @@ export default async function InvitationStudioPage({
             {preset.name} • {scheme.label} • {design.preset} • {toDevanagariDigits(design.page.widthMm)}×
             {toDevanagariDigits(design.page.heightMm)} मिमी + bleed {toDevanagariDigits(design.page.bleedMm)} मिमी
           </p>
+          {activeDesignId ? (
+            <p className="mt-1.5 inline-flex min-h-11 items-center rounded-full border border-gold/30 bg-ivory-deep px-3 py-1 font-ui text-xs font-bold text-charcoal">
+              पाहत असलेली आवृत्ती — {designs.find((entry) => entry.id === activeDesignId)?.name ?? activeDesignId}
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-3">
           <a
             href={`/api/designs/${design.id}/svg?print=1&slug=${encodeURIComponent(slug)}&v=${design.version}`}
-            className="btn-base border border-maroon/30 px-4 text-sm font-semibold text-maroon hover:bg-maroon/5"
+            className="btn-base min-h-11 border border-maroon/30 px-4 text-sm font-semibold text-maroon hover:bg-maroon/5"
           >
             प्रिंट SVG
           </a>
@@ -116,12 +166,37 @@ export default async function InvitationStudioPage({
             href={`/api/designs/${design.id}/print?slug=${encodeURIComponent(slug)}&v=${design.version}`}
             target="_blank"
             rel="noreferrer"
-            className="btn-base btn-outline px-4 text-sm"
+            className="btn-base btn-outline min-h-11 px-4 text-sm"
           >
             प्रूफ उघडा
           </a>
         </div>
       </header>
+
+      <section aria-label="छपाई खर्च सारांश" className="surface mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4">
+        <div>
+          <p className="font-ui text-[11px] font-bold uppercase tracking-widest text-charcoal-muted">प्रमाण</p>
+          <p className="font-display text-lg font-bold text-charcoal">{toDevanagariDigits(quote.quantity)} कार्डे</p>
+        </div>
+        <div>
+          <p className="font-ui text-[11px] font-bold uppercase tracking-widest text-charcoal-muted">प्रति कार्ड</p>
+          <p className="font-display text-lg font-bold text-charcoal">{devRupees(quote.unitPricePaise)}</p>
+        </div>
+        <div>
+          <p className="font-ui text-[11px] font-bold uppercase tracking-widest text-charcoal-muted">वाहतूक</p>
+          <p className="font-display text-lg font-bold text-charcoal">{quote.shippingPaise === 0 ? 'मोफत' : devRupees(quote.shippingPaise)}</p>
+        </div>
+        <div>
+          <p className="font-ui text-[11px] font-bold uppercase tracking-widest text-charcoal-muted">एकूण देय</p>
+          <p className="font-display text-xl font-bold text-maroon">{devRupees(quote.totalPaise)}</p>
+        </div>
+        <a href="#print-order" className="btn-base btn-maroon ml-auto min-h-11 px-5 text-sm">
+          ऑर्डरकडे जा
+        </a>
+        <span aria-live="polite" role="status" className="sr-only">
+          {toDevanagariDigits(quote.quantity)} कार्डे, एकूण {devRupees(quote.totalPaise)}
+        </span>
+      </section>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">
@@ -137,10 +212,20 @@ export default async function InvitationStudioPage({
             schemes={STUDIO_SCHEMES.map((entry) => ({ id: entry.id, label: entry.label, surface: entry.palette.surface ?? '#FBF7F0', accent: entry.palette.accent ?? '#C6A15B', primary: entry.palette.primary ?? '#6B1D2A' }))}
             papers={PANELS}
             finishing={FINISHING}
+            designs={designs.map((entry) => ({
+              id: entry.id,
+              name: entry.name,
+              version: entry.version,
+              status: entry.status,
+              updatedAt: entry.updatedAt,
+              scheme: entry.scheme,
+            }))}
+            activeDesignId={activeDesignId}
+            designId={design.id}
           />
 
-          <section className="surface p-5">
-            <h2 className="font-display text-xl font-bold text-charcoal">रचना (composed) मजकूर</h2>
+          <section aria-labelledby="composed-heading" className="surface animate-fade-up p-5">
+            <h2 id="composed-heading" className="font-display text-xl font-bold text-charcoal">रचना (composed) मजकूर</h2>
             <p className="mt-1 text-xs text-charcoal-soft">
               हा मजकूर मराठी भाषा-इंजिन तयार करते — नातेसंबंध, आदरार्थी व विधी-प्रकारानुसार. तोच मजकूर पत्रिकेवर, डिजिटल पानावर व
               व्हॉट्सअॅप संदेशात जातो.
@@ -165,18 +250,25 @@ export default async function InvitationStudioPage({
                 </ul>
               </div>
             </div>
+            <ComposedCopyButtons plain={composed.plainText} whatsapp={composed.whatsappText} />
           </section>
         </div>
 
         <aside className="space-y-6">
-          <section className="surface p-5">
-            <h2 className="font-display text-lg font-bold text-charcoal">प्री-फ्लाइट तपासणी</h2>
+          <section aria-labelledby="preflight-heading" className="surface animate-fade-up p-5">
+            <h2 id="preflight-heading" className="font-display text-lg font-bold text-charcoal">प्री-फ्लाइट तपासणी</h2>
             <p className="mt-1 text-xs text-charcoal-soft">
               छपाईच्या आधी कागद, bleed व रंग तपासले जातात — प्रूफमध्ये दिसणार नाही असे काहीही छापले जात नाही.
             </p>
-            <ul className="mt-3 space-y-2 text-sm">
+            <div className="mt-4 rounded-2xl border border-gold/25 bg-ivory-deep/50 p-3">
+              <QualityRing score={composed.quality.score} />
+              <p className="mt-2 text-center font-display text-sm font-bold text-maroon">
+                {toDevanagariDigits(composed.quality.score)}/१००
+              </p>
+            </div>
+            <ul aria-live="polite" className="stagger mt-4 space-y-2 text-sm">
               {printIssues.map((check) => (
-                <li key={check.id} className="flex items-start gap-2">
+                <li key={check.id} className="flex items-start gap-2 rounded-xl border border-gold/15 bg-white px-3 py-2.5 shadow-2xs">
                   <span
                     aria-hidden
                     className={
@@ -192,34 +284,33 @@ export default async function InvitationStudioPage({
                   <span>
                     <span className="font-semibold text-charcoal">{check.label}</span>
                     {check.detail ? <span className="block text-xs text-charcoal-soft">{check.detail}</span> : null}
+                    <span className="sr-only">{check.status === 'pass' ? 'उत्तीर्ण' : check.status === 'warn' ? 'सूचना' : 'त्रुटी'}</span>
                   </span>
                 </li>
               ))}
             </ul>
-            <div className="mt-4 flex items-center justify-between rounded-xl border border-gold/30 bg-ivory-deep/50 px-3 py-2">
-              <span className="font-ui text-xs uppercase tracking-wider text-charcoal-soft">गुणवत्ता गुण</span>
-              <span className="font-display text-xl font-bold text-maroon">{toDevanagariDigits(composed.quality.score)}/१००</span>
-            </div>
           </section>
 
-          <PrintOrderPanel
-            slug={slug}
-            designId={design.id}
-            quote={quote}
-            history={designs.map((entry) => ({
-              id: entry.id,
-              name: entry.name,
-              version: entry.version,
-              status: entry.status,
-              updatedAt: entry.updatedAt,
-              scheme: entry.scheme,
-            }))}
-            eventDateLabel={event.eventDate ? formatMarathiDate(event.eventDate) : 'तारीख ठरलेली नाही'}
-            printerLabel={vendorCategoryLabel('printer')}
-            expressDefault={express}
-            paper={paper}
-            finishing={finishing}
-          />
+          <div id="print-order" className="scroll-mt-24">
+            <PrintOrderPanel
+              slug={slug}
+              designId={design.id}
+              quote={quote}
+              history={designs.map((entry) => ({
+                id: entry.id,
+                name: entry.name,
+                version: entry.version,
+                status: entry.status,
+                updatedAt: entry.updatedAt,
+                scheme: entry.scheme,
+              }))}
+              eventDateLabel={event.eventDate ? formatMarathiDate(event.eventDate) : 'तारीख ठरलेली नाही'}
+              printerLabel={vendorCategoryLabel('printer')}
+              expressDefault={express}
+              paper={paper}
+              finishing={finishing}
+            />
+          </div>
         </aside>
       </div>
 

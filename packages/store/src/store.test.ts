@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { postingForPayment, postingForRefund, priceQuote } from '@mazi/commerce';
+import { availabilityState } from '@mazi/commerce';
 
 import {
   LATEST_SCHEMA_VERSION,
@@ -416,11 +417,13 @@ describe('store/bookings, ledger & disputes', () => {
     withBooking(store);
     store.bookings.appendLedger([
       { id: 'led_x', bookingId: 'b1', account: 'PLATFORM_CASH', amountPaise: 100, memo: 'पहिली', idempotencyKey: 'b1:first' },
+      { id: 'led_y', bookingId: 'b1', account: 'VENDOR_PAYABLE', amountPaise: -100, memo: 'पहिली देय', idempotencyKey: 'b1:first-payable' },
     ]);
     expect(() => store.bookings.appendLedger([
-      { id: 'led_x', bookingId: 'b1', account: 'PLATFORM_CASH', amountPaise: 200, memo: 'दुसरी', idempotencyKey: 'b1:second' },
+      { id: 'led_x', bookingId: 'b1', account: 'PLATFORM_CASH', amountPaise: 100, memo: 'दुसरी', idempotencyKey: 'b1:second' },
+      { id: 'led_z', bookingId: 'b1', account: 'VENDOR_PAYABLE', amountPaise: -100, memo: 'दुसरी देय', idempotencyKey: 'b1:second-payable' },
     ])).toThrow(/लेजर नोंद जतन करता आली नाही/);
-    expect(store.bookings.ledger('b1')).toHaveLength(1);
+    expect(store.bookings.ledger('b1')).toHaveLength(2);
     store.close();
   });
 
@@ -627,5 +630,166 @@ describe('store/ids', () => {
     const ids = new Set(Array.from({ length: 500 }, () => newId('evt')));
     expect(ids.size).toBe(500);
     for (const id of ids) expect(id.startsWith('evt_')).toBe(true);
+  });
+});
+
+describe('store/availability-atomicity', () => {
+  function withVendor(store: Store) {
+    store.vendors.create({ id: 'v1', name: 'कुलकर्णी पिक्चर्स', category: 'photographer', city: 'पुणे' });
+  }
+
+  it('rejects a single row whose booked count exceeds its capacity', () => {
+    const store = fresh();
+    withVendor(store);
+    expect(() => store.vendors.setAvailability({
+      vendorId: 'v1', date: '2027-05-01', status: 'booked', teamCapacity: 1, bookedTeamCount: 2,
+    })).toThrow(/क्षमता/);
+    expect(store.vendors.availability('v1', '2027-05-01', '2027-05-01')).toEqual([]);
+    store.close();
+  });
+
+  it('rejects a second booked row once the day capacity is full', () => {
+    const store = fresh();
+    withVendor(store);
+    store.vendors.setAvailability({
+      vendorId: 'v1', date: '2027-05-01', status: 'booked', teamCapacity: 1, bookedTeamCount: 1, notes: 'lead_a',
+    });
+    expect(() => store.vendors.setAvailability({
+      vendorId: 'v1', date: '2027-05-01', status: 'booked', teamCapacity: 1, bookedTeamCount: 1, notes: 'lead_b',
+    })).toThrow(/जागा नाही/);
+    expect(store.vendors.availability('v1', '2027-05-01', '2027-05-01')).toHaveLength(1);
+    store.close();
+  });
+
+  it('increments a single booked row with a conditional update and stops at capacity', () => {
+    const store = fresh();
+    withVendor(store);
+    const first = store.vendors.incrementBookedTeams({ vendorId: 'v1', date: '2027-06-01', teamCapacity: 2 });
+    expect(first.bookedTeamCount).toBe(1);
+    const second = store.vendors.incrementBookedTeams({ vendorId: 'v1', date: '2027-06-01' });
+    expect(second.id).toBe(first.id);
+    expect(second.bookedTeamCount).toBe(2);
+    expect(() => store.vendors.incrementBookedTeams({ vendorId: 'v1', date: '2027-06-01' })).toThrow(/क्षमता/);
+    expect(store.vendors.availability('v1', '2027-06-01', '2027-06-01')).toHaveLength(1);
+    const slots = store.vendors.availability('v1', '2027-06-01', '2027-06-01');
+    const state = availabilityState(slots, { vendorId: 'v1', date: '2027-06-01' });
+    expect(state.status).toBe('booked');
+    expect(state.bookable).toBe(false);
+    store.close();
+  });
+
+  it('refuses to increment a blocked day', () => {
+    const store = fresh();
+    withVendor(store);
+    store.vendors.setAvailability({
+      vendorId: 'v1', date: '2027-07-01', status: 'blocked', teamCapacity: 2, bookedTeamCount: 0,
+    });
+    expect(() => store.vendors.incrementBookedTeams({ vendorId: 'v1', date: '2027-07-01' })).toThrow(/राखीव/);
+    store.close();
+  });
+});
+
+describe('store/ledger-balance', () => {
+  function withBooking(store: Store) {
+    store.users.create({ id: 'u1', role: 'customer', name: 'रमेश' });
+    store.vendors.create({ id: 'v1', name: 'कुलकर्णी पिक्चर्स', category: 'photographer', city: 'पुणे' });
+    return store.bookings.create({
+      id: 'b9', vendorId: 'v1', state: 'BOOKING_CONFIRMED', eventDate: '2027-04-18',
+      totalPaise: 5_000_000, advancePaise: 1_000_000, commissionPaise: 500_000,
+    });
+  }
+
+  it('throws on an unbalanced posting and writes nothing', () => {
+    const store = fresh();
+    withBooking(store);
+    expect(() => store.bookings.appendLedger([
+      { bookingId: 'b9', account: 'PLATFORM_CASH', amountPaise: 5_000_000, memo: 'येणे', idempotencyKey: 'b9:bad-cash' },
+      { bookingId: 'b9', account: 'VENDOR_PAYABLE', amountPaise: -4_000_000, memo: 'देय', idempotencyKey: 'b9:bad-payable' },
+    ])).toThrow(/असंतुलित/);
+    expect(store.bookings.ledger('b9')).toEqual([]);
+    store.close();
+  });
+
+  it('rejects a non-positive payment amount but keeps idempotency replay', () => {
+    const store = fresh();
+    withBooking(store);
+    expect(() => store.bookings.recordPayment({
+      bookingId: 'b9', kind: 'advance', amountPaise: 0, idempotencyKey: 'b9:zero',
+    })).toThrow(/रक्कम/);
+    const first = store.bookings.recordPayment({
+      bookingId: 'b9', kind: 'advance', amountPaise: 1_000_000, idempotencyKey: 'b9:adv',
+    });
+    const replay = store.bookings.recordPayment({
+      bookingId: 'b9', kind: 'advance', amountPaise: 1_000_000, idempotencyKey: 'b9:adv',
+    });
+    expect(first.duplicate).toBe(false);
+    expect(replay).toEqual({ id: first.id, duplicate: true });
+    store.close();
+  });
+});
+
+describe('store/settlements-guard', () => {
+  function withBooking(store: Store) {
+    store.users.create({ id: 'u1', role: 'customer', name: 'रमेश' });
+    store.vendors.create({ id: 'v1', name: 'कुलकर्णी पिक्चर्स', category: 'photographer', city: 'पुणे' });
+    return store.bookings.create({
+      id: 'b7', vendorId: 'v1', state: 'SERVICE_COMPLETED', eventDate: '2027-04-18',
+      totalPaise: 7_670_000, advancePaise: 2_301_000, commissionPaise: 980_000,
+    });
+  }
+
+  it('allows one active settlement per booking and a new one after payment', () => {
+    const store = fresh();
+    withBooking(store);
+    store.bookings.createSettlement({ id: 's7a', bookingId: 'b7', vendorId: 'v1', amountPaise: 6_690_000 });
+    expect(() => store.bookings.createSettlement({
+      bookingId: 'b7', vendorId: 'v1', amountPaise: 6_690_000,
+    })).toThrow(/प्रलंबित/);
+    const paid = store.bookings.markSettlementPaid('s7a', 'UTR123', '2026-04-20T09:00:00.000Z');
+    expect(paid.status).toBe('paid');
+    const next = store.bookings.createSettlement({ id: 's7b', bookingId: 'b7', vendorId: 'v1', amountPaise: 100_000 });
+    expect(next.status).toBe('pending');
+    store.close();
+  });
+
+  it('validates settlement payment inputs', () => {
+    const store = fresh();
+    withBooking(store);
+    store.bookings.createSettlement({ id: 's7c', bookingId: 'b7', vendorId: 'v1', amountPaise: 6_690_000 });
+    expect(() => store.bookings.markSettlementPaid('missing', 'UTR1')).toThrow(/सापडले नाही/);
+    expect(() => store.bookings.markSettlementPaid('s7c', '   ')).toThrow(/UTR/);
+    const paid = store.bookings.markSettlementPaid('s7c', 'UTR1');
+    const again = store.bookings.markSettlementPaid('s7c', 'UTR1');
+    expect(again.status).toBe('paid');
+    expect(again.utr).toBe(paid.utr);
+    store.close();
+  });
+});
+
+describe('store/disputes-independent', () => {
+  function withBooking(store: Store) {
+    store.users.create({ id: 'u1', role: 'customer', name: 'रमेश' });
+    store.vendors.create({ id: 'v1', name: 'कुलकर्णी पिक्चर्स', category: 'photographer', city: 'पुणे' });
+    return store.bookings.create({
+      id: 'b8', vendorId: 'v1', state: 'BOOKING_CONFIRMED', eventDate: '2027-04-18',
+      totalPaise: 7_670_000, advancePaise: 2_301_000, commissionPaise: 980_000,
+    });
+  }
+
+  it('opens and resolves disputes without moving the booking state', () => {
+    const store = fresh();
+    withBooking(store);
+    const before = store.bookings.byId('b8')?.state;
+    const dispute = store.bookings.openDispute({
+      id: 'd8', bookingId: 'b8', raisedBy: 'customer', reason: 'सेवा उशिरा सुरू झाली', evidence: ['फोटो'],
+    });
+    expect(dispute.status).toBe('open');
+    expect(store.bookings.byId('b8')?.state).toBe(before);
+    expect(store.vendors.byId('v1')?.disputeCount).toBe(1);
+    const resolved = store.bookings.resolveDispute('d8', 'आंशिक परतावा मान्य', 'resolved');
+    expect(resolved.status).toBe('resolved');
+    expect(store.bookings.byId('b8')?.state).toBe(before);
+    expect(() => store.bookings.resolveDispute('missing', 'x', 'resolved')).toThrow(/सापडला नाही/);
+    store.close();
   });
 });

@@ -52,9 +52,35 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const siteUrl = (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  const siteJsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        name: 'माझी पत्रिका',
+        alternateName: 'Mazi Patrika',
+        url: siteUrl,
+        logo: `${siteUrl}/icons/icon-512.png`,
+      },
+      {
+        '@type': 'WebSite',
+        name: 'माझी पत्रिका',
+        alternateName: 'Mazi Patrika',
+        url: siteUrl,
+        inLanguage: 'mr-IN',
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: `${siteUrl}/vendors?city={city}`,
+          'query-input': 'required name=city',
+        },
+      },
+    ],
+  };
   return (
     <html lang="mr-IN" suppressHydrationWarning>
       <body className="min-h-dvh antialiased" suppressHydrationWarning>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }} />
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-maroon focus:px-4 focus:py-2 focus:text-ivory"

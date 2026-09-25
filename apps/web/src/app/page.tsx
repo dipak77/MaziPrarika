@@ -15,7 +15,7 @@ import {
 import { DEFAULT_DESIGN, IMG, TEMPLATES } from "@/lib/arch-data";
 
 export const metadata = {
-  title: "माझी पत्रिका — Create. Plan. Discover. Book. Print. Manage. Celebrate.",
+  title: "माझी पत्रिका — महाराष्ट्राचा डिजिटल उत्सव आणि पत्रिका मंच",
   description:
     "मराठी कुटुंबांसाठी संपूर्ण कार्यक्रम व्यवस्थापन — पत्रिका स्टुडिओ, मुहूर्त-सुसंगत पंचांग, पडताळलेले विक्रेते, बजेट व पाहुणे व्यवस्थापन एकाच वर्कस्पेसमध्ये.",
   openGraph: {
@@ -132,7 +132,7 @@ function Hero() {
             <div className="flex items-center gap-3">
               <ReadyRingMini value={82} />
               <div>
-                <p className="text-[11px] font-extrabold tracking-wider text-ink-500 uppercase">Readiness</p>
+                <p className="text-[11px] font-extrabold tracking-wider text-ink-500 uppercase">तयारी</p>
                 <p className="text-[15px] font-bold text-leaf-700">इव्हेंट ८२% तयार</p>
               </div>
             </div>
@@ -144,7 +144,7 @@ function Hero() {
                 <Icon name="check" strokeWidth={2.4} />
               </span>
               <div>
-                <p className="text-[13px] font-bold text-ink-900">बुकिंग कन्फर्म ✓</p>
+                <p className="text-[13px] font-bold text-ink-900">बुकिंग निश्चित — अक्षता पडायला सज्ज!</p>
                 <p className="text-[11.5px] text-ink-500">कॅटरर · ₹४५०/ताट</p>
               </div>
             </div>
@@ -152,7 +152,7 @@ function Hero() {
 
           <div className="animate-float absolute -bottom-5 left-8 hidden items-center gap-2 rounded-full bg-maroon-900 py-2 pr-4 pl-2.5 text-[12px] font-bold text-gold-200 shadow-luxe sm:flex [--tilt:-1deg]" style={{ animationDelay: "0.6s" }}>
             <Icon name="whatsapp" className="h-4 w-4 text-gold-300" />
-            RSVP आलं — ३४ पाहुणे ✓
+            ॥ सहर्ष स्वागतम् ॥ — ३४ पाहुणे येणार ✓
           </div>
         </div>
       </div>
@@ -209,9 +209,9 @@ const PILLARS: { icon: IconName; mr: string; en: string; desc: string; href: str
   { icon: "brush", mr: "क्रिएट स्टुडिओ", en: "Create Studio", desc: "पैठणी, वारली, देवालय, मंडल — बारा सांस्कृतिक पत्रिका. QR असलेले डिजिटल पान आणि छपाई-तयार निर्यात.", href: "/studio" },
   { icon: "layers", mr: "इव्हेंट ओएस", en: "Event OS", desc: "पाहुणे यादी, बजेट ट्रॅकर, चेकलिस्ट, मुहूर्त आणि तयारी-स्कोर. काका, मामी, आत्या — नातेवाईकांसह संपूर्ण इव्हेंट एका पानावर.", href: "/studio/patil-patil-vivah-2027" },
   { icon: "search", mr: "डिस्कव्हरी", en: "Discovery", desc: "सत्यपडताळलेले व्हेन्यू, डेकोरेटर, फोटोग्राफर, कॅटरर — किंमत, उपलब्धता आणि खऱ्या रिव्ह्यूंसह तुलना करा.", href: "/vendors" },
-  { icon: "wallet", mr: "कॉमर्स", en: "Commerce", desc: "चौकशी → कोट → बुकिंग → सेटलमेंट. स्वतंत्र लेजर, पारदर्शक कमिशन आणि ठेव-सुरक्षा धोरण.", href: "/admin" },
+  { icon: "wallet", mr: "कॉमर्स", en: "Commerce", desc: "चौकशी → कोट → बुकिंग → पेमेंट. प्रत्येक पैशाचा स्पष्ट हिशोब, लपलेलं शुल्क नाही — मन पूर्ण शांत.", href: "/admin" },
   { icon: "building", mr: "व्हेंडर ओएस", en: "Vendor OS", desc: "लीड्स, कोट्स, कॅलेंडर, पेमेंट्स आणि रिव्ह्यू — व्हेंडरसाठी संपूर्ण बिझनेस डॅशबोर्ड.", href: "/vendor" },
-  { icon: "printer", mr: "प्रिंट व प्रसार", en: "Print & Share", desc: "WYSIWYP — प्रिंट-परफेक्ट पत्रिका. ब्लीड, क्रॉप मार्क्स, गोल्ड फॉइल प्रिव्ह्यू. २४–४८ तासांत घरपोच.", href: "/studio" },
+  { icon: "printer", mr: "प्रिंट व प्रसार", en: "Print & Share", desc: "छपाईत शून्य चूक — स्क्रीनवर दिसतं तेच कागदावर येतं. २४–४८ तासांत घरपोच.", href: "/studio" },
 ];
 
 function Pillars() {
@@ -259,15 +259,15 @@ function StudioShowcase() {
             <span className="gold-foil">हस्तकलेचा ठसा</span>
           </h2>
           <p className="mt-5 max-w-lg text-[15.5px] leading-relaxed text-ivory-100/70">
-            हरफबझ-ग्रेड मराठी टायपोग्राफी, स्मार्ट लेआउट इंजिन आणि प्रिंट-परफेक्ट एक्सपोर्ट.
-            नावं बदला — कार्ड लगेच जुळवून घेतं. अक्षरं ओव्हरफ्लो होत नाहीत, कधीच.
+            सुंदर मराठी अक्षरं आणि मनासारखे नमुने. नावं बदला — कार्ड लगेच जुळवून घेतं.
+            छपाईत अक्षरं कधीच कापली जात नाहीत — मन पूर्ण शांत.
           </p>
 
           <ul className="mt-8 space-y-4">
             {[
-              { icon: "sparkle" as IconName, t: "स्मार्ट लेआउट इंजिन", d: "मोठी नावं आली की फॉन्ट आपोआप जुळतो — ६० FPS एडिटर" },
-              { icon: "shield" as IconName, t: "क्वालिटी गार्ड", d: "डाउनलोडपूर्वी ५ तपासण्या — ओव्हरफ्लो, तारीख-सुसंगती, हरवलेली फील्ड्स" },
-              { icon: "printer" as IconName, t: "WYSIWYP प्रिंट", d: "ब्लीड, क्रॉप मार्क्स, गोल्ड फॉइल प्रिव्ह्यू — जे दिसतं तेच छापलं जातं" },
+              { icon: "sparkle" as IconName, t: "नावं बदलली तरी चिंता नाही", d: "मोठी नावं आली तरी अक्षरं आपोआप जुळतात — काहीच कापलं जात नाही" },
+              { icon: "shield" as IconName, t: "छपाईपूर्व तपासणी", d: "डाउनलोडपूर्वी ५ तपासण्या — तारीख, नावं आणि माहिती अगदी अचूक" },
+              { icon: "printer" as IconName, t: "छपाईत शून्य चूक", d: "स्क्रीनवर दिसतं तेच कागदावर — तणावमुक्त तयारी" },
               { icon: "qr" as IconName, t: "QR + इव्हेंट वेबसाइट", d: "प्रत्येक पत्रिकेसोबत पाहुण्यांसाठी लाइव्ह डिजिटल पान" },
             ].map((f) => (
               <li key={f.t} className="flex gap-4">
@@ -460,7 +460,7 @@ function Marketplace() {
         <Reveal delay={100} className="mt-10 grid gap-4 rounded-2xl border border-gold-500/30 bg-white p-6 sm:grid-cols-3">
           {[
             { icon: "shield" as IconName, h: "७-पदरी सत्यापन", d: "ओळख, व्यवसाय, GST, फोन, ठिकाण, पोर्टफोलिओ, रिव्ह्यू" },
-            { icon: "wallet" as IconName, h: "स्वतंत्र लेजर", d: "गेटवे म्हणजे सत्य नाही — दर व्यवहाराचा आमचा हिशोब" },
+            { icon: "wallet" as IconName, h: "पैशांचा स्पष्ट हिशोब", d: "प्रत्येक पेमेंटची नोंद तुमच्यासमोर — मन पूर्ण शांत" },
             { icon: "bell" as IconName, h: "बॅकअप व्हेंडर", d: "फोटोग्राफर माघारला? बजेट-जुळणारे ३ पर्याय लगेच" },
           ].map((x) => (
             <div key={x.h} className="flex gap-3.5">

@@ -61,6 +61,16 @@ export function SiteFooter() {
         </div>
       </div>
 
+      <div className="border-b border-gold/25 py-4">
+        <div className="shell flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center">
+          <p className="text-xs font-bold text-maroon">भागीदार व व्हेंडरांसाठी</p>
+          <p className="text-xs text-charcoal-muted">WYSIWYP प्रूफिंग · ६० FPS एडिटर · दुहेरी-नोंदणी लेजर</p>
+          <Link href="/api/health" className="inline-flex min-h-[44px] items-center rounded-full border border-gold/35 px-3.5 text-xs font-bold text-maroon transition hover:text-gold-deep">
+            सिस्टम स्थिती →
+          </Link>
+        </div>
+      </div>
+
       {/* Main Footer Links */}
       <div className="shell grid gap-10 py-14 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
@@ -89,7 +99,7 @@ export function SiteFooter() {
                 <li key={link.href + link.label}>
                   <Link
                     href={link.href}
-                    className="inline-block py-2 text-xs text-charcoal-soft transition hover:text-maroon hover:translate-x-0.5"
+                    className="inline-flex min-h-[44px] items-center py-2 text-xs text-charcoal-soft transition hover:text-maroon hover:translate-x-0.5"
                   >
                     {link.label}
                   </Link>

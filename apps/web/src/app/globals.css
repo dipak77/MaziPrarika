@@ -625,3 +625,34 @@ table.data-table tbody tr:hover td { background: color-mix(in oklab, var(--color
   body { background: white; }
   .no-print { display: none !important; }
 }
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+.animate-fade-up {
+  animation-delay: var(--reveal-delay, 0ms);
+}
+.animate-float-soft {
+  animation: float-soft 7s ease-in-out infinite;
+}
+.glass-ivory {
+  background: color-mix(in oklab, var(--color-ivory-surface) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(1.06);
+  -webkit-backdrop-filter: blur(14px) saturate(1.06);
+  border: 1px solid color-mix(in oklab, var(--color-gold) 30%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+.ring-gold-soft {
+  border: 1px solid color-mix(in oklab, var(--color-gold) 34%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-gold) 38%, transparent), 0 10px 28px -14px rgb(198 161 91 / 0.4);
+}
+.text-balance-marathi {
+  text-wrap: balance;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-soft {
+    animation: none !important;
+  }
+}

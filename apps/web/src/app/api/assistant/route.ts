@@ -19,6 +19,7 @@ const BodySchema = z.object({
   message: z.string().min(2).max(1200),
   confirm: z.boolean().optional(),
   eventSlug: z.string().max(80).optional(),
+  lang: z.enum(['mr', 'en']).optional(),
 });
 
 // A simple per-instance rate limit: the assistant is the most expensive route.
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
     const eventSlug = turn.report.createdEvent?.slug;
     const event = eventSlug ? store.events.bySlug(eventSlug) : undefined;
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       answer: turn.answer,
       summary: turn.plan.summary,
       clarifications: turn.plan.clarifications,
@@ -110,6 +111,16 @@ export async function POST(request: Request) {
       provider: { id: turn.provider.provider, model: turn.provider.model, fallback: turn.provider.fallback, latencyMs: turn.provider.latencyMs },
       guardrail: { allowed: turn.guardrail.allowed, category: turn.guardrail.category },
     });
+
+    if (parsed.data.lang) {
+      res.cookies.set('mazi_lang', parsed.data.lang, {
+        maxAge: 31536000,
+        path: '/',
+        sameSite: 'lax',
+      });
+    }
+
+    return res;
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'सहाय्यक अनुपलब्ध आहे.' },

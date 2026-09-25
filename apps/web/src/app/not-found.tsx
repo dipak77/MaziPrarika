@@ -15,16 +15,16 @@ export default function NotFound() {
         </p>
         <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-charcoal sm:text-5xl">हे पान सापडले नाही</h1>
         <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-charcoal-soft sm:text-base">
-          दुवा चुकीचा असू शकतो किंवा पान हलवले गेले असू शकते. खालील दुव्यांनी पुढे जा — तुमचे वर्कस्पेस सुरक्षित आहेत.
+          दुवा चुकीचा असू शकतो किंवा पान हलवले गेले असू शकते. ॥ सहर्ष स्वागतम् ॥ — खालील दुव्यांनी पुढे जा, तुमची तयारी सुरक्षित आहे.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link href="/" className="btn-base btn-gold px-6 py-3 text-sm">
+          <Link href="/" className="btn-base btn-gold min-h-[44px] px-6 py-3 text-sm">
             मुखपृष्ठावर जा
           </Link>
-          <Link href="/vendors" className="btn-base btn-outline px-6 py-3 text-sm">
+          <Link href="/vendors" className="btn-base btn-outline min-h-[44px] px-6 py-3 text-sm">
             विक्रेते शोधा
           </Link>
-          <Link href="/panchang" className="btn-base btn-ghost px-6 py-3 text-sm">
+          <Link href="/panchang" className="btn-base btn-ghost min-h-[44px] px-6 py-3 text-sm">
             पंचांग पाहा
           </Link>
         </div>

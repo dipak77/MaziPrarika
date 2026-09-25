@@ -1,12 +1,14 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
-import { adPerformance, COMMISSION_RATES, gatewayFeeBreakdown, reconcileLedger, trustBadges, type LedgerEntry } from '@mazi/commerce';
+import { adPerformance, calculateRefund, COMMISSION_RATES, gatewayFeeBreakdown, priceQuote, reconcileLedger, trustBadges, type LedgerEntry, type Quote } from '@mazi/commerce';
 import { formatMarathiDate, formatMarathiDateTime, toDevanagariDigits, vendorCategoryLabel } from '@mazi/marathi';
 
 import { getStore } from '@/lib/store';
 import { assistantLedger } from '@/lib/assistant';
 import { devNumber, devRupees, percent } from '@/lib/format';
+import { refundBookingAction } from '@/app/vendor/actions';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,17 +18,49 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/**
- * Admin console: the numbers that decide whether this business works.
- *
- * Ordered the way an operator actually reads them:
- *   1. money integrity (is the ledger sound? is anything stuck?)
- *   2. marketplace liquidity (do enquiries turn into bookings, fast?)
- *   3. supply quality (who is degrading, who deserves promotion?)
- *   4. unit economics (commission vs AI cost vs ad revenue)
- * Nothing here is decorative: every figure is computed from the same store the
- * product writes to, so a discrepancy is a real bug, not a dashboard artefact.
- */
+async function resolveDisputeRowAction(formData: FormData): Promise<void> {
+  'use server';
+  const store = getStore();
+  const id = String(formData.get('disputeId') ?? '').slice(0, 80);
+  if (!id) return;
+  const resolution = String(formData.get('resolution') ?? '').trim().slice(0, 500) || 'तोडगा नोंदवला';
+  const status = String(formData.get('status') ?? 'resolved') === 'rejected' ? 'rejected' as const : 'resolved' as const;
+  const at = new Date().toISOString();
+  store.transaction(() => {
+    store.bookings.resolveDispute(id, resolution, status, at);
+    store.audit.record({
+      actor: 'admin',
+      action: status === 'resolved' ? 'dispute.resolved' : 'dispute.rejected',
+      entity: 'dispute',
+      entityId: id,
+      after: { resolution },
+      at,
+    });
+  });
+  revalidatePath('/admin');
+}
+
+async function markSettlementPaidAction(formData: FormData): Promise<void> {
+  'use server';
+  const store = getStore();
+  const id = String(formData.get('settlementId') ?? '').slice(0, 80);
+  const utr = String(formData.get('utr') ?? '').trim().slice(0, 40) || `UTR${Date.now().toString(36)}`;
+  if (!id) return;
+  const at = new Date().toISOString();
+  store.transaction(() => {
+    store.bookings.markSettlementPaid(id, utr, at);
+    store.audit.record({
+      actor: 'admin',
+      action: 'settlement.paid',
+      entity: 'settlement',
+      entityId: id,
+      after: { utr },
+      at,
+    });
+  });
+  revalidatePath('/admin');
+}
+
 export default async function AdminPage() {
   const store = getStore();
   const today = new Date().toISOString().slice(0, 10);
@@ -42,7 +76,6 @@ export default async function AdminPage() {
   const settlements = store.bookings.settlements();
   const payments = bookings.flatMap((booking) => store.bookings.payments(booking.id));
 
-  // Ledger integrity: sum every entry per booking and reconcile.
   const ledgerEntries: LedgerEntry[] = bookings.flatMap((booking) =>
     store.bookings.ledger(booking.id).map((row) => ({
       id: row.id,
@@ -394,15 +427,89 @@ export default async function AdminPage() {
 
           <section className="surface p-5">
             <h2 className="font-display text-lg font-bold text-charcoal">तक्रारी व सेटलमेंट</h2>
-            <ul className="mt-3 space-y-2 text-sm">
-              {openDisputes.map((dispute) => (
-                <li key={dispute.id} className="rounded-xl border border-maroon/25 bg-maroon/5 p-3">
-                  <p className="font-semibold text-maroon">{dispute.reason}</p>
-                  <p className="text-xs text-charcoal-soft">
-                    उघडले {formatMarathiDateTime(dispute.createdAt)} • {dispute.raisedBy}
+            <h3 className="mt-4 text-sm font-bold text-charcoal">सेटलमेंट रांग — {toDevanagariDigits(stuckSettlements.length)} प्रलंबित</h3>
+            <ul className="mt-2 space-y-2 text-sm">
+              {stuckSettlements.slice(0, 8).map((settlement) => (
+                <li key={settlement.id} className="rounded-xl border border-gold/25 bg-ivory p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-semibold text-charcoal">
+                      {settlement.bookingId.slice(0, 14)} • {devRupees(settlement.amountPaise)}
+                    </p>
+                    <p className="text-xs text-charcoal-soft">{settlement.status}</p>
+                  </div>
+                  <p className="mt-0.5 text-xs text-charcoal-soft">
+                    विक्रेता {settlement.vendorId.slice(0, 18)} • {formatMarathiDateTime(settlement.createdAt)}
                   </p>
+                  <form action={markSettlementPaidAction} className="mt-2 flex flex-wrap gap-2">
+                    <input type="hidden" name="settlementId" value={settlement.id} />
+                    <input name="utr" placeholder="UTR" maxLength={40} className="min-w-0 flex-1 rounded-lg border border-gold/40 bg-white px-2 py-1 text-xs" />
+                    <button type="submit" className="rounded-lg bg-maroon px-3 py-1 text-xs font-bold text-white">
+                      पैसे दिले
+                    </button>
+                  </form>
                 </li>
               ))}
+              {stuckSettlements.length === 0 ? <li className="text-sm text-charcoal-soft">प्रलंबित सेटलमेंट नाही.</li> : null}
+            </ul>
+            <h3 className="mt-5 text-sm font-bold text-charcoal">चालू तक्रारी — {toDevanagariDigits(openDisputes.length)}</h3>
+            <ul className="mt-2 space-y-2 text-sm">
+              {openDisputes.map((dispute) => {
+                const booking = bookings.find((b) => b.id === dispute.bookingId);
+                const quote = booking?.quoteId ? store.marketplace.quoteById(booking.quoteId) : undefined;
+                const lead = booking?.leadId ? store.marketplace.leadById(booking.leadId) : undefined;
+                const breakdown = quote && lead
+                  ? priceQuote({
+                      id: quote.id,
+                      vendorId: booking!.vendorId,
+                      ...(booking!.eventId || lead.eventId ? { eventId: (booking!.eventId ?? lead.eventId)! } : {}),
+                      category: lead.category as Quote['category'],
+                      items: quote.items,
+                      discountPaise: quote.discountPaise,
+                      validTill: quote.validTill,
+                      status: 'accepted',
+                    })
+                  : undefined;
+                const daysBefore = booking ? Math.max(0, Math.round((new Date(booking.eventDate).getTime() - Date.now()) / 86_400_000)) : 0;
+                const suggestion = breakdown ? calculateRefund({ breakdown, daysBeforeEvent: daysBefore, fault: 'customer' }) : undefined;
+                return (
+                  <li key={dispute.id} className="rounded-xl border border-maroon/25 bg-maroon/5 p-3">
+                    <p className="font-semibold text-maroon">{dispute.reason}</p>
+                    <p className="text-xs text-charcoal-soft">
+                      उघडले {formatMarathiDateTime(dispute.createdAt)} • {dispute.raisedBy} • बुकिंग {dispute.bookingId.slice(0, 14)}
+                    </p>
+                    {suggestion ? (
+                      <p className="mt-1 text-xs text-charcoal-soft">
+                        सुचवलेला परतावा {devRupees(suggestion.refundPaise)} • {suggestion.policyNote}
+                      </p>
+                    ) : null}
+                    <form action={resolveDisputeRowAction} className="mt-2 space-y-2">
+                      <input type="hidden" name="disputeId" value={dispute.id} />
+                      <input name="resolution" placeholder="तोडगा लिहा" maxLength={500} className="w-full rounded-lg border border-gold/40 bg-white px-2 py-1 text-xs" />
+                      <div className="flex flex-wrap gap-2">
+                        <button type="submit" name="status" value="resolved" className="rounded-lg bg-maroon px-3 py-1 text-xs font-bold text-white">
+                          तक्रार सोडवा
+                        </button>
+                        <button type="submit" name="status" value="rejected" className="rounded-lg border border-maroon/40 px-3 py-1 text-xs font-bold text-maroon">
+                          फेटाळा
+                        </button>
+                      </div>
+                    </form>
+                    {booking ? (
+                      <form action={refundBookingAction} className="mt-2 flex flex-wrap items-center gap-2">
+                        <input type="hidden" name="bookingId" value={booking.id} />
+                        <input type="hidden" name="reason" value={dispute.reason} />
+                        <input type="hidden" name="refundRupees" value={suggestion ? String(suggestion.refundPaise / 100) : String(booking.advancePaise / 100)} />
+                        <button type="submit" className="rounded-lg border border-gold/50 px-3 py-1 text-xs font-bold text-charcoal">
+                          परतावा द्या
+                        </button>
+                        <Link href={`/vendor/leads/${booking.leadId ?? ''}`} className="text-xs font-semibold text-maroon">
+                          लीड पाहा →
+                        </Link>
+                      </form>
+                    ) : null}
+                  </li>
+                );
+              })}
               {openDisputes.length === 0 ? <li className="text-sm text-charcoal-soft">चालू तक्रार नाही.</li> : null}
               <li className="pt-2 text-xs text-charcoal-soft">
                 प्रलंबित सेटलमेंट: {toDevanagariDigits(stuckSettlements.length)} • एकूण पेमेंट नोंदी{' '}
