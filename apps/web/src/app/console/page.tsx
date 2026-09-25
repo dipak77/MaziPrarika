@@ -1,4 +1,5 @@
 import { Chip, Eyebrow, Icon } from "@/components/ui";
+import { ConsoleBanner } from "@/components/console-banner";
 import { getStore } from "@/lib/store";
 import { devRupees } from "@/lib/format";
 import { toDevanagariDigits } from "@mazi/marathi";
@@ -93,29 +94,12 @@ export default async function ConsolePage() {
 
   return (
     <div className="bg-ivory-200/50 pb-16">
-      <div className="bg-paisley-dark text-ivory-100">
-        <div className="shell py-12">
-          <Eyebrow dark>सुपर ॲडमिन · मझी कन्सोल</Eyebrow>
-          <h1 className="font-marathi-display text-4xl font-bold sm:text-[42px]">मार्केटप्लेस आरोग्य</h1>
-          <p className="mt-3 max-w-2xl text-[14.5px] text-ivory-100/65">
-            नॉर्थ स्टार: तयार झालेले नव्हे — <strong className="text-gold-300">सक्रिय व पूर्ण झालेले इव्हेंट्स</strong>.
-            GMV + निव्वळ महसूल + टेक-रेट थेट येथे.
-          </p>
-          <div className="mt-7 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-4">
-            {[
-              { l: "GMV (या महिन्यात)", v: `₹${(effectiveGmvRupees / 100000).toFixed(1)} लाख` },
-              { l: "टेक-रेट", v: takeRate },
-              { l: "बुकिंग रूपांतरण", v: conversionLive },
-              { l: "सक्रिय व्हेंडर्स", v: toDevanagariDigits(allVendors.length) },
-            ].map((k) => (
-              <div key={k.l}>
-                <div className="font-display text-[28px] font-semibold text-gold-300">{k.v}</div>
-                <div className="mt-0.5 text-[11.5px] font-bold text-ivory-100/55">{k.l}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <ConsoleBanner
+        gmvLakh={`₹${(effectiveGmvRupees / 100000).toFixed(1)} Lakh`}
+        takeRate={takeRate}
+        conversionLive={conversionLive}
+        activeVendors={toDevanagariDigits(allVendors.length)}
+      />
 
       <div className="shell space-y-6 py-8">
         <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-gold-500/30 bg-white px-5 py-4 shadow-card">

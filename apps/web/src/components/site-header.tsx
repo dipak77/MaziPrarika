@@ -1,17 +1,24 @@
+'use client';
+
 import Link from 'next/link';
 import { LangToggle } from '@/components/lang-toggle';
-
-const NAV = [
-  { href: '/studio', label: 'क्रिएट स्टुडिओ', badge: '६० FPS' },
-  { href: '/create', label: 'AI सोहळा', badge: 'AI' },
-  { href: '/vendors', label: 'व्हेंडर शोधा' },
-  { href: '/events', label: 'इव्हेंट्स' },
-  { href: '/vendor-os', label: 'व्हेंडर ओएस', badge: 'CRM' },
-  { href: '/console', label: 'कन्सोल' },
-  { href: '/panchang', label: 'पंचांग' },
-];
+import { useLanguage } from '@/context/language-context';
+import { uiCopy } from '@/lib/i18n';
 
 export function SiteHeader() {
+  const { lang, isEn } = useLanguage();
+  const t = uiCopy[lang].header;
+
+  const nav = [
+    { href: '/studio', label: t.studio, badge: isEn ? '60 FPS' : '६० FPS' },
+    { href: '/create', label: t.create, badge: 'AI' },
+    { href: '/vendors', label: t.vendors },
+    { href: '/events', label: t.events },
+    { href: '/vendor-os', label: t.vendorOs, badge: 'CRM' },
+    { href: '/console', label: t.console },
+    { href: '/panchang', label: t.panchang },
+  ];
+
   return (
     <header className="sticky top-0 z-50 border-b border-gold/30 bg-ivory/95 backdrop-blur-xl shadow-xs">
       {/* Top Auspicious Micro-Bar */}
@@ -19,14 +26,14 @@ export function SiteHeader() {
         <div className="shell flex items-center justify-between">
           <span className="hidden sm:inline-flex items-center gap-1.5 opacity-90">
             <span className="size-1.5 rounded-full bg-gold-bright animate-pulse-subtle" />
-            ॥ श्री गणेशाय नमः ॥
+            {t.mantra}
           </span>
           <span className="mx-auto sm:mx-0 font-medium">
-            महाराष्ट्र आवृत्ती • सूर्यसिद्धांत पंचांग • अचूक छपाई व सुरक्षित खातेवही
+            {t.tagline}
           </span>
           <span className="hidden md:inline-flex items-center gap-2 text-gold/85">
             <span className="size-1.5 rounded-full bg-paithani-light" />
-            थेट पंचांग सक्रिय
+            {t.livePanchang}
           </span>
         </div>
       </div>
@@ -60,8 +67,8 @@ export function SiteHeader() {
         </Link>
 
         {/* Desktop Nav Items */}
-        <nav aria-label="मुख्य नेव्हिगेशन" className="hidden items-center gap-1 lg:flex">
-          {NAV.map((item) => (
+        <nav aria-label={isEn ? "Main navigation" : "मुख्य नेव्हिगेशन"} className="hidden items-center gap-1 lg:flex">
+          {nav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -87,14 +94,14 @@ export function SiteHeader() {
             href="/vendor"
             className="hidden sm:inline-flex min-h-11 items-center rounded-full border border-gold/45 bg-ivory px-3.5 text-xs font-semibold text-charcoal-soft transition hover:border-gold hover:bg-ivory-deep hover:text-maroon"
           >
-            विक्रेता प्रवेश
+            {t.vendorLogin}
           </Link>
           <Link
             href="/create"
             className="btn-base btn-gold px-3.5 sm:px-5 text-xs sm:text-sm"
           >
             <span className="flex items-center gap-1.5">
-              <span>पत्रिका बनवा</span>
+              <span>{t.createCard}</span>
               <span aria-hidden="true">→</span>
             </span>
           </Link>
@@ -102,8 +109,8 @@ export function SiteHeader() {
       </div>
 
       {/* Mobile Horizontal Scroll Nav */}
-      <nav aria-label="मोबाइल नेव्हिगेशन" className="shell flex gap-1.5 overflow-x-auto pb-2.5 pt-1 lg:hidden">
-        {NAV.map((item) => (
+      <nav aria-label={isEn ? "Mobile navigation" : "मोबाइल नेव्हिगेशन"} className="shell flex gap-1.5 overflow-x-auto pb-2.5 pt-1 lg:hidden">
+        {nav.map((item) => (
           <Link
             key={item.href}
             href={item.href}
@@ -116,4 +123,3 @@ export function SiteHeader() {
     </header>
   );
 }
-

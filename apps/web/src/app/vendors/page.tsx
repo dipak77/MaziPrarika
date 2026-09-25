@@ -4,6 +4,7 @@ import { VENDOR_CATEGORIES } from '@mazi/commerce';
 import { toDevanagariDigits, vendorCategoryLabel } from '@mazi/marathi';
 
 import { DiscoveryFeed } from '@/components/vendors/discovery-feed';
+import { VendorsHeader } from '@/components/vendors-header';
 import { CITY_OPTIONS } from '@/lib/panchang';
 import { getStore } from '@/lib/store';
 import { Kicker } from '@/components/ui';
@@ -57,14 +58,10 @@ export default async function VendorsPage({
 
   return (
     <div className="shell py-10">
-      <header className="max-w-3xl">
-        <Kicker>Marketplace</Kicker>
-        <h1 className="mt-2 font-display text-4xl font-bold text-maroon">विक्रेते शोधा</h1>
-        <p className="mt-3 text-lg text-charcoal-soft">
-          {toDevanagariDigits(store.vendors.search({ city, limit: 200 }).length)} विक्रेते {city} आणि परिसरात — प्रत्येक क्रमांक
-          पडताळलेल्या पुराव्यावर, आणि प्रायोजित निकाल नेहमी स्पष्टपणे चिन्हांकित.
-        </p>
-      </header>
+      <VendorsHeader
+        city={city}
+        count={store.vendors.search({ city, limit: 200 }).length}
+      />
 
       <div className="mt-6 flex flex-wrap gap-2">
         {cityCounts.map((entry) => (

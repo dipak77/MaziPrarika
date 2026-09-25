@@ -4,6 +4,7 @@ import { adPerformance, trustBadges } from '@mazi/commerce';
 import { formatMarathiDate, formatMarathiDateTime, leadStatusLabel, toDevanagariDigits } from '@mazi/marathi';
 
 import { VendorCalendar } from '@/components/vendor/vendor-calendar';
+import { VendorDeskHeader } from '@/components/vendor-desk-header';
 import { getStore } from '@/lib/store';
 import { vendorDeskId } from '@/lib/vendor-desk';
 import { devRupees, percent } from '@/lib/format';
@@ -76,23 +77,13 @@ export default async function VendorDeskPage() {
 
   return (
     <div className="shell py-10">
-      <header className="flex flex-wrap items-end justify-between gap-6">
-        <div>
-          <Kicker>Vendor OS</Kicker>
-          <h1 className="mt-1 font-display text-4xl font-bold text-maroon">{vendor.name}</h1>
-          <p className="mt-2 text-charcoal-soft">
-            {vendor.city} • योजना {vendor.plan} • सेंद्रिय गुण {toDevanagariDigits(trust.organicScore)}/१००
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Link href={`/vendors/${vendor.id}`} className="btn-base btn-outline px-4 text-sm">
-            सार्वजनिक प्रोफाइल
-          </Link>
-          <Link href="/vendors" className="btn-base btn-maroon px-4 text-sm">
-            नवीन विनंत्या कोठून येतात?
-          </Link>
-        </div>
-      </header>
+      <VendorDeskHeader
+        vendorName={vendor.name}
+        vendorId={vendor.id}
+        city={vendor.city}
+        plan={vendor.plan}
+        organicScore={trust.organicScore}
+      />
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[

@@ -1,13 +1,8 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import {
-  type CardLang,
-  DEFAULT_LANG,
-  PREF_LANG_COOKIE,
-  PREF_LANG_STORAGE_KEY,
-} from '@/lib/i18n';
+import { Suspense } from 'react';
+import { useLanguage } from '@/context/language-context';
+import type { CardLang } from '@/lib/i18n';
 
 export interface LangToggleProps {
   lang?: CardLang;
@@ -24,81 +19,17 @@ function LangToggleControl({
   className = '',
   id,
 }: LangToggleProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { lang: contextLang, setLang: contextSetLang } = useLanguage();
+  const effective = controlledLang ?? contextLang;
 
-  const [activeLang, setActiveLang] = useState<CardLang>(() => {
-    if (controlledLang) return controlledLang;
-    const queryLang = searchParams?.get('lang');
-    if (queryLang === 'en' || queryLang === 'mr') return queryLang;
-    return DEFAULT_LANG;
-  });
-
-  // Keep in sync when controlledLang prop changes
-  useEffect(() => {
-    if (controlledLang && controlledLang !== activeLang) {
-      setActiveLang(controlledLang);
-    }
-  }, [controlledLang, activeLang]);
-
-  // On client mount, if not controlled and no query param, check cookie/storage
-  useEffect(() => {
-    if (!controlledLang && !searchParams?.get('lang')) {
-      try {
-        const stored = localStorage.getItem(PREF_LANG_STORAGE_KEY);
-        if (stored === 'en' || stored === 'mr') {
-          setActiveLang(stored);
-          return;
-        }
-        const match = document.cookie.match(new RegExp(`(?:^|; )${PREF_LANG_COOKIE}=([^;]*)`));
-        if (match && (match[1] === 'en' || match[1] === 'mr')) {
-          setActiveLang(match[1] as CardLang);
-        }
-      } catch {
-        // storage or cookie access restricted
-      }
-    }
-  }, [controlledLang, searchParams]);
-
-  const switchTo = useCallback(
-    (next: CardLang) => {
-      // 1. Persist to cookie (1 year lifespan, SameSite=Lax for SSR)
-      try {
-        document.cookie = `${PREF_LANG_COOKIE}=${next}; path=/; max-age=31536000; SameSite=Lax`;
-      } catch {
-        // cookie write restricted
-      }
-
-      // 2. Persist to localStorage for client retention
-      try {
-        localStorage.setItem(PREF_LANG_STORAGE_KEY, next);
-      } catch {
-        // localStorage write restricted
-      }
-
-      setActiveLang(next);
-      onChange?.(next);
-
-      // 3. Update URL if searchParams exist or pathname is present
-      try {
-        const params = new URLSearchParams(searchParams?.toString() ?? '');
-        params.set('lang', next);
-        const queryStr = params.toString();
-        const targetUrl = queryStr ? `${pathname}?${queryStr}` : pathname;
-        router.replace(targetUrl, { scroll: false });
-      } catch {
-        // navigation fallback
-      }
-    },
-    [pathname, router, searchParams, onChange],
-  );
-
-  const effective = controlledLang ?? activeLang;
+  const switchTo = (next: CardLang) => {
+    contextSetLang(next);
+    onChange?.(next);
+  };
 
   const btnBase = compact
-    ? 'inline-flex min-h-[32px] items-center justify-center px-2.5 py-1 text-xs font-bold transition-all duration-200'
-    : 'inline-flex min-h-[40px] min-w-[44px] items-center justify-center px-4 py-2 text-sm font-bold transition-all duration-200';
+    ? 'inline-flex min-h-[32px] items-center justify-center px-2.5 py-1 text-xs font-bold transition-all duration-200 cursor-pointer'
+    : 'inline-flex min-h-[40px] min-w-[44px] items-center justify-center px-4 py-2 text-sm font-bold transition-all duration-200 cursor-pointer';
 
   return (
     <div
@@ -141,22 +72,16 @@ function LangToggleControl({
 }
 
 export function LangToggle(props: LangToggleProps) {
-  const fallbackBtn = props.compact ? (
-    <div
-      className={`inline-flex min-h-[32px] items-center overflow-hidden rounded-full border border-gold/40 bg-white/95 px-3 text-xs font-bold text-maroon shadow-2xs ${props.className ?? ''}`}
-    >
-      मराठी
-    </div>
-  ) : (
-    <div
-      className={`inline-flex min-h-[40px] items-center overflow-hidden rounded-full border border-gold/40 bg-white/95 px-4 text-sm font-bold text-maroon shadow-2xs ${props.className ?? ''}`}
-    >
-      मराठी (डिफॉल्ट)
-    </div>
-  );
-
   return (
-    <Suspense fallback={fallbackBtn}>
+    <Suspense
+      fallback={
+        <div
+          className={`inline-flex min-h-[32px] items-center overflow-hidden rounded-full border border-gold/40 bg-white/95 px-3 text-xs font-bold text-maroon shadow-2xs ${props.className ?? ''}`}
+        >
+          मराठी
+        </div>
+      }
+    >
       <LangToggleControl {...props} />
     </Suspense>
   );

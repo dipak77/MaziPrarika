@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { ServiceWorkerRegistrar } from '@/components/service-worker';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
+import { LanguageProvider } from '@/context/language-context';
 
 import './globals.css';
 
@@ -81,16 +82,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="mr-IN" suppressHydrationWarning>
       <body className="min-h-dvh antialiased" suppressHydrationWarning>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }} />
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-maroon focus:px-4 focus:py-2 focus:text-ivory"
-        >
-          मुख्य मजकुराकडे जा
-        </a>
-        <SiteHeader />
-        <main id="main">{children}</main>
-        <SiteFooter />
-        <ServiceWorkerRegistrar />
+        <LanguageProvider>
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-maroon focus:px-4 focus:py-2 focus:text-ivory"
+          >
+            मुख्य मजकुराकडे जा
+          </a>
+          <SiteHeader />
+          <main id="main">{children}</main>
+          <SiteFooter />
+          <ServiceWorkerRegistrar />
+        </LanguageProvider>
       </body>
     </html>
   );

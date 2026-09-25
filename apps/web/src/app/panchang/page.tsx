@@ -4,6 +4,8 @@ import { EVENT_TYPES, formatMarathiDate, getEventType, toDevanagariDigits } from
 import { findMuhurats } from '@mazi/panchang';
 
 import { PanchangMonth } from '@/components/panchang-month';
+import { PanchangHeader } from '@/components/panchang-header';
+import { PanchangFilters } from '@/components/panchang-filters';
 import { CITY_OPTIONS, DPO_NOTE, locationFor, panchangFor } from '@/lib/panchang';
 import { getStore } from '@/lib/store';
 import { Kicker } from '@/components/ui';
@@ -110,43 +112,15 @@ export default async function PanchangPage({
   return (
     <div className="shell py-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
-      <header className="max-w-3xl">
-        <Kicker>Panchang Engine</Kicker>
-        <h1 className="mt-1 font-display text-4xl font-bold text-maroon">पंचांग व मुहूर्त</h1>
-        <p className="mt-3 text-lg text-charcoal-soft">
-          प्रत्येक गणना शहरानुसार — सूर्योदय महाराष्ट्रात २० मिनिटांपर्यंत बदलतो, आणि तिथीची सीमा त्यावर ठरते. {DPO_NOTE}
-        </p>
-      </header>
+      <PanchangHeader />
 
-      <form className="surface mt-6 grid gap-3 p-5 sm:grid-cols-3" method="get">
-        <label className="text-sm">
-          <span className="font-ui text-xs uppercase tracking-wider text-charcoal-soft">शहर</span>
-          <select name="city" defaultValue={city} className="mt-1 w-full rounded-xl border border-gold/40 bg-ivory px-3 py-2 text-sm">
-            {CITY_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-sm">
-          <span className="font-ui text-xs uppercase tracking-wider text-charcoal-soft">तारीख</span>
-          <input type="date" name="date" defaultValue={date} className="mt-1 w-full rounded-xl border border-gold/40 bg-ivory px-3 py-2 text-sm" />
-        </label>
-        <label className="text-sm">
-          <span className="font-ui text-xs uppercase tracking-wider text-charcoal-soft">कार्यक्रम प्रकार</span>
-          <select name="event" defaultValue={eventType} className="mt-1 w-full rounded-xl border border-gold/40 bg-ivory px-3 py-2 text-sm">
-            {EVENT_CHOICES.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="submit" className="btn-base btn-maroon px-5 text-sm sm:col-span-3">
-          पंचांग पाहा
-        </button>
-      </form>
+      <PanchangFilters
+        city={city}
+        date={date}
+        eventType={eventType}
+        cityOptions={CITY_OPTIONS}
+        eventChoices={EVENT_CHOICES}
+      />
 
       <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[

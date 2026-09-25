@@ -4,6 +4,7 @@ import { InvitationCard } from "@/components/invitation-card";
 import { Icon } from "@/components/ui";
 import { LangToggle } from "@/components/lang-toggle";
 import { saveStudioDesign } from "@/app/studio/actions";
+import { useLanguage } from "@/context/language-context";
 import {
   BLESSINGS,
   BLESSINGS_EN,
@@ -14,40 +15,22 @@ import {
   type TemplateId,
 } from "@/lib/arch-data";
 import { toDevanagariDigits } from "@/lib/format";
-import {
-  type CardLang,
-  DEFAULT_LANG,
-  PREF_LANG_COOKIE,
-  PREF_LANG_STORAGE_KEY,
-} from "@/lib/i18n";
 import { useEffect, useRef, useState, useTransition } from "react";
 
-function rupeesLabel(paise: number): string {
+function rupeesLabel(paise: number, isEn: boolean): string {
   const rupees = Math.round(paise / 100);
-  return `₹${toDevanagariDigits(rupees)}`;
+  return `₹${isEn ? rupees : toDevanagariDigits(rupees)}`;
 }
 
 type SaveStatus = "idle" | "saving" | "saved";
 
 export function StudioEditor() {
-  const [editorLang, setEditorLang] = useState<CardLang>(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const qLang = params.get("lang");
-      if (qLang === "en" || qLang === "mr") return qLang;
-      try {
-        const stored = localStorage.getItem(PREF_LANG_STORAGE_KEY);
-        if (stored === "en" || stored === "mr") return stored;
-        const match = document.cookie.match(new RegExp(`(?:^|; )${PREF_LANG_COOKIE}=([^;]*)`));
-        if (match && (match[1] === "en" || match[1] === "mr")) return match[1] as CardLang;
-      } catch {}
-    }
-    return DEFAULT_LANG;
-  });
+  const { lang, setLang, isEn } = useLanguage();
 
   const [design, setDesign] = useState<DesignData>(() => ({
     ...DEFAULT_DESIGN,
-    lang: DEFAULT_LANG,
+    lang,
+    blessing: lang === "en" ? "॥ Shri Ganeshaya Namah ॥" : "श्री गणेशाय नमः",
   }));
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [mounted, setMounted] = useState(false);
@@ -61,10 +44,19 @@ export function StudioEditor() {
   }, []);
 
   useEffect(() => {
-    if (design.lang !== editorLang) {
-      setDesign((d) => ({ ...d, lang: editorLang }));
+    if (design.lang !== lang) {
+      setDesign((d) => ({
+        ...d,
+        lang,
+        blessing:
+          d.blessing === "श्री गणेशाय नमः" && isEn
+            ? "॥ Shri Ganeshaya Namah ॥"
+            : d.blessing === "॥ Shri Ganeshaya Namah ॥" && !isEn
+              ? "श्री गणेशाय नमः"
+              : d.blessing,
+      }));
     }
-  }, [editorLang, design.lang]);
+  }, [lang, isEn, design.lang]);
 
   const set = <K extends keyof DesignData>(k: K, v: DesignData[K]) =>
     setDesign((d) => ({ ...d, [k]: v }));
@@ -76,23 +68,39 @@ export function StudioEditor() {
 
   const errPersonA =
     design.personA.trim().length < 2
-      ? "किमान २ अक्षरं लिहा."
+      ? isEn
+        ? "Please enter at least 2 characters."
+        : "किमान २ अक्षरं लिहा."
       : design.personA.trim().length > 28
-        ? "२८ अक्षरांत बसवा — प्रिंट सुंदर दिसेल."
+        ? isEn
+          ? "Keep within 28 characters for best layout."
+          : "२८ अक्षरांत बसवा — प्रिंट सुंदर दिसेल."
         : null;
+
   const errPersonB = !isCouple
     ? null
     : design.personB.trim().length < 2
-      ? "दुसरं नाव लिहा."
+      ? isEn
+        ? "Please enter the second name."
+        : "दुसरं नाव लिहा."
       : design.personB.trim().length > 28
-        ? "२८ अक्षरांत बसवा — प्रिंट सुंदर दिसेल."
+        ? isEn
+          ? "Keep within 28 characters for best layout."
+          : "२८ अक्षरांत बसवा — प्रिंट सुंदर दिसेल."
         : null;
-  const errDate = !design.date ? "दिनांक निवडा." : null;
+
+  const errDate = !design.date ? (isEn ? "Please select a date." : "दिनांक निवडा.") : null;
   const errVenue =
-    design.venue.trim().length < 3 ? "स्थळ ३ किंवा अधिक अक्षरांत लिहा." : null;
+    design.venue.trim().length < 3
+      ? isEn
+        ? "Please enter at least 3 characters for venue."
+        : "स्थळ ३ किंवा अधिक अक्षरांत लिहा."
+      : null;
   const errCity =
     design.city.trim().length > 0 && design.city.trim().length < 2
-      ? "शहराचं नाव तपासा."
+      ? isEn
+        ? "Please check city name."
+        : "शहराचं नाव तपासा."
       : null;
 
   const showA = touched["personA"] ? errPersonA : null;
@@ -102,11 +110,26 @@ export function StudioEditor() {
   const showCity = touched["city"] ? errCity : null;
 
   const checks = [
-    { ok: design.personA.trim().length > 1, t: "पहिलं नाव भरलं" },
-    { ok: !isCouple || design.personB.trim().length > 1, t: isCouple ? "दुसरं नाव भरलं" : "एकच नाव — बरोबर" },
-    { ok: Boolean(design.date), t: "दिनांक निवडला" },
-    { ok: design.venue.trim().length > 2, t: "स्थळ स्पष्ट आहे" },
-    { ok: design.personA.length <= 28 && (!isCouple || design.personB.length <= 28), t: "नावं स्मार्ट-लेआउट मर्यादेत" },
+    {
+      ok: design.personA.trim().length > 1,
+      t: isEn ? "First name filled" : "पहिलं नाव भरलं",
+    },
+    {
+      ok: !isCouple || design.personB.trim().length > 1,
+      t: isCouple
+        ? isEn
+          ? "Second name filled"
+          : "दुसरं नाव भरलं"
+        : isEn
+          ? "Single name — verified"
+          : "एकच नाव — बरोबर",
+    },
+    { ok: Boolean(design.date), t: isEn ? "Date selected" : "दिनांक निवडला" },
+    { ok: design.venue.trim().length > 2, t: isEn ? "Venue is clear" : "स्थळ स्पष्ट आहे" },
+    {
+      ok: design.personA.length <= 28 && (!isCouple || design.personB.length <= 28),
+      t: isEn ? "Names within layout bounds" : "नावं स्मार्ट-लेआउट मर्यादेत",
+    },
   ];
   const doneCount = checks.filter((c) => c.ok).length;
   const allOk = doneCount === checks.length;
@@ -114,10 +137,11 @@ export function StudioEditor() {
 
   const activeTemplate = TEMPLATES.find((t) => t.id === design.template);
   const activePaise = activeTemplate ? activeTemplate.price * 100 : 0;
-  const activeRupees = rupeesLabel(activePaise);
+  const activeRupees = rupeesLabel(activePaise, isEn);
 
   const isSaving = saving || saveStatus === "saving";
   const longName = design.personA.length > 22 || (isCouple && design.personB.length > 22);
+
   const previewEmpty =
     design.personA.trim().length === 0 &&
     design.venue.trim().length === 0 &&
@@ -142,7 +166,11 @@ export function StudioEditor() {
             throw e;
           }
           setSaveStatus("idle");
-          setSaveError("जतन अयशस्वी झाले — कनेक्शन तपासा व पुन्हा प्रयत्न करा.");
+          setSaveError(
+            isEn
+              ? "Save failed — check your network connection and retry."
+              : "जतन अयशस्वी झाले — कनेक्शन तपासा व पुन्हा प्रयत्न करा."
+          );
         });
     });
   };
@@ -175,7 +203,7 @@ export function StudioEditor() {
       <div
         role="status"
         aria-busy="true"
-        aria-label="स्टुडिओ मांडणी तयार होत आहे"
+        aria-label={isEn ? "Loading studio layout" : "स्टुडिओ मांडणी तयार होत आहे"}
         className="grid gap-10 lg:grid-cols-[1fr_440px]"
       >
         <div className="space-y-4">
@@ -190,7 +218,7 @@ export function StudioEditor() {
         <div className="rounded-2xl bg-paisley-dark p-6 sm:p-10">
           <div className="mx-auto aspect-[3/4] max-w-[380px] animate-pulse rounded-xl bg-ivory-100/10" />
         </div>
-        <p className="sr-only">मांडणी तयार होत आहे…</p>
+        <p className="sr-only">{isEn ? "Loading layout…" : "मांडणी तयार होत आहे…"}</p>
       </div>
     );
   }
@@ -201,7 +229,7 @@ export function StudioEditor() {
         href="#studio-preview"
         className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:inline-flex focus:min-h-[44px] focus:items-center focus:rounded-full focus:bg-maroon-800 focus:px-5 focus:py-2.5 focus:text-sm focus:font-bold focus:text-ivory-100"
       >
-        थेट प्रिव्ह्यूकडे जा
+        {isEn ? "Skip to Live Preview" : "थेट प्रिव्ह्यूकडे जा"}
       </a>
       <div className="min-w-0 animate-fade-up">
         {/* Card Language Preference Banner */}
@@ -213,23 +241,23 @@ export function StudioEditor() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-display text-sm font-bold text-ink-800">
-                  {editorLang === "mr" ? "पत्रिका भाषा प्राधान्य" : "Card Language Preference"}
+                  {isEn ? "Card Language Preference" : "पत्रिका भाषा प्राधान्य"}
                 </span>
                 <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold-ink ring-1 ring-gold/30">
-                  {editorLang === "mr" ? "डिफॉल्ट: मराठी" : "Selected: English"}
+                  {isEn ? "Selected: English" : "डिफॉल्ट: मराठी"}
                 </span>
               </div>
               <p className="text-[12px] text-ink-500">
-                {editorLang === "mr"
-                  ? "डिफॉल्ट मराठी; आवश्यकतेनुसार इंग्रजी निवडा"
-                  : "Default is Marathi; English selected"}
+                {isEn
+                  ? "Default is Marathi; English selected"
+                  : "डिफॉल्ट मराठी; आवश्यकतेनुसार इंग्रजी निवडा"}
               </p>
             </div>
           </div>
           <LangToggle
-            lang={editorLang}
+            lang={lang}
             onChange={(next) => {
-              setEditorLang(next);
+              setLang(next);
               setDesign((d) => ({
                 ...d,
                 lang: next,
@@ -241,30 +269,29 @@ export function StudioEditor() {
 
         <fieldset>
           <legend className="label">
-            {editorLang === "en"
+            {isEn
               ? `Select Template · ${TEMPLATES.length} Options`
               : `टेम्पलेट निवडा · ${toDevanagariDigits(TEMPLATES.length)} पर्याय`}
           </legend>
           {TEMPLATES.length === 0 ? (
             <div className="rounded-xl border border-maroon-900/10 bg-white/70 px-5 py-8 text-center">
               <p className="font-marathi-display text-[15px] font-bold text-ink-700">
-                टेम्पलेट उपलब्ध नाहीत
+                {isEn ? "No templates available" : "टेम्पलेट उपलब्ध नाहीत"}
               </p>
               <p className="mt-1 text-[13px] text-ink-500">
-                कृपया थोड्या वेळाने पुन्हा उघडा — गॅलरी लगेच भरेल.
+                {isEn ? "Please reload shortly." : "कृपया थोड्या वेळाने पुन्हा उघडा — गॅलरी लगेच भरेल."}
               </p>
             </div>
           ) : (
             <div
               role="radiogroup"
-              aria-label="टेम्पलेट निवडा"
+              aria-label={isEn ? "Select template" : "टेम्पलेट निवडा"}
               onKeyDown={handleGalleryKeys}
               className="stagger grid grid-cols-2 gap-3 sm:grid-cols-4"
             >
               {TEMPLATES.map((t, i) => {
                 const selected = design.template === t.id;
                 const cardPaise = t.price * 100;
-                const cardRupees = Math.round(cardPaise / 100);
                 return (
                   <button
                     key={t.id}
@@ -272,7 +299,7 @@ export function StudioEditor() {
                     role="radio"
                     aria-checked={selected}
                     aria-pressed={selected}
-                    aria-label={`${t.name} · ₹${cardRupees}`}
+                    aria-label={`${isEn ? t.en : t.name} · ${rupeesLabel(cardPaise, isEn)}`}
                     onClick={() => set("template", t.id as TemplateId)}
                     style={{ animationDelay: `${i * 70}ms` }}
                     className={`group relative min-h-[44px] overflow-hidden rounded-xl text-left ring-2 transition-all duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-600 ${
@@ -282,13 +309,23 @@ export function StudioEditor() {
                     }`}
                   >
                     <InvitationCard
-                      design={{ ...design, template: t.id, personA: "नाव", personB: "नाव", host: "", time: "" }}
+                      design={{
+                        ...design,
+                        lang,
+                        template: t.id,
+                        personA: isEn ? "Name" : "नाव",
+                        personB: isEn ? "Name" : "नाव",
+                        host: "",
+                        time: "",
+                      }}
                       className="pointer-events-none aspect-[3/4] w-full"
                     />
                     <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-maroon-950/95 via-maroon-950/55 to-transparent px-2.5 pb-2 pt-8">
-                      <span className="block font-marathi-display text-[12.5px] font-bold text-gold-200">{t.name}</span>
+                      <span className="block font-marathi-display text-[12.5px] font-bold text-gold-200">
+                        {isEn ? t.en : t.name}
+                      </span>
                       <span className="block text-[11px] font-semibold text-ivory-100/60">
-                        {rupeesLabel(cardPaise)}
+                        {rupeesLabel(cardPaise, isEn)}
                       </span>
                     </span>
                     <span
@@ -305,7 +342,11 @@ export function StudioEditor() {
             </div>
           )}
           <p id="template-hint" aria-live="polite" className="mt-2 min-h-[20px] text-[12.5px] font-medium text-ink-500">
-            {activeTemplate ? `${activeTemplate.name} — ${activeTemplate.desc} · ${activeRupees} प्रीमियम` : "टेम्पलेट निवडा."}
+            {activeTemplate
+              ? `${isEn ? activeTemplate.en : activeTemplate.name} — ${activeTemplate.desc} · ${activeRupees}`
+              : isEn
+                ? "Select a template."
+                : "टेम्पलेट निवडा."}
           </p>
         </fieldset>
 
@@ -314,18 +355,20 @@ export function StudioEditor() {
           action={handleAction}
           noValidate
           id="design-form"
-          aria-label="पत्रिका तपशील फॉर्म"
+          aria-label={isEn ? "Invitation details form" : "पत्रिका तपशील फॉर्म"}
           className="mt-6 space-y-6"
         >
           <input type="hidden" name="design" value={JSON.stringify(design)} />
 
           <fieldset className="rounded-2xl border border-maroon-900/10 bg-white/70 p-5 sm:p-6">
             <legend className="rounded-full bg-maroon-800 px-3.5 py-1 text-[11px] font-extrabold tracking-[0.14em] text-ivory-100 uppercase">
-              १ · कार्यक्रम
+              {isEn ? "1 · Event Details" : "१ · कार्यक्रम"}
             </legend>
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label htmlFor="f-event" className="label">कार्यक्रम प्रकार</label>
+                <label htmlFor="f-event" className="label">
+                  {isEn ? "Event Type" : "कार्यक्रम प्रकार"}
+                </label>
                 <select
                   id="f-event"
                   value={design.eventType}
@@ -334,13 +377,15 @@ export function StudioEditor() {
                   className="field min-h-[44px]"
                 >
                   {EVENT_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.mr}</option>
+                    <option key={t.value} value={t.value}>
+                      {isEn ? t.en : t.mr}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
                 <label htmlFor="f-blessing" className="label">
-                  {editorLang === "en" ? "Blessing / Invocation" : "मंगलाचरण / आशीर्वाद"}
+                  {isEn ? "Blessing / Invocation" : "मंगलाचरण / आशीर्वाद"}
                 </label>
                 <select
                   id="f-blessing"
@@ -349,13 +394,15 @@ export function StudioEditor() {
                   onBlur={() => mark("blessing")}
                   className="field min-h-[44px]"
                 >
-                  {(editorLang === "en" ? BLESSINGS_EN : BLESSINGS).map((b) => (
+                  {(isEn ? BLESSINGS_EN : BLESSINGS).map((b) => (
                     <option key={b} value={b}>{b}</option>
                   ))}
                 </select>
               </div>
               <div className="sm:col-span-2">
-                <label htmlFor="f-date" className="label">दिनांक</label>
+                <label htmlFor="f-date" className="label">
+                  {isEn ? "Date" : "दिनांक"}
+                </label>
                 <input
                   id="f-date"
                   type="date"
@@ -376,14 +423,16 @@ export function StudioEditor() {
 
           <fieldset className="rounded-2xl border border-maroon-900/10 bg-white/70 p-5 sm:p-6">
             <legend className="rounded-full bg-maroon-800 px-3.5 py-1 text-[11px] font-extrabold tracking-[0.14em] text-ivory-100 uppercase">
-              २ · व्यक्ती
+              {isEn ? "2 · Personal Details" : "२ · व्यक्ती"}
             </legend>
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <div className="flex items-baseline justify-between gap-2">
-                  <label htmlFor="f-personA" className="label">{isCouple ? "वर / यजमान व्यक्ती" : "नाव"}</label>
+                  <label htmlFor="f-personA" className="label">
+                    {isEn ? (isCouple ? "Groom / First Person" : "Host Name") : (isCouple ? "वर / यजमान व्यक्ती" : "नाव")}
+                  </label>
                   <span id="hint-personA" className="text-[11px] font-bold text-ink-400">
-                    {toDevanagariDigits(design.personA.trim().length)} / २८
+                    {isEn ? `${design.personA.trim().length} / 28` : `${toDevanagariDigits(design.personA.trim().length)} / २८`}
                   </span>
                 </div>
                 <input
@@ -393,7 +442,7 @@ export function StudioEditor() {
                   value={design.personA}
                   onChange={(e) => set("personA", e.target.value)}
                   onBlur={() => mark("personA")}
-                  placeholder="पूर्ण नाव"
+                  placeholder={isEn ? "e.g. Tejas Prabhulkar Deshmukh" : "उदा. तेजस प्रभुलकर देशमुख"}
                   aria-invalid={Boolean(showA)}
                   aria-describedby={showA ? "err-personA hint-personA" : "hint-personA"}
                   className="field font-marathi-display min-h-[44px]"
@@ -405,9 +454,11 @@ export function StudioEditor() {
               {isCouple ? (
                 <div>
                   <div className="flex items-baseline justify-between gap-2">
-                    <label htmlFor="f-personB" className="label">वधू / दुसरी व्यक्ती</label>
+                    <label htmlFor="f-personB" className="label">
+                      {isEn ? "Bride / Second Person" : "वधू / दुसरी व्यक्ती"}
+                    </label>
                     <span id="hint-personB" className="text-[11px] font-bold text-ink-400">
-                      {toDevanagariDigits(design.personB.trim().length)} / २८
+                      {isEn ? `${design.personB.trim().length} / 28` : `${toDevanagariDigits(design.personB.trim().length)} / २८`}
                     </span>
                   </div>
                   <input
@@ -417,7 +468,7 @@ export function StudioEditor() {
                     value={design.personB}
                     onChange={(e) => set("personB", e.target.value)}
                     onBlur={() => mark("personB")}
-                    placeholder="पूर्ण नाव"
+                    placeholder={isEn ? "e.g. Ananya Shrinivas Kulkarni" : "उदा. अनन्या श्रीनिवास कुलकर्णी"}
                     aria-invalid={Boolean(showB)}
                     aria-describedby={showB ? "err-personB hint-personB" : "hint-personB"}
                     className="field font-marathi-display min-h-[44px]"
@@ -432,28 +483,32 @@ export function StudioEditor() {
 
           <fieldset className="rounded-2xl border border-maroon-900/10 bg-white/70 p-5 sm:p-6">
             <legend className="rounded-full bg-maroon-800 px-3.5 py-1 text-[11px] font-extrabold tracking-[0.14em] text-ivory-100 uppercase">
-              ३ · वेळ व स्थळ
+              {isEn ? "3 · Timing & Venue" : "३ · वेळ व स्थळ"}
             </legend>
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label htmlFor="f-time" className="label">वेळ</label>
+                <label htmlFor="f-time" className="label">
+                  {isEn ? "Time" : "वेळ"}
+                </label>
                 <input
                   id="f-time"
                   value={design.time}
                   onChange={(e) => set("time", e.target.value)}
                   onBlur={() => mark("time")}
-                  placeholder="उदा. दुपारी १२:३० वा."
+                  placeholder={isEn ? "e.g. 12:30 PM" : "उदा. दुपारी १२:३० वा."}
                   className="field min-h-[44px]"
                 />
               </div>
               <div>
-                <label htmlFor="f-city" className="label">शहर</label>
+                <label htmlFor="f-city" className="label">
+                  {isEn ? "City" : "शहर"}
+                </label>
                 <input
                   id="f-city"
                   value={design.city}
                   onChange={(e) => set("city", e.target.value)}
                   onBlur={() => mark("city")}
-                  placeholder="पुणे"
+                  placeholder={isEn ? "e.g. Pune" : "उदा. पुणे"}
                   aria-invalid={Boolean(showCity)}
                   aria-describedby={showCity ? "err-city" : undefined}
                   className="field min-h-[44px]"
@@ -463,14 +518,16 @@ export function StudioEditor() {
                 ) : null}
               </div>
               <div className="sm:col-span-2">
-                <label htmlFor="f-venue" className="label">स्थळ</label>
+                <label htmlFor="f-venue" className="label">
+                  {isEn ? "Venue" : "स्थळ"}
+                </label>
                 <input
                   id="f-venue"
                   required
                   value={design.venue}
                   onChange={(e) => set("venue", e.target.value)}
                   onBlur={() => mark("venue")}
-                  placeholder="उदा. शिवनेरी लॉन्स, बाणेर"
+                  placeholder={isEn ? "e.g. Shivneri Lawns, Baner" : "उदा. शिवनेरी लॉन्स, बाणेर"}
                   aria-invalid={Boolean(showVenue)}
                   aria-describedby={showVenue ? "err-venue" : undefined}
                   className="field min-h-[44px]"
@@ -484,20 +541,24 @@ export function StudioEditor() {
 
           <fieldset className="rounded-2xl border border-maroon-900/10 bg-white/70 p-5 sm:p-6">
             <legend className="rounded-full bg-maroon-800 px-3.5 py-1 text-[11px] font-extrabold tracking-[0.14em] text-ivory-100 uppercase">
-              ४ · यजमान ओळ
+              {isEn ? "4 · Host Details" : "४ · यजमान ओळ"}
             </legend>
             <div>
-              <label htmlFor="f-host" className="label">यजमान / विनंती ओळ</label>
+              <label htmlFor="f-host" className="label">
+                {isEn ? "Invited By / Host Family" : "यजमान / विनंती ओळ"}
+              </label>
               <input
                 id="f-host"
                 value={design.host}
                 onChange={(e) => set("host", e.target.value)}
                 onBlur={() => mark("host")}
-                placeholder="उदा. श्री. देशमुख व कुलकर्णी कुटुंबीय"
+                placeholder={isEn ? "e.g. The Deshmukh & Kulkarni Families" : "उदा. श्री. देशमुख व कुलकर्णी कुटुंबीय"}
                 className="field min-h-[44px]"
               />
               <p className="mt-1.5 text-[12px] text-ink-400">
-                ही ओळ कार्डच्या तळाशी दिसेल — कुटुंबाचं नाव प्रेमाने लिहा.
+                {isEn
+                  ? "This line appears at the bottom of the card — written with love by the family."
+                  : "ही ओळ कार्डच्या तळाशी दिसेल — कुटुंबाचं नाव प्रेमाने लिहा."}
               </p>
             </div>
           </fieldset>
@@ -506,8 +567,10 @@ export function StudioEditor() {
             <div aria-live="polite" className="flex animate-fade-in items-start gap-3 rounded-xl border border-gold-500/40 bg-gold-400/10 px-4 py-3">
               <Icon name="sparkle" className="mt-0.5 h-5 w-5 shrink-0 text-gold-600" />
               <p className="text-[13px] leading-relaxed text-ink-700">
-                <strong className="font-bold">स्मार्ट लेआउट सक्रिय:</strong> नाव मोठं असल्याने नाव-विभाग
-                आपोआप २-प्लॅन लहान फॉन्टमध्ये बसवला जाईल — प्रिंट कधीच तुटणार नाही.
+                <strong className="font-bold">{isEn ? "Smart Layout Active: " : "स्मार्ट लेआउट सक्रिय: "}</strong>
+                {isEn
+                  ? "Due to longer names, the layout automatically adjusts typography to guarantee zero print clipping."
+                  : "नाव मोठं असल्याने नाव-विभाग आपोआप २-प्लॅन लहान फॉन्टमध्ये बसवला जाईल — प्रिंट कधीच तुटणार नाही."}
               </p>
             </div>
           ) : null}
@@ -518,15 +581,15 @@ export function StudioEditor() {
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p id="guard-title" className="flex min-h-[24px] items-center gap-2 text-[13px] font-extrabold tracking-wider text-ink-700 uppercase">
-                <Icon name="shield" className="h-4 w-4 text-maroon-700" /> क्वालिटी गार्ड
+                <Icon name="shield" className="h-4 w-4 text-maroon-700" /> {isEn ? "Quality Guard" : "क्वालिटी गार्ड"}
               </p>
               <span id="guard-summary" aria-live="polite" className={`text-[12px] font-bold ${allOk ? "text-leaf-700" : "text-gold-700"}`}>
-                {toDevanagariDigits(doneCount)}/{toDevanagariDigits(checks.length)} तपासण्या पूर्ण
+                {isEn ? `${doneCount}/${checks.length} Checks Complete` : `${toDevanagariDigits(doneCount)}/${toDevanagariDigits(checks.length)} तपासण्या पूर्ण`}
               </span>
             </div>
             <div
               role="progressbar"
-              aria-label="क्वालिटी गार्ड प्रगती"
+              aria-label={isEn ? "Quality Guard progress" : "क्वालिटी गार्ड प्रगती"}
               aria-valuemin={0}
               aria-valuemax={checks.length}
               aria-valuenow={doneCount}
@@ -561,12 +624,20 @@ export function StudioEditor() {
             >
               {isSaving ? (
                 <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-ivory-100/40 border-t-ivory-100" />
-              ) : saveStatus === "saved" ? (
-                <Icon name="check" className="h-4 w-4 text-gold-300" strokeWidth={2.8} />
               ) : (
                 <Icon name="check" className="h-4 w-4 text-gold-300" strokeWidth={2.4} />
               )}
-              {isSaving ? "जतन होत आहे…" : saveStatus === "saved" ? "जतन झालं — वर्कस्पेस उघडत आहे" : "जतन करा व वर्कस्पेस उघडा"}
+              {isSaving
+                ? isEn
+                  ? "Saving…"
+                  : "जतन होत आहे…"
+                : saveStatus === "saved"
+                  ? isEn
+                    ? "Saved — Opening Workspace"
+                    : "जतन झालं — वर्कस्पेस उघडत आहे"
+                  : isEn
+                    ? "Save & Open Workspace"
+                    : "जतन करा व वर्कस्पेस उघडा"}
             </button>
             <button
               type="button"
@@ -574,20 +645,28 @@ export function StudioEditor() {
               className="inline-flex min-h-[44px] items-center gap-2.5 rounded-full border border-maroon-800/25 bg-white px-6 py-3.5 text-[15px] font-bold text-maroon-800 transition hover:border-gold-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-600"
             >
               <Icon name="printer" className="h-5 w-5" />
-              PDF / प्रिंट
+              {isEn ? "PDF / Print" : "PDF / प्रिंट"}
             </button>
             <span className="text-[12.5px] font-semibold text-ink-400">
-              {activeRupees} · प्रीमियम टेम्पलेट
+              {activeRupees} · {isEn ? "Premium Template" : "प्रीमियम टेम्पलेट"}
             </span>
           </div>
           <p id="save-status" aria-live="polite" className="min-h-[20px] text-[12.5px] font-medium text-ink-500">
             {isSaving
-              ? "सुरक्षित जतन सुरू आहे — कृपया थांबा."
+              ? isEn
+                ? "Secure save in progress — please wait."
+                : "सुरक्षित जतन सुरू आहे — कृपया थांबा."
               : saveStatus === "saved"
-                ? "रचना जतन झाली — वर्कस्पेस उघडत आहे."
+                ? isEn
+                  ? "Design saved — opening workspace."
+                  : "रचना जतन झाली — वर्कस्पेस उघडत आहे."
                 : allOk
-                  ? "सर्व तपासण्या पूर्ण — जतन तयार."
-                  : "क्वालिटी गार्ड पूर्ण करा — मग जतन सक्रिय होईल."}
+                  ? isEn
+                    ? "All checks passed — ready to save."
+                    : "सर्व तपासण्या पूर्ण — जतन तयार."
+                  : isEn
+                    ? "Complete Quality Guard checks to enable save."
+                    : "क्वालिटी गार्ड पूर्ण करा — मग जतन सक्रिय होईल."}
           </p>
           {saveError ? (
             <div
@@ -600,7 +679,7 @@ export function StudioEditor() {
                 onClick={handleRetry}
                 className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-maroon-800 px-5 py-2.5 text-[13.5px] font-bold text-ivory-100 transition hover:bg-maroon-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-600"
               >
-                पुन्हा प्रयत्न करा
+                {isEn ? "Retry" : "पुन्हा प्रयत्न करा"}
               </button>
             </div>
           ) : null}
@@ -609,30 +688,35 @@ export function StudioEditor() {
 
       <section
         id="studio-preview"
-        aria-label="थेट प्रिव्ह्यू"
+        aria-label={isEn ? "Live preview" : "थेट प्रिव्ह्यू"}
         className="animate-fade-up lg:sticky lg:top-28 lg:self-start"
         style={{ animationDelay: "140ms" }}
       >
         <div className="flex min-h-[28px] items-center justify-between gap-2">
-          <p className="label mb-0">लाइव्ह प्रिव्ह्यू</p>
+          <p className="label mb-0">{isEn ? "Live Preview" : "लाइव्ह प्रिव्ह्यू"}</p>
           <span className="flex items-center gap-1.5 rounded-full bg-leaf-600/10 px-2.5 py-1 text-[11px] font-bold text-leaf-700 ring-1 ring-leaf-600/25">
-            <span aria-hidden="true" className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-leaf-600" /> ६० FPS
+            <span aria-hidden="true" className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-leaf-600" />{" "}
+            {isEn ? "60 FPS" : "६० FPS"}
           </span>
         </div>
         <div className="mt-3 rounded-2xl bg-paisley-dark p-6 shadow-card sm:p-10">
-          <div aria-live="polite" aria-label="आमंत्रण प्रिव्ह्यू">
+          <div aria-live="polite" aria-label={isEn ? "Invitation Preview" : "आमंत्रण प्रिव्ह्यू"}>
             <InvitationCard design={design} id="print-card" className="mx-auto max-w-[380px]" />
           </div>
           {previewEmpty ? (
             <div className="mx-auto mt-5 max-w-[380px] rounded-xl border border-gold-400/25 bg-ivory-100/5 px-4 py-3 text-center">
-              <p className="text-[13px] font-bold text-gold-200">अजून तपशील भरा</p>
+              <p className="text-[13px] font-bold text-gold-200">
+                {isEn ? "Fill in more details" : "अजून तपशील भरा"}
+              </p>
               <p className="mt-0.5 text-[12px] text-ivory-100/60">
-                नाव, दिनांक व स्थळ लिहिल्यावर प्रिव्ह्यू आपोआप जुळेल.
+                {isEn
+                  ? "Live preview will auto-render as names, date, and venue are filled."
+                  : "नाव, दिनांक व स्थळ लिहिल्यावर प्रिव्ह्यू आपोआप जुळेल."}
               </p>
             </div>
           ) : null}
           <p className="mt-6 text-center text-[11px] tracking-[0.18em] text-gold-300/70 uppercase">
-            WYSIWYP — जे दिसतंय, तेच छापलं जाईल
+            {isEn ? "WYSIWYP — What You See Is What You Print" : "WYSIWYP — जे दिसतंय, तेच छापलं जाईल"}
           </p>
           <div className="mt-4 flex justify-center">
             <button
@@ -641,14 +725,17 @@ export function StudioEditor() {
               className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-gold-400/40 px-5 py-2.5 text-[13px] font-bold text-gold-200 transition hover:border-gold-300 hover:text-gold-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300"
             >
               <Icon name="printer" className="h-4 w-4" />
-              प्रिव्ह्यू प्रिंट करा
+              {isEn ? "Print Preview" : "प्रिव्ह्यू प्रिंट करा"}
             </button>
           </div>
         </div>
         <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-maroon-900/10 bg-white/70 px-4 py-3">
           <Icon name="eye" className="mt-0.5 h-4 w-4 shrink-0 text-maroon-700" />
           <p className="text-[12.5px] leading-relaxed text-ink-500">
-            {activeTemplate ? `${activeTemplate.name} · ` : ""}प्रत्येक अक्षर बदलताच प्रिव्ह्यू क्षणार्धात जुळतो — स्क्रोल न करता तपासा.
+            {activeTemplate ? `${isEn ? activeTemplate.en : activeTemplate.name} · ` : ""}
+            {isEn
+              ? "Live preview updates dynamically at 60 FPS as you type — zero distortion."
+              : "प्रत्येक अक्षर बदलताच प्रिव्ह्यू क्षणार्धात जुळतो — स्क्रोल न करता तपासा."}
           </p>
         </div>
       </section>

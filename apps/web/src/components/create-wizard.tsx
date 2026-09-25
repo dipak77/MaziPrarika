@@ -5,11 +5,10 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { toDevanagariDigits } from '@mazi/marathi';
 import { LangToggle } from '@/components/lang-toggle';
+import { useLanguage } from '@/context/language-context';
 import {
   type CardLang,
   DEFAULT_LANG,
-  PREF_LANG_COOKIE,
-  PREF_LANG_STORAGE_KEY,
   onboardingCopy,
 } from '@/lib/i18n';
 
@@ -87,29 +86,11 @@ function isAssistantResponse(data: unknown): data is AssistantResponse {
 }
 
 export function CreateWizard({ examples }: { examples: string[] }) {
-  // Always default to Marathi ('mr') unless user explicitly chooses otherwise
-  const [preferredLang, setPreferredLang] = useState<CardLang>(DEFAULT_LANG);
+  const { lang, setLang, isEn } = useLanguage();
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState(false);
   const [response, setResponse] = useState<AssistantResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Sync client-side language preference from cookie or localStorage if set
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(PREF_LANG_STORAGE_KEY);
-      if (stored === 'en' || stored === 'mr') {
-        setPreferredLang(stored);
-        return;
-      }
-      const match = document.cookie.match(new RegExp(`(?:^|; )${PREF_LANG_COOKIE}=([^;]*)`));
-      if (match && (match[1] === 'en' || match[1] === 'mr')) {
-        setPreferredLang(match[1] as CardLang);
-      }
-    } catch {
-      // storage access unavailable
-    }
-  }, []);
 
   const send = useCallback(async (text: string, confirm: boolean, langChoice: CardLang) => {
     setPending(true);
@@ -152,10 +133,9 @@ export function CreateWizard({ examples }: { examples: string[] }) {
     }
   }, []);
 
-  const isEn = preferredLang === 'en';
   const toolLabels = isEn ? TOOL_LABELS_EN : TOOL_LABELS_MR;
   const activeExamples = isEn ? DEFAULT_EN_EXAMPLES : examples;
-  const copy = onboardingCopy[preferredLang];
+  const copy = onboardingCopy[lang];
 
   const view = response !== null && isAssistantResponse(response) ? response : null;
   const submitted = view !== null;
@@ -169,7 +149,7 @@ export function CreateWizard({ examples }: { examples: string[] }) {
         onSubmit={(event) => {
           event.preventDefault();
           if (message.trim().length < 2) return;
-          void send(message, false, preferredLang);
+          void send(message, false, lang);
         }}
       >
         {/* Onboarding Language Preference Selector */}
@@ -191,9 +171,9 @@ export function CreateWizard({ examples }: { examples: string[] }) {
             </div>
           </div>
           <LangToggle
-            lang={preferredLang}
+            lang={lang}
             onChange={(next) => {
-              setPreferredLang(next);
+              setLang(next);
             }}
           />
         </div>
@@ -289,7 +269,7 @@ export function CreateWizard({ examples }: { examples: string[] }) {
           <button
             type="button"
             onClick={() => {
-              if (message.trim().length >= 2) void send(message, false, preferredLang);
+              if (message.trim().length >= 2) void send(message, false, lang);
             }}
             disabled={pending}
             className="btn-base btn-maroon mt-3 px-5 text-sm"
@@ -353,7 +333,7 @@ export function CreateWizard({ examples }: { examples: string[] }) {
               </p>
               <button
                 type="button"
-                onClick={() => void send(message, true, preferredLang)}
+                onClick={() => void send(message, true, lang)}
                 disabled={pending}
                 className="btn-base btn-maroon mt-3 px-5 text-sm"
               >
@@ -439,13 +419,13 @@ export function CreateWizard({ examples }: { examples: string[] }) {
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link
-                  href={`/studio/${view.event.slug}?lang=${preferredLang}`}
+                  href={`/studio/${view.event.slug}?lang=${lang}`}
                   className="btn-base btn-maroon px-5 py-2.5 text-sm"
                 >
                   {isEn ? 'Open Workspace' : 'वर्कस्पेस उघडा'}
                 </Link>
                 <Link
-                  href={`/studio/${view.event.slug}/invitation?lang=${preferredLang}`}
+                  href={`/studio/${view.event.slug}/invitation?lang=${lang}`}
                   className="btn-base btn-outline px-5 py-2.5 text-sm bg-white"
                 >
                   {isEn ? 'Create Invitation' : 'पत्रिका तयार करा'}

@@ -4,6 +4,8 @@ import { EVENT_TYPES, formatMarathiDate, toDevanagariDigits } from '@mazi/marath
 
 import { CITY_OPTIONS, DPO_NOTE, panchangFor } from '@/lib/panchang';
 import { getStore } from '@/lib/store';
+import { EventsHeader } from '@/components/events-header';
+import { EventsFilters } from '@/components/events-filters';
 import { Kicker } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
@@ -40,42 +42,14 @@ export default async function EventsPage({
 
   return (
     <div className="shell py-10">
-      <header className="max-w-3xl">
-        <Kicker>Event Discovery</Kicker>
-        <h1 className="mt-1 font-display text-4xl font-bold text-maroon">सार्वजनिक पत्रिका</h1>
-        <p className="mt-3 text-lg text-charcoal-soft">
-          काही कुटुंबे आपली पत्रिका सार्वजनिक करतात — मग नातेवाईक, मित्र व नवीन पाहुणे ती शोधू शकतात. नोंदणी न करता
-          पाहता येते; शुभेच्छा देण्यासाठी नाव लिहावे लागते.
-        </p>
-      </header>
+      <EventsHeader />
 
-      <form className="surface mt-6 grid gap-3 p-5 sm:grid-cols-3" method="get">
-        <label className="text-sm">
-          <span className="font-ui text-xs uppercase tracking-wider text-charcoal-soft">शहर</span>
-          <select name="city" defaultValue={city} className="mt-1 w-full rounded-xl border border-gold/40 bg-ivory px-3 py-2 text-sm">
-            <option value="">सर्व शहरे</option>
-            {CITY_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-sm">
-          <span className="font-ui text-xs uppercase tracking-wider text-charcoal-soft">प्रकार</span>
-          <select name="type" defaultValue={type} className="mt-1 w-full rounded-xl border border-gold/40 bg-ivory px-3 py-2 text-sm">
-            <option value="">सर्व प्रकार</option>
-            {Object.values(EVENT_TYPES).map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="submit" className="btn-base btn-maroon self-end px-5 text-sm">
-          पत्रिका शोधा
-        </button>
-      </form>
+      <EventsFilters
+        city={city}
+        type={type}
+        cityOptions={CITY_OPTIONS}
+        eventOptions={Object.values(EVENT_TYPES).map((opt) => ({ key: opt.key, label: opt.label }))}
+      />
 
       <p className="mt-4 text-xs text-charcoal-soft">
         एकूण सार्वजनिक पत्रिका: {toDevanagariDigits(publicCount)} • पुढील १२ महिन्यांतील: {toDevanagariDigits(events.length)} •{' '}
