@@ -24,9 +24,11 @@ export default async function StudioPage({
   const params = await searchParams;
   const rawMode = params?.mode;
   const initialMode: StudioMode =
-    typeof rawMode === "string" && VALID_MODES.includes(rawMode as StudioMode)
-      ? (rawMode as StudioMode)
-      : "all-events";
+    typeof rawMode === "string" && (rawMode === "canva" || rawMode === "canvas")
+      ? "pro-editor"
+      : typeof rawMode === "string" && VALID_MODES.includes(rawMode as StudioMode)
+        ? (rawMode as StudioMode)
+        : "all-events";
 
   return (
     <div className="shell py-10 sm:py-14">

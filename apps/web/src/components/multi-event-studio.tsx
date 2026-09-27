@@ -14,7 +14,11 @@ import { TransliteratedInput } from "@/components/ui/transliterated-input";
 import { useLanguage } from "@/context/language-context";
 import { toDevanagariDigits } from "@/lib/format";
 
-export function MultiEventStudio() {
+export function MultiEventStudio({
+  onOpenCanvaPro,
+}: {
+  onOpenCanvaPro?: (templateId: string) => void;
+} = {}) {
   const { lang, setLang, isEn, isHi } = useLanguage();
 
   const [activeCategory, setActiveCategory] = useState<EventCategory | "all">("all");
@@ -458,6 +462,19 @@ export function MultiEventStudio() {
 
           {/* Action Toolbar */}
           <div className="flex flex-wrap items-center gap-3 pt-2">
+            {onOpenCanvaPro && (
+              <button
+                type="button"
+                onClick={() => onOpenCanvaPro(selectedTemplateId)}
+                className="inline-flex min-h-[46px] items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-rose-600 to-amber-600 px-6 py-3 text-sm font-black text-white shadow-xl hover:from-amber-400 hover:to-rose-500 transition transform hover:-translate-y-0.5 active:scale-95"
+              >
+                <span>🎨</span>
+                {isEn
+                  ? "Open in Canva Pro Canvas Studio"
+                  : "कॅनव्हा प्रो स्टुडिओ कॅनव्हासवर उघडा (Canva Pro)"}
+              </button>
+            )}
+
             <button
               type="button"
               onClick={handlePrint}
@@ -494,6 +511,24 @@ export function MultiEventStudio() {
               {isBlankPlaceholder ? "📋 Blank Placeholder" : "✨ Working Template"}
             </div>
           </div>
+
+          {onOpenCanvaPro && (
+            <div className="mb-3">
+              <button
+                type="button"
+                onClick={() => onOpenCanvaPro(selectedTemplateId)}
+                className="w-full flex items-center justify-between rounded-xl bg-gradient-to-r from-amber-500 via-rose-600 to-amber-600 px-4 py-2.5 text-xs font-black text-white shadow-md hover:brightness-110 transition active:scale-98"
+              >
+                <span className="flex items-center gap-1.5">
+                  <span>🎨</span>
+                  <span>{isEn ? "Open & Customise in Canva Pro Studio" : "कॅनव्हा प्रो स्टुडिओ कॅनव्हासवर मनसोक्त एडिट करा"}</span>
+                </span>
+                <span className="rounded bg-black/30 px-2 py-0.5 text-[10px] uppercase tracking-wider font-extrabold text-amber-200">
+                  CANVA PRO
+                </span>
+              </button>
+            </div>
+          )}
 
           {/* Master Template Card Rendering */}
           <div className="animate-fade-up">

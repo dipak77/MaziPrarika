@@ -19,6 +19,7 @@ import {
 import { BiodataEditor } from "@/components/biodata-editor";
 import { MultiEventStudio } from "@/components/multi-event-studio";
 import { ProTemplateEditor } from "@/components/pro-template-editor";
+import { CanvaCanvasEditor } from "@/components/canva-canvas-editor";
 import { toDevanagariDigits } from "@/lib/format";
 import {
   useEffect,
@@ -269,6 +270,26 @@ export function StudioEditor({
 }) {
   const { lang, setLang, isEn, isHi, isMr } = useLanguage();
   const [studioMode, setStudioMode] = useState<StudioMode>(initialMode);
+  const [canvaTemplateId, setCanvaTemplateId] = useState<string | undefined>(undefined);
+
+  // Synchronize hash: when /studio#design-form is visited or clicked, automatically switch to pro-editor mode
+  useEffect(() => {
+    const handleHash = () => {
+      if (typeof window !== "undefined" && window.location.hash === "#design-form") {
+        setStudioMode("pro-editor");
+        setTimeout(() => {
+          const el = document.getElementById("design-form");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 120);
+      }
+    };
+
+    handleHash();
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
 
   // ── Core Design State ──
   const [design, setDesign] = useState<DesignData>(() => ({
@@ -734,12 +755,12 @@ export function StudioEditor({
       id: "pro-editor" as StudioMode,
       icon: "🎨",
       label: {
-        en: "Pro Editor",
-        hi: "प्रो एडिटर",
-        mr: "प्रो एडिटर",
+        en: "Canva Pro Studio",
+        hi: "कैनवा प्रो स्टूडियो",
+        mr: "कॅनव्हा प्रो स्टुडिओ",
       },
-      badge: "PRO",
-      badgeColor: "bg-red-600 text-white",
+      badge: "CANVA PRO",
+      badgeColor: "bg-gradient-to-r from-amber-500 via-rose-500 to-amber-600 text-white font-extrabold animate-pulse shadow-xs",
     },
     {
       id: "video-studio" as StudioMode,
@@ -924,9 +945,17 @@ export function StudioEditor({
           STUDIO MODE CONTENT
       ═══════════════════════════════════════════════════════════════════════ */}
       {studioMode === "all-events" ? (
-        <MultiEventStudio />
+        <MultiEventStudio
+          onOpenCanvaPro={(tmplId) => {
+            setCanvaTemplateId(tmplId);
+            setStudioMode("pro-editor");
+            if (typeof window !== "undefined") {
+              window.location.hash = "#design-form";
+            }
+          }}
+        />
       ) : studioMode === "pro-editor" ? (
-        <ProTemplateEditor />
+        <CanvaCanvasEditor initialTemplateId={canvaTemplateId} />
       ) : studioMode === "biodata" ? (
         <BiodataEditor />
       ) : studioMode === "video-studio" ? (
@@ -1879,7 +1908,7 @@ export function StudioEditor({
                 ref={activePanel === "text" ? undefined : formRef}
                 action={handleAction}
                 noValidate
-                id="design-form"
+                id="legacy-design-form"
                 aria-label={
                   isEn
                     ? "Invitation details form"
