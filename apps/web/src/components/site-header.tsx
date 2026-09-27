@@ -53,6 +53,7 @@ export interface SubItem {
   icon: string;
   badge?: string;
   href: string;
+  target?: string;
   en: string;
   mr: string;
   hi: string;
@@ -101,6 +102,18 @@ const NAV_SECTIONS: NavSection[] = [
         enD: '60 FPS live animated templates',
         mrD: '६० FPS लाइव्ह ॲनिमेटेड टेम्पलेट्स',
         hiD: '60 FPS लाइव एनिमेटेड टेम्पलेट्स',
+      },
+      {
+        icon: 'sparkle',
+        badge: 'NEW TAB ⤢',
+        href: '/studio/editor',
+        target: '_blank',
+        en: 'Canva Pro Studio (Full View)',
+        mr: 'कॅनव्हा प्रो स्टुडिओ (फुल स्क्रीन)',
+        hi: 'कैनवा प्रो स्टूडियो (फुल स्क्रीन)',
+        enD: '100% full screen canvas workspace with zero distraction',
+        mrD: '१००% संपूर्ण स्क्रीन कॅनव्हास, अमर्याद जागा व टूल्स',
+        hiD: '100% फुल स्क्रीन कैनवास, संपूर्ण स्पेस व टूल्स',
       },
       {
         icon: 'wand',
@@ -177,6 +190,18 @@ const NAV_SECTIONS: NavSection[] = [
     badge: 'NEW',
     badgeVariant: 'gold',
     items: [
+      {
+        icon: 'sparkle',
+        badge: 'NEW TAB ⤢',
+        href: '/biodata/editor',
+        target: '_blank',
+        en: 'Biodata Maker (Full View)',
+        mr: 'विवाह बायोडाटा (फुल स्क्रीन)',
+        hi: 'विवाह बायोडाटा (फुल स्क्रीन)',
+        enD: '100% full view workspace for distraction-free editing',
+        mrD: 'संपूर्ण स्क्रीन जागेत बायोडाटा बनवा व प्रिंट करा',
+        hiD: 'संपूर्ण स्क्रीन में बायोडाटा बनाएँ व प्रिंट करें',
+      },
       {
         icon: 'crown',
         badge: '८ TEMPLATES',
@@ -894,6 +919,8 @@ export function SiteHeader() {
                         <Link
                           key={m.href + m.en + i}
                           href={m.href}
+                          target={m.target}
+                          rel={m.target === '_blank' ? 'noopener noreferrer' : undefined}
                           onClick={handleCloseAll}
                           className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-[#dfb150]/15"
                           style={{ animation: `hdr-fade-up 0.3s ${i * 35}ms both` }}
@@ -1006,6 +1033,8 @@ export function SiteHeader() {
                     <Link
                       key={m.href + m.en + i}
                       href={m.href}
+                      target={m.target}
+                      rel={m.target === '_blank' ? 'noopener noreferrer' : undefined}
                       onClick={handleCloseAll}
                       className="group flex items-start gap-3.5 rounded-2xl border border-[#dfb150]/20 bg-white/70 p-3.5 transition-all duration-300 hover:border-[#dfb150]/70 hover:bg-linear-to-br hover:from-[#dfb150]/15 hover:via-white hover:to-transparent hover:shadow-md"
                       style={{ animation: `hdr-fade-up 0.3s ${i * 35}ms both` }}
@@ -1183,6 +1212,8 @@ export function SiteHeader() {
                           <Link
                             key={sub.href + sub.en}
                             href={sub.href}
+                            target={sub.target}
+                            rel={sub.target === '_blank' ? 'noopener noreferrer' : undefined}
                             onClick={handleCloseAll}
                             className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-[#dfb150]/15"
                           >

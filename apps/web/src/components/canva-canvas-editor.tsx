@@ -68,6 +68,8 @@ export interface CanvasElement {
   shadow?: boolean;
   letterSpacing?: number;
   lineHeight?: number;
+  textShadowPreset?: "none" | "gold-glow" | "deep-black" | "embossed" | "neon-rose";
+  textTransform?: "none" | "uppercase" | "lowercase" | "capitalize";
 
   // Shape attributes
   shapeType?: "rectangle" | "rounded" | "circle" | "arch" | "star" | "shield" | "pill";
@@ -77,7 +79,7 @@ export interface CanvasElement {
   borderRadius?: number;
 
   // Ornament attributes
-  ornamentType?: "ganesha" | "mandala" | "toran" | "peacock" | "bells" | "chandelier" | "divider" | "diya" | "swastik" | "katyar";
+  ornamentType?: "ganesha" | "mandala" | "toran" | "peacock" | "bells" | "chandelier" | "divider" | "diya" | "swastik" | "katyar" | "kalash" | "mangalsutra" | "shehnai" | "dhol" | "rajmudra" | "lotus" | "pheta" | "trishul" | "paithani";
   ornamentColor?: string;
 
   // Photo attributes
@@ -209,6 +211,12 @@ const AUSPICIOUS_PHRASES = [
   { label: "सत्यनारायण", text: "॥ सत्यनारायण महापूजा ॥" },
   { label: "बारसे/नामकरण", text: "॥ बारसे व नामकरण सोहळा ॥" },
   { label: "वाढदिवस", text: "॥ वाढदिवसाच्या हार्दिक शुभेच्छा ॥" },
+  { label: "सौभाग्यवती", text: "॥ अखंड सौभाग्यवती भव ॥" },
+  { label: "कुलदेवता", text: "॥ कुलदेवता प्रसन्न ॥" },
+  { label: "राजमुद्रा श्लोक", text: "॥ प्रतिपच्चंद्रलेखेव वर्धिष्णुर्विश्ववंदिता शाहसूनोः शिवस्यैषा मुद्रा भद्राय राजते ॥" },
+  { label: "शुभारंभ", text: "॥ शुभारंभ ॥" },
+  { label: "अमृत महोत्सव", text: "॥ अमृत महोत्सव सोहळा ॥" },
+  { label: "संस्कृती", text: "॥ सत्य, शौर्य, संस्कृती ॥" },
 ];
 
 /* Inline Royal Swastik SVG Motif */
@@ -220,6 +228,143 @@ function RoyalSwastikSvg({ size = 48, accentColor = "#d4af37" }: { size?: number
       <circle cx="68" cy="32" r="3" fill={accentColor} stroke="none" />
       <circle cx="68" cy="68" r="3" fill={accentColor} stroke="none" />
       <circle cx="32" cy="68" r="3" fill={accentColor} stroke="none" />
+    </svg>
+  );
+}
+
+/* Inline Royal Kalash SVG */
+function RoyalKalashSvg({ size = 48, accentColor = "#d4af37" }: { size?: number; accentColor?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} fill="none" stroke={accentColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M50 15 C40 25, 42 35, 50 38 C58 35, 60 25, 50 15 Z" fill={accentColor} fillOpacity="0.25" />
+      <path d="M36 30 C42 22, 50 28, 48 36" />
+      <path d="M64 30 C58 22, 50 28, 52 36" />
+      <path d="M26 34 C35 30, 44 36, 42 40" />
+      <path d="M74 34 C65 30, 56 36, 58 40" />
+      <path d="M35 40 H65" strokeWidth="4" />
+      <path d="M38 45 H62" strokeWidth="3" />
+      <path d="M38 45 C25 55, 25 78, 42 85 H58 C75 78, 75 55, 62 45 Z" fill={accentColor} fillOpacity="0.15" />
+      <path d="M38 85 H62 V90 H38 Z" fill={accentColor} fillOpacity="0.3" strokeWidth="2" />
+      <path d="M50 56 v16 M42 64 h16 M50 56 h6 M58 64 v6 M50 72 h-6 M42 64 v-6" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
+/* Inline Mangalsutra Motif SVG */
+function MangalsutraMotifSvg({ size = 48, accentColor = "#d4af37" }: { size?: number; accentColor?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} fill="none" stroke={accentColor} strokeWidth="3" aria-hidden="true">
+      <path d="M10 35 Q50 65 90 35" strokeDasharray="3 4" strokeWidth="3" stroke="#222" />
+      <path d="M10 40 Q50 70 90 40" strokeDasharray="3 4" strokeWidth="2.5" stroke={accentColor} />
+      <circle cx="43" cy="62" r="8" fill={accentColor} fillOpacity="0.3" strokeWidth="2.5" />
+      <circle cx="57" cy="62" r="8" fill={accentColor} fillOpacity="0.3" strokeWidth="2.5" />
+      <circle cx="50" cy="58" r="3.5" fill={accentColor} stroke="none" />
+      <circle cx="43" cy="62" r="2.5" fill={accentColor} stroke="none" />
+      <circle cx="57" cy="62" r="2.5" fill={accentColor} stroke="none" />
+      <path d="M43 70 v5 M57 70 v5" strokeWidth="2" />
+      <circle cx="43" cy="76" r="1.5" fill={accentColor} stroke="none" />
+      <circle cx="57" cy="76" r="1.5" fill={accentColor} stroke="none" />
+    </svg>
+  );
+}
+
+/* Inline Shehnai & Choughada SVG */
+function ShehnaiChoughadaSvg({ size = 48, accentColor = "#d4af37" }: { size?: number; accentColor?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} fill="none" stroke={accentColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 75 L65 30 L72 37 L27 82 Z" fill={accentColor} fillOpacity="0.2" strokeWidth="2" />
+      <path d="M16 71 C10 77, 18 89, 29 83 Z" fill={accentColor} fillOpacity="0.4" strokeWidth="2" />
+      <circle cx="40" cy="55" r="1.5" fill={accentColor} stroke="none" />
+      <circle cx="48" cy="47" r="1.5" fill={accentColor} stroke="none" />
+      <circle cx="56" cy="39" r="1.5" fill={accentColor} stroke="none" />
+      <ellipse cx="68" cy="68" rx="14" ry="10" fill={accentColor} fillOpacity="0.2" strokeWidth="2.5" />
+      <ellipse cx="80" cy="58" rx="12" ry="8" fill={accentColor} fillOpacity="0.2" strokeWidth="2.5" />
+      <path d="M50 78 L65 68" strokeWidth="2.5" />
+      <path d="M92 42 L80 58" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
+/* Inline Dhol Tasha SVG */
+function DholTashaMotifSvg({ size = 48, accentColor = "#d4af37" }: { size?: number; accentColor?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} fill="none" stroke={accentColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <ellipse cx="40" cy="50" rx="12" ry="22" fill={accentColor} fillOpacity="0.3" strokeWidth="2.5" />
+      <path d="M40 28 C65 32, 65 68, 40 72" fill={accentColor} fillOpacity="0.15" strokeWidth="2.5" />
+      <path d="M32 35 L58 45 L32 55 L58 65" strokeWidth="1.5" strokeDasharray="2 2" />
+      <ellipse cx="74" cy="48" rx="16" ry="11" fill={accentColor} fillOpacity="0.25" strokeWidth="2.5" />
+      <path d="M62 48 L74 65 L86 48" strokeWidth="2" />
+      <path d="M22 62 L38 52" strokeWidth="3" />
+      <path d="M82 32 L74 46" strokeWidth="3" />
+    </svg>
+  );
+}
+
+/* Inline Royal Maratha Rajmudra SVG */
+function RoyalRajmudraMotifSvg({ size = 48, accentColor = "#d4af37" }: { size?: number; accentColor?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} fill="none" stroke={accentColor} strokeWidth="3" aria-hidden="true">
+      <polygon points="50,6 80,18 94,48 82,78 50,92 18,78 6,48 20,18" fill={accentColor} fillOpacity="0.12" strokeWidth="3" />
+      <polygon points="50,12 75,22 88,48 77,74 50,86 23,74 12,48 25,22" strokeWidth="1.5" strokeDasharray="3 2" />
+      <path d="M40 30 A 8 8 0 0 0 54 22 A 10 10 0 1 1 40 30 Z" fill={accentColor} stroke="none" />
+      <path d="M30 40 H70 M26 48 H74 M28 56 H72 M32 64 H68 M38 72 H62" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/* Inline Sacred Lotus SVG */
+function SacredLotusSvg({ size = 48, accentColor = "#d4af37" }: { size?: number; accentColor?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} fill="none" stroke={accentColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M50 20 C42 42, 42 68, 50 78 C58 68, 58 42, 50 20 Z" fill={accentColor} fillOpacity="0.35" />
+      <path d="M50 36 C34 46, 26 62, 34 76 C42 76, 46 64, 50 56" fill={accentColor} fillOpacity="0.2" />
+      <path d="M50 36 C66 46, 74 62, 66 76 C58 76, 54 64, 50 56" fill={accentColor} fillOpacity="0.2" />
+      <path d="M50 48 C28 54, 16 68, 22 80 C32 82, 42 74, 50 68" fill={accentColor} fillOpacity="0.15" />
+      <path d="M50 48 C72 54, 84 68, 78 80 C68 82, 58 74, 50 68" fill={accentColor} fillOpacity="0.15" />
+      <path d="M30 82 Q50 90 70 82" strokeWidth="2" />
+    </svg>
+  );
+}
+
+/* Inline Royal Maratha Pheta SVG */
+function RoyalPhetaSvg({ size = 48, accentColor = "#d4af37" }: { size?: number; accentColor?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} fill="none" stroke={accentColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M22 66 C20 48, 32 30, 52 26 C68 24, 82 36, 80 56 C68 62, 40 68, 22 66 Z" fill={accentColor} fillOpacity="0.25" />
+      <path d="M24 54 C36 42, 64 40, 78 48" strokeWidth="2" strokeDasharray="3 2" />
+      <path d="M26 62 C40 52, 62 50, 76 58" strokeWidth="2" />
+      <path d="M52 26 C52 14, 56 8, 62 6 C66 12, 64 22, 54 26" fill={accentColor} fillOpacity="0.5" strokeWidth="2" />
+      <circle cx="53" cy="27" r="4" fill={accentColor} stroke="none" />
+      <path d="M78 50 C86 52, 88 64, 86 78 L80 84" strokeWidth="2.2" />
+    </svg>
+  );
+}
+
+/* Inline Trishul & Om Motif SVG */
+function TrishulOmSvg({ size = 48, accentColor = "#d4af37" }: { size?: number; accentColor?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} fill="none" stroke={accentColor} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M50 14 V86" strokeWidth="3" />
+      <path d="M50 14 L42 26 H58 Z" fill={accentColor} stroke="none" />
+      <path d="M28 26 C28 46, 50 48, 50 48 C50 48, 72 46, 72 26" strokeWidth="2.8" />
+      <path d="M28 26 L22 34 H34 Z" fill={accentColor} stroke="none" />
+      <path d="M72 26 L66 34 H78 Z" fill={accentColor} stroke="none" />
+      <ellipse cx="50" cy="56" rx="10" ry="6" fill={accentColor} fillOpacity="0.3" strokeWidth="2" />
+      <path d="M40 56 L60 56" strokeWidth="2" />
+    </svg>
+  );
+}
+
+/* Inline Paithani Sari Corner SVG */
+function PaithaniCornerSvg({ size = 48, accentColor = "#d4af37" }: { size?: number; accentColor?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} fill="none" stroke={accentColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10 10 H90 V25 H25 V90 H10 Z" fill={accentColor} fillOpacity="0.2" strokeWidth="2.5" />
+      <path d="M18 18 H82 M18 18 V82" strokeWidth="1.5" strokeDasharray="2 2" />
+      <circle cx="35" cy="35" r="10" fill={accentColor} fillOpacity="0.3" strokeWidth="2" />
+      <path d="M35 25 C45 35, 45 45, 35 45 C25 45, 25 35, 35 25 Z" fill={accentColor} stroke="none" />
+      <circle cx="60" cy="20" r="3" fill={accentColor} stroke="none" />
+      <circle cx="20" cy="60" r="3" fill={accentColor} stroke="none" />
     </svg>
   );
 }
@@ -446,10 +591,19 @@ function getInitialElements(): CanvasElement[] {
    ═══════════════════════════════════════════════════════════════ */
 export function CanvaCanvasEditor({
   initialTemplateId,
+  fullViewMode = false,
 }: {
   initialTemplateId?: string;
+  fullViewMode?: boolean;
 }) {
   const { lang, isEn, isHi } = useLanguage();
+
+  // Full View State & Panel Visibility
+  const [isFullView, setIsFullView] = useState(fullViewMode);
+  const [leftDockOpen, setLeftDockOpen] = useState(true);
+  const [rightInspectorOpen, setRightInspectorOpen] = useState(true);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Document Title
   const [docTitle, setDocTitle] = useState("माझी पत्रिका — राजेशाही कॅनव्हास डिझाइन");
@@ -458,8 +612,11 @@ export function CanvaCanvasEditor({
 
   // Active Tool Dock Tab
   const [activeTab, setActiveTab] = useState<
-    "templates" | "text" | "elements" | "photos" | "colors" | "effects" | "layers"
+    "templates" | "blocks" | "text" | "elements" | "photos" | "colors" | "effects" | "layers"
   >("templates");
+
+  // DOM Refs
+  const jsonInputRef = useRef<HTMLInputElement>(null);
 
   // Canvas State & History Stack
   const [elements, setElements] = useState<CanvasElement[]>(() => getInitialElements());
@@ -1059,6 +1216,720 @@ export function CanvaCanvasEditor({
     };
   }, [isDragging, isResizing, dragStart, resizeStart, selectedId, resizeHandle, zoom, elements, pushState]);
 
+  // Escape key listener to exit full view
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFullView) {
+        setIsFullView(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFullView]);
+
+  // Ready Component Block Stampers
+  const handleAddReadyBlock = (
+    blockType:
+      | "muhurat"
+      | "couple"
+      | "inviter"
+      | "venue"
+      | "rajmudra"
+      | "haldi"
+      | "satyanarayan"
+      | "snehbhojan"
+  ) => {
+    const timestamp = Date.now();
+    let newElements: CanvasElement[] = [];
+
+    if (blockType === "muhurat") {
+      newElements = [
+        {
+          id: `ready-muhurat-bg-${timestamp}`,
+          type: "shape",
+          name: "मुहूर्त बॅकग्राउंड कार्ड",
+          x: 100,
+          y: dimensions.height / 2 - 60,
+          width: dimensions.width - 200,
+          height: 120,
+          rotation: 0,
+          opacity: 0.95,
+          zIndex: 20,
+          shapeType: "rounded",
+          fill: "#1f0408",
+          stroke: customAccentColor,
+          strokeWidth: 2,
+          borderRadius: 20,
+        },
+        {
+          id: `ready-muhurat-title-${timestamp}`,
+          type: "text",
+          name: "मुहूर्त शीर्षक",
+          x: 110,
+          y: dimensions.height / 2 - 50,
+          width: dimensions.width - 220,
+          height: 30,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 21,
+          text: "॥ शुभ मुहूर्त ॥",
+          fontFamily: "display",
+          fontSize: 18,
+          fontWeight: "bold",
+          textAlign: "center",
+          color: customAccentColor,
+          goldFoil: true,
+        },
+        {
+          id: `ready-muhurat-date-${timestamp}`,
+          type: "text",
+          name: "मुहूर्त दिनांक",
+          x: 110,
+          y: dimensions.height / 2 - 20,
+          width: dimensions.width - 220,
+          height: 40,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 22,
+          text: "रविवार, २५ डिसेंबर २०२७",
+          fontFamily: "serif",
+          fontSize: 24,
+          fontWeight: "black",
+          textAlign: "center",
+          color: "#ffffff",
+        },
+        {
+          id: `ready-muhurat-time-${timestamp}`,
+          type: "text",
+          name: "मुहूर्त वेळ",
+          x: 110,
+          y: dimensions.height / 2 + 18,
+          width: dimensions.width - 220,
+          height: 30,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 23,
+          text: "दुपारी १२ वाजून ३५ मिनिटांनी शुभमुहूर्तावर",
+          fontFamily: "sans",
+          fontSize: 15,
+          fontWeight: "normal",
+          textAlign: "center",
+          color: customTextColor,
+        },
+      ];
+    } else if (blockType === "couple") {
+      newElements = [
+        {
+          id: `ready-couple-groom-${timestamp}`,
+          type: "text",
+          name: "वर नाव",
+          x: 50,
+          y: 300,
+          width: dimensions.width - 100,
+          height: 60,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 24,
+          text: "चि. चिन्मय",
+          fontFamily: "serif",
+          fontSize: 36,
+          fontWeight: "black",
+          textAlign: "center",
+          color: "#ffffff",
+          shadow: true,
+          goldFoil: true,
+        },
+        {
+          id: `ready-couple-connector-${timestamp}`,
+          type: "text",
+          name: "सह शब्द",
+          x: dimensions.width / 2 - 60,
+          y: 365,
+          width: 120,
+          height: 30,
+          rotation: 0,
+          opacity: 0.9,
+          zIndex: 25,
+          text: "— सह —",
+          fontFamily: "display",
+          fontSize: 18,
+          fontWeight: "normal",
+          textAlign: "center",
+          color: customAccentColor,
+        },
+        {
+          id: `ready-couple-bride-${timestamp}`,
+          type: "text",
+          name: "वधू नाव",
+          x: 50,
+          y: 400,
+          width: dimensions.width - 100,
+          height: 60,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 26,
+          text: "चि.सौ.कां. तन्वी",
+          fontFamily: "serif",
+          fontSize: 36,
+          fontWeight: "black",
+          textAlign: "center",
+          color: "#ffffff",
+          shadow: true,
+          goldFoil: true,
+        },
+      ];
+    } else if (blockType === "inviter") {
+      newElements = [
+        {
+          id: `ready-inviter-bg-${timestamp}`,
+          type: "shape",
+          name: "निमंत्रक बॉक्स",
+          x: 80,
+          y: dimensions.height - 280,
+          width: dimensions.width - 160,
+          height: 110,
+          rotation: 0,
+          opacity: 0.85,
+          zIndex: 20,
+          shapeType: "rounded",
+          fill: "#150205",
+          stroke: customAccentColor,
+          strokeWidth: 1.5,
+          borderRadius: 16,
+        },
+        {
+          id: `ready-inviter-title-${timestamp}`,
+          type: "text",
+          name: "निमंत्रक शीर्षक",
+          x: 90,
+          y: dimensions.height - 275,
+          width: dimensions.width - 180,
+          height: 28,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 21,
+          text: "॥ निमंत्रक ॥",
+          fontFamily: "display",
+          fontSize: 16,
+          fontWeight: "bold",
+          textAlign: "center",
+          color: customAccentColor,
+          goldFoil: true,
+        },
+        {
+          id: `ready-inviter-names-${timestamp}`,
+          type: "text",
+          name: "निमंत्रक नावे",
+          x: 90,
+          y: dimensions.height - 245,
+          width: dimensions.width - 180,
+          height: 40,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 22,
+          text: "समस्त देशमुख व पाटील परिवार",
+          fontFamily: "serif",
+          fontSize: 20,
+          fontWeight: "bold",
+          textAlign: "center",
+          color: "#ffffff",
+        },
+        {
+          id: `ready-inviter-note-${timestamp}`,
+          type: "text",
+          name: "उपस्थिती विनंती",
+          x: 90,
+          y: dimensions.height - 205,
+          width: dimensions.width - 180,
+          height: 25,
+          rotation: 0,
+          opacity: 0.85,
+          zIndex: 23,
+          text: "आपल्या सप्रेम उपस्थितीची व आशीर्वादाची नम्र विनंती.",
+          fontFamily: "sans",
+          fontSize: 13,
+          fontWeight: "normal",
+          textAlign: "center",
+          color: customTextColor,
+        },
+      ];
+    } else if (blockType === "venue") {
+      newElements = [
+        {
+          id: `ready-venue-bg-${timestamp}`,
+          type: "shape",
+          name: "स्थळ कार्ड",
+          x: 80,
+          y: dimensions.height - 150,
+          width: dimensions.width - 160,
+          height: 90,
+          rotation: 0,
+          opacity: 0.9,
+          zIndex: 20,
+          shapeType: "rounded",
+          fill: "#1f0408",
+          stroke: customAccentColor,
+          strokeWidth: 1.5,
+          borderRadius: 14,
+        },
+        {
+          id: `ready-venue-title-${timestamp}`,
+          type: "text",
+          name: "स्थळ मजकूर",
+          x: 90,
+          y: dimensions.height - 145,
+          width: dimensions.width - 180,
+          height: 30,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 21,
+          text: "📍 स्थळ: दामिनी लॉन्स, एनडीए रोड, बावधन, पुणे",
+          fontFamily: "sans",
+          fontSize: 16,
+          fontWeight: "bold",
+          textAlign: "center",
+          color: "#ffffff",
+        },
+        {
+          id: `ready-venue-sub-${timestamp}`,
+          type: "text",
+          name: "गुगल मॅप टीप",
+          x: 90,
+          y: dimensions.height - 110,
+          width: dimensions.width - 180,
+          height: 25,
+          rotation: 0,
+          opacity: 0.9,
+          zIndex: 22,
+          text: "📲 Google Maps लोकेशनसाठी येथे स्कॅन करा",
+          fontFamily: "sans",
+          fontSize: 13,
+          fontWeight: "normal",
+          textAlign: "center",
+          color: customAccentColor,
+        },
+      ];
+    } else if (blockType === "rajmudra") {
+      newElements = [
+        {
+          id: `ready-rajmudra-emblem-${timestamp}`,
+          type: "ornament",
+          name: "छत्रपती शिवमुद्रा",
+          x: dimensions.width / 2 - 40,
+          y: 40,
+          width: 80,
+          height: 80,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 20,
+          ornamentType: "rajmudra",
+          ornamentColor: customAccentColor,
+        },
+        {
+          id: `ready-rajmudra-shloka-${timestamp}`,
+          type: "text",
+          name: "राजमुद्रा श्लोक",
+          x: 60,
+          y: 130,
+          width: dimensions.width - 120,
+          height: 48,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 21,
+          text: "॥ प्रतिपच्चंद्रलेखेव वर्धिष्णुर्विश्ववंदिता शाहसूनोः शिवस्यैषा मुद्रा भद्राय राजते ॥",
+          fontFamily: "display",
+          fontSize: 15,
+          fontWeight: "bold",
+          textAlign: "center",
+          color: customAccentColor,
+          goldFoil: true,
+        },
+      ];
+    } else if (blockType === "haldi") {
+      newElements = [
+        {
+          id: `ready-haldi-bg-${timestamp}`,
+          type: "shape",
+          name: "हळदी बॅज पार्श्वभूमी",
+          x: 70,
+          y: dimensions.height / 2 - 60,
+          width: dimensions.width - 140,
+          height: 110,
+          rotation: 0,
+          opacity: 0.95,
+          zIndex: 20,
+          shapeType: "rounded",
+          fill: "#2e1a02",
+          stroke: "#f59e0b",
+          strokeWidth: 2,
+          borderRadius: 18,
+        },
+        {
+          id: `ready-haldi-title-${timestamp}`,
+          type: "text",
+          name: "हळदी शीर्षक",
+          x: 80,
+          y: dimensions.height / 2 - 50,
+          width: dimensions.width - 160,
+          height: 36,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 21,
+          text: "🟡 ॥ हळदी समारंभ व संगीत संध्या ॥ 🎶",
+          fontFamily: "display",
+          fontSize: 18,
+          fontWeight: "bold",
+          textAlign: "center",
+          color: "#fde047",
+          goldFoil: true,
+        },
+        {
+          id: `ready-haldi-sub-${timestamp}`,
+          type: "text",
+          name: "हळदी वेळ व दिवस",
+          x: 80,
+          y: dimensions.height / 2 - 12,
+          width: dimensions.width - 160,
+          height: 44,
+          rotation: 0,
+          opacity: 0.95,
+          zIndex: 22,
+          text: "विवाहाच्या आदल्या दिवशी सायंकाळी ५:०० वा.\nसस्नेह हळद लावण्यासाठी सहकुटुंब उपस्थित राहावे.",
+          fontFamily: "sans",
+          fontSize: 13,
+          fontWeight: "normal",
+          textAlign: "center",
+          color: "#fef3c7",
+          lineHeight: 1.4,
+        },
+      ];
+    } else if (blockType === "satyanarayan") {
+      newElements = [
+        {
+          id: `ready-satya-bg-${timestamp}`,
+          type: "shape",
+          name: "सत्यनारायण चौकट",
+          x: 70,
+          y: dimensions.height / 2 - 60,
+          width: dimensions.width - 140,
+          height: 110,
+          rotation: 0,
+          opacity: 0.95,
+          zIndex: 20,
+          shapeType: "rounded",
+          fill: "#1f070b",
+          stroke: "#d4af37",
+          strokeWidth: 2,
+          borderRadius: 18,
+        },
+        {
+          id: `ready-satya-title-${timestamp}`,
+          type: "text",
+          name: "सत्यनारायण शीर्षक",
+          x: 80,
+          y: dimensions.height / 2 - 50,
+          width: dimensions.width - 160,
+          height: 36,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 21,
+          text: "🥥 ॥ श्री सत्यनारायण महापूजा व वास्तुशांती ॥ 🪔",
+          fontFamily: "display",
+          fontSize: 17,
+          fontWeight: "bold",
+          textAlign: "center",
+          color: "#ffd700",
+          goldFoil: true,
+        },
+        {
+          id: `ready-satya-sub-${timestamp}`,
+          type: "text",
+          name: "सत्यनारायण वेळ",
+          x: 80,
+          y: dimensions.height / 2 - 12,
+          width: dimensions.width - 160,
+          height: 44,
+          rotation: 0,
+          opacity: 0.95,
+          zIndex: 22,
+          text: "सकाळी ९:३० वा. पूजा प्रारंभ • दुपारी १२:०० वा. महाप्रसाद\nतीर्थप्रसादाचा लाभ घ्यावा ही नम्र विनंती.",
+          fontFamily: "sans",
+          fontSize: 13,
+          fontWeight: "normal",
+          textAlign: "center",
+          color: "#fef3c7",
+          lineHeight: 1.4,
+        },
+      ];
+    } else if (blockType === "snehbhojan") {
+      newElements = [
+        {
+          id: `ready-bhojan-bg-${timestamp}`,
+          type: "shape",
+          name: "स्नेहभोजन चौकट",
+          x: 80,
+          y: dimensions.height - 180,
+          width: dimensions.width - 160,
+          height: 75,
+          rotation: 0,
+          opacity: 0.9,
+          zIndex: 20,
+          shapeType: "rounded",
+          fill: "#170508",
+          stroke: customAccentColor,
+          strokeWidth: 1.5,
+          borderRadius: 14,
+        },
+        {
+          id: `ready-bhojan-title-${timestamp}`,
+          type: "text",
+          name: "स्नेहभोजन मजकूर",
+          x: 90,
+          y: dimensions.height - 170,
+          width: dimensions.width - 180,
+          height: 52,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 21,
+          text: "🍛 सस्नेह प्रीतीभोजन: सोहळ्यानंतर दुपारी १:०० वाजता\nआपली उपस्थिती हेच आमचे सौभाग्य!",
+          fontFamily: "display",
+          fontSize: 14,
+          fontWeight: "bold",
+          textAlign: "center",
+          color: "#ffffff",
+          lineHeight: 1.4,
+        },
+      ];
+    }
+
+    pushState([...elements, ...newElements]);
+    setSelectedId(newElements[0]?.id || null);
+  };
+
+  // High-Resolution 2x PNG Export
+  const handleExportPng = () => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = dimensions.width * 2;
+      canvas.height = dimensions.height * 2;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.scale(2, 2);
+      ctx.fillStyle = customBgColor;
+      ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+
+      const sorted = [...elements].sort((a, b) => a.zIndex - b.zIndex);
+      for (const el of sorted) {
+        if (el.visible === false) continue;
+        ctx.save();
+        ctx.globalAlpha = el.opacity;
+        const centerX = el.x + el.width / 2;
+        const centerY = el.y + el.height / 2;
+        ctx.translate(centerX, centerY);
+        ctx.rotate((el.rotation * Math.PI) / 180);
+        ctx.translate(-centerX, -centerY);
+
+        if (el.type === "shape") {
+          ctx.fillStyle = el.fill || "transparent";
+          ctx.strokeStyle = el.stroke || customAccentColor;
+          ctx.lineWidth = el.strokeWidth || 2;
+          if (el.borderRadius) {
+            ctx.beginPath();
+            ctx.roundRect(el.x, el.y, el.width, el.height, el.borderRadius);
+            if (el.fill && el.fill !== "transparent") ctx.fill();
+            ctx.stroke();
+          } else {
+            if (el.fill && el.fill !== "transparent") ctx.fillRect(el.x, el.y, el.width, el.height);
+            ctx.strokeRect(el.x, el.y, el.width, el.height);
+          }
+        } else if (el.type === "text" && el.text) {
+          ctx.font = `${el.fontWeight === "black" ? "900" : el.fontWeight === "bold" ? "700" : "400"} ${el.fontSize || 24}px 'Tiro Devanagari Marathi', 'Noto Serif Devanagari', Arial, sans-serif`;
+          ctx.fillStyle = el.color || customTextColor;
+          ctx.textAlign = el.textAlign || "center";
+          ctx.textBaseline = "middle";
+          if (el.shadow || el.textShadowPreset === "deep-black") {
+            ctx.shadowColor = "rgba(0,0,0,0.85)";
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 3;
+          } else if (el.textShadowPreset === "gold-glow") {
+            ctx.shadowColor = "rgba(223,177,80,0.9)";
+            ctx.shadowBlur = 14;
+          }
+          const posX = el.textAlign === "left" ? el.x : el.textAlign === "right" ? el.x + el.width : el.x + el.width / 2;
+          const posY = el.y + el.height / 2;
+          ctx.fillText(el.text, posX, posY);
+        }
+        ctx.restore();
+      }
+
+      const pngUrl = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = pngUrl;
+      a.download = `${docTitle.replace(/[^a-zA-Z0-9\u0900-\u097F]/g, "_")}.png`;
+      a.click();
+    } catch {
+      window.print();
+    }
+  };
+
+  // Copy High-Resolution Image to Clipboard
+  const handleCopyImageToClipboard = async () => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = dimensions.width * 2;
+      canvas.height = dimensions.height * 2;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.scale(2, 2);
+      ctx.fillStyle = customBgColor;
+      ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+
+      const sorted = [...elements].sort((a, b) => a.zIndex - b.zIndex);
+      for (const el of sorted) {
+        if (el.visible === false) continue;
+        ctx.save();
+        ctx.globalAlpha = el.opacity;
+        if (el.rotation) {
+          ctx.translate(el.x + el.width / 2, el.y + el.height / 2);
+          ctx.rotate((el.rotation * Math.PI) / 180);
+          ctx.translate(-(el.x + el.width / 2), -(el.y + el.height / 2));
+        }
+
+        if (el.type === "shape") {
+          ctx.fillStyle = el.fill || "transparent";
+          ctx.strokeStyle = el.stroke || customAccentColor;
+          ctx.lineWidth = el.strokeWidth || 2;
+          if (el.shapeType === "circle") {
+            ctx.beginPath();
+            ctx.ellipse(el.x + el.width / 2, el.y + el.height / 2, el.width / 2, el.height / 2, 0, 0, Math.PI * 2);
+            if (el.fill && el.fill !== "transparent") ctx.fill();
+            ctx.stroke();
+          } else {
+            if (el.fill && el.fill !== "transparent") ctx.fillRect(el.x, el.y, el.width, el.height);
+            ctx.strokeRect(el.x, el.y, el.width, el.height);
+          }
+        } else if (el.type === "text" && el.text) {
+          ctx.font = `${el.fontWeight === "black" ? "900" : el.fontWeight === "bold" ? "700" : "400"} ${el.fontSize || 24}px 'Tiro Devanagari Marathi', 'Noto Serif Devanagari', Arial, sans-serif`;
+          ctx.fillStyle = el.color || customTextColor;
+          ctx.textAlign = el.textAlign || "center";
+          ctx.textBaseline = "middle";
+          const posX = el.textAlign === "left" ? el.x : el.textAlign === "right" ? el.x + el.width : el.x + el.width / 2;
+          const posY = el.y + el.height / 2;
+          ctx.fillText(el.text, posX, posY);
+        }
+        ctx.restore();
+      }
+
+      canvas.toBlob(async (blob) => {
+        if (blob && typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.write) {
+          try {
+            await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+            alert("इमेज थेट क्लिपबोर्डवर कॉपी झाली! आपण आता कोठेही Paste (Ctrl+V) करू शकता.");
+          } catch {
+            handleExportPng();
+          }
+        } else {
+          handleExportPng();
+        }
+      });
+    } catch {
+      handleExportPng();
+    }
+  };
+
+  // Vector SVG Export
+  const handleExportSvg = () => {
+    let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${dimensions.width}" height="${dimensions.height}" viewBox="0 0 ${dimensions.width} ${dimensions.height}">`;
+    svgContent += `<rect width="100%" height="100%" fill="${customBgColor}" />`;
+
+    const sorted = [...elements].sort((a, b) => a.zIndex - b.zIndex);
+    for (const el of sorted) {
+      if (el.visible === false) continue;
+      if (el.type === "shape") {
+        svgContent += `<rect x="${el.x}" y="${el.y}" width="${el.width}" height="${el.height}" rx="${el.borderRadius || 0}" fill="${el.fill || "transparent"}" stroke="${el.stroke || customAccentColor}" stroke-width="${el.strokeWidth || 2}" opacity="${el.opacity}" transform="rotate(${el.rotation} ${el.x + el.width/2} ${el.y + el.height/2})" />`;
+      } else if (el.type === "text" && el.text) {
+        const escaped = el.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const anchor = el.textAlign === "left" ? "start" : el.textAlign === "right" ? "end" : "middle";
+        const textX = el.textAlign === "left" ? el.x : el.textAlign === "right" ? el.x + el.width : el.x + el.width / 2;
+        const textY = el.y + el.height / 2 + (el.fontSize || 24) * 0.35;
+        svgContent += `<text x="${textX}" y="${textY}" text-anchor="${anchor}" font-size="${el.fontSize || 24}" font-weight="${el.fontWeight || "normal"}" fill="${el.color || customTextColor}" opacity="${el.opacity}" font-family="Arial, 'Noto Sans Devanagari', sans-serif" transform="rotate(${el.rotation} ${el.x + el.width/2} ${el.y + el.height/2})">${escaped}</text>`;
+      }
+    }
+    svgContent += `</svg>`;
+
+    const blob = new Blob([svgContent], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${docTitle.replace(/[^a-zA-Z0-9\u0900-\u097F]/g, "_")}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // JSON Project Save
+  const handleExportJson = () => {
+    const data = {
+      version: "2.0",
+      app: "MaziPratika Canva Pro Studio",
+      timestamp: new Date().toISOString(),
+      docTitle,
+      aspectRatio,
+      dimensions,
+      activePaletteId,
+      customBgColor,
+      customAccentColor,
+      customTextColor,
+      patternOpacity,
+      elements,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${docTitle.replace(/[^a-zA-Z0-9\u0900-\u097F]/g, "_")}.mazipratika.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // JSON Project Restore
+  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (parsed.docTitle) setDocTitle(parsed.docTitle);
+        if (parsed.aspectRatio && DIMENSIONS_MAP[parsed.aspectRatio as AspectRatio]) {
+          setAspectRatio(parsed.aspectRatio);
+        }
+        if (parsed.customBgColor) setCustomBgColor(parsed.customBgColor);
+        if (parsed.customAccentColor) setCustomAccentColor(parsed.customAccentColor);
+        if (parsed.customTextColor) setCustomTextColor(parsed.customTextColor);
+        if (Array.isArray(parsed.elements)) {
+          pushState(parsed.elements);
+          setSelectedId(null);
+        }
+      } catch {
+        alert("अवैध JSON फाइल (Invalid JSON file)");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  // Copy share URL
+  const handleCopyShareLink = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(window.location.href);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
   // WhatsApp Share Generator
   const handleWhatsAppShare = () => {
     const textLines = elements
@@ -1080,30 +1951,52 @@ export function CanvaCanvasEditor({
     <section
       id="design-form"
       aria-label={isEn ? "Canva Pro Free Design Studio" : "कॅनव्हा प्रो फ्री डिझाइन स्टुडिओ"}
-      className="relative my-8 overflow-hidden rounded-3xl border border-[#dfb150]/40 bg-[#140a0d] text-ivory shadow-[0_24px_80px_rgba(0,0,0,0.65)] select-none"
+      className={`relative select-none transition-all duration-300 ${
+        isFullView
+          ? "fixed inset-0 z-[9999] w-screen h-screen flex flex-col bg-[#0f090c] overflow-hidden text-ivory"
+          : "my-8 overflow-hidden rounded-3xl border border-[#dfb150]/40 bg-[#140a0d] text-ivory shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
+      }`}
     >
+      {/* Hidden file input for Project JSON restoration */}
+      <input
+        ref={jsonInputRef}
+        type="file"
+        accept=".json"
+        onChange={handleImportJson}
+        className="hidden"
+      />
+
       {/* ═══════════════════════════════════════════════════════════════
           CANVA PRO TOP HEADER WORKSPACE BAR
       ═══════════════════════════════════════════════════════════════ */}
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#dfb150]/30 bg-gradient-to-r from-[#240307] via-[#3d0711] to-[#240307] px-4 py-3 sm:px-6">
-        {/* Document Title & Aspect Ratio Pill */}
-        <div className="flex items-center gap-3">
-          <div className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-[#dfb150] to-[#8a6a2b] text-[#240307] shadow-md font-black text-sm">
+      <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-[#dfb150]/30 bg-gradient-to-r from-[#240307] via-[#3d0711] to-[#240307] px-3 py-2.5 sm:px-6">
+        {/* Left Side: Document Title & Aspect Ratio Pill */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => setLeftDockOpen((v) => !v)}
+            title={leftDockOpen ? "डावे पॅनल लपवा (Hide Left Dock)" : "डावे पॅनल दाखवा (Show Left Dock)"}
+            className="hidden lg:grid size-8 place-items-center rounded-lg border border-[#dfb150]/30 text-xs text-[#dfb150] hover:bg-white/10 transition"
+          >
+            {leftDockOpen ? "◀" : "▶"}
+          </button>
+
+          <div className="grid size-8 sm:size-9 place-items-center rounded-xl bg-gradient-to-br from-[#dfb150] to-[#8a6a2b] text-[#240307] shadow-md font-black text-sm">
             🎨
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <input
                 type="text"
                 value={docTitle}
                 onChange={(e) => setDocTitle(e.target.value)}
-                className="bg-transparent font-display text-sm sm:text-base font-bold text-[#fef3c7] outline-none border-b border-transparent hover:border-[#dfb150]/40 focus:border-[#dfb150] transition truncate max-w-[240px] sm:max-w-xs"
+                className="bg-transparent font-display text-xs sm:text-base font-bold text-[#fef3c7] outline-none border-b border-transparent hover:border-[#dfb150]/40 focus:border-[#dfb150] transition truncate max-w-[170px] sm:max-w-xs"
               />
-              <span className="rounded-full bg-[#dfb150]/20 px-2 py-0.5 text-[9px] font-black uppercase text-[#ffd700] border border-[#dfb150]/30">
+              <span className="rounded-full bg-gradient-to-r from-amber-500 to-rose-600 px-2 py-0.5 text-[8.5px] sm:text-[9px] font-black uppercase text-white shadow-xs">
                 PRO CANVAS
               </span>
             </div>
-            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-[#dfb150]/75">
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-[#dfb150]/75">
               <span>{dimensions.name}</span>
               <span>•</span>
               <span>{dimensions.width} × {dimensions.height} px</span>
@@ -1112,7 +2005,7 @@ export function CanvaCanvasEditor({
         </div>
 
         {/* Aspect Ratio Switcher */}
-        <div className="hidden md:flex items-center gap-1 rounded-xl bg-black/40 p-1 border border-[#dfb150]/20">
+        <div className="hidden xl:flex items-center gap-1 rounded-xl bg-black/40 p-1 border border-[#dfb150]/20">
           {(["2:3", "9:16", "16:9", "1:1"] as AspectRatio[]).map((ratio) => (
             <button
               key={ratio}
@@ -1129,16 +2022,16 @@ export function CanvaCanvasEditor({
           ))}
         </div>
 
-        {/* Top Action Cluster (Undo, Redo, Zoom, Share, Print) */}
-        <div className="flex items-center gap-2">
+        {/* Center / Right Action Cluster */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Undo / Redo */}
-          <div className="flex items-center gap-1 rounded-xl bg-white/5 p-1 border border-[#dfb150]/20">
+          <div className="flex items-center gap-0.5 rounded-xl bg-white/5 p-1 border border-[#dfb150]/20">
             <button
               type="button"
               onClick={handleUndo}
               disabled={historyIndex <= 0}
               aria-label="Undo"
-              className="grid size-8 place-items-center rounded-lg text-[#fef3c7] hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent"
+              className="grid size-7 sm:size-8 place-items-center rounded-lg text-[#fef3c7] hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-sm"
               title="पूर्ववत करा (Ctrl+Z)"
             >
               ↩
@@ -1148,7 +2041,7 @@ export function CanvaCanvasEditor({
               onClick={handleRedo}
               disabled={historyIndex >= history.length - 1}
               aria-label="Redo"
-              className="grid size-8 place-items-center rounded-lg text-[#fef3c7] hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent"
+              className="grid size-7 sm:size-8 place-items-center rounded-lg text-[#fef3c7] hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-sm"
               title="पुन्हा करा (Ctrl+Y)"
             >
               ↪
@@ -1164,12 +2057,12 @@ export function CanvaCanvasEditor({
             >
               -
             </button>
-            <span className="w-12 text-center font-bold text-[#ffd700]">
+            <span className="w-10 text-center font-bold text-[#ffd700]">
               {Math.round(zoom * 100)}%
             </span>
             <button
               type="button"
-              onClick={() => setZoom((z) => Math.min(1.6, Number((z + 0.1).toFixed(1))))}
+              onClick={() => setZoom((z) => Math.min(1.8, Number((z + 0.1).toFixed(1))))}
               className="hover:text-[#ffd700] font-bold px-1"
             >
               +
@@ -1187,8 +2080,8 @@ export function CanvaCanvasEditor({
           <button
             type="button"
             onClick={() => setShowGrid((g) => !g)}
-            title="ग्रिड मार्गदर्शक"
-            className={`hidden sm:grid size-8 place-items-center rounded-lg border transition ${
+            title="ग्रिड मार्गदर्शक (Toggle Grid)"
+            className={`hidden md:grid size-8 place-items-center rounded-lg border transition ${
               showGrid
                 ? "bg-[#dfb150] text-[#240307] border-[#dfb150]"
                 : "border-[#dfb150]/30 text-[#fef3c7]/70 hover:bg-white/10"
@@ -1197,24 +2090,194 @@ export function CanvaCanvasEditor({
             ▦
           </button>
 
+          {/* Full View Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsFullView((v) => !v)}
+            className={`inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-xs font-bold transition ${
+              isFullView
+                ? "bg-amber-500 text-maroon-950 border-amber-400 font-extrabold shadow-sm animate-pulse"
+                : "border-[#dfb150]/30 text-[#fef3c7] hover:border-[#dfb150] hover:bg-white/10"
+            }`}
+            title={isFullView ? "सामान्य दृश्यावर परत या (Exit Full View - Esc)" : "संपूर्ण स्क्रीन स्पेस उघडा (Full View Workspace)"}
+          >
+            <span>{isFullView ? "✕" : "⛶"}</span>
+            <span className="hidden sm:inline">
+              {isFullView ? "सामान्य दृश्य (Exit)" : "पूर्ण दृश्य (Full View)"}
+            </span>
+          </button>
+
+          {/* Open in New Tab Button */}
+          <a
+            href={`/studio/editor${initialTemplateId ? `?template=${initialTemplateId}` : ""}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border border-[#dfb150]/30 bg-black/40 px-2.5 sm:px-3 text-xs font-bold text-[#fef3c7] hover:border-[#ffd700] hover:text-[#ffd700] hover:bg-white/5 transition"
+            title="नवीन टॅबमध्ये स्टुडिओ उघडा (Open in New Tab with 100% Space)"
+          >
+            <span>⤢</span>
+            <span className="hidden md:inline">नवीन टॅब (New Tab)</span>
+          </a>
+
           {/* WhatsApp Direct Share */}
           <button
             type="button"
             onClick={handleWhatsAppShare}
-            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full bg-[#25D366] px-3 text-xs font-bold text-white shadow-md hover:bg-[#20ba59] transition"
+            className="inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1 rounded-full bg-[#25D366] px-2.5 sm:px-3 text-xs font-bold text-white shadow-md hover:bg-[#20ba59] transition"
           >
             <span>💬</span>
-            <span className="hidden sm:inline">WhatsApp</span>
+            <span className="hidden lg:inline">WhatsApp</span>
           </button>
 
-          {/* Download & Print Button */}
+          {/* Pro Export & Download Dropdown / Modal Trigger */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowExportModal((m) => !m)}
+              className="inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1.5 rounded-full bg-gradient-to-r from-[#dfb150] via-[#ffd700] to-[#dfb150] px-3 sm:px-4 text-xs font-black text-[#240307] shadow-lg hover:brightness-110 transition"
+            >
+              <span>📥</span>
+              <span>एक्सपोर्ट / प्रिंट ▾</span>
+            </button>
+
+            {/* Export Dropdown Menu */}
+            {showExportModal && (
+              <div
+                onClick={() => setShowExportModal(false)}
+                className="fixed inset-0 z-40"
+              />
+            )}
+            {showExportModal && (
+              <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-[#dfb150]/40 bg-[#1c080d] p-2 text-ivory shadow-[0_20px_50px_rgba(0,0,0,0.85)] z-50 backdrop-blur-xl">
+                <div className="px-3 py-2 border-b border-[#dfb150]/20">
+                  <div className="text-xs font-bold text-[#ffd700]">
+                    प्रो एक्सपोर्ट पर्याय (Export Options)
+                  </div>
+                  <div className="text-[10.5px] text-[#fef3c7]/60">
+                    उच्च दर्जाचे आउटपुट पर्याय
+                  </div>
+                </div>
+
+                <div className="py-1 space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportModal(false);
+                      handleExportPng();
+                    }}
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                  >
+                    <span className="text-base">🖼️</span>
+                    <div>
+                      <div>PNG इमेज डाउनलोड करा</div>
+                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">२x हाय-रिझोल्यूशन इमेज</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportModal(false);
+                      handleCopyImageToClipboard();
+                    }}
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                  >
+                    <span className="text-base">📋</span>
+                    <div>
+                      <div>क्लिपबोर्डवर कॉपी करा</div>
+                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">थेट Paste (Ctrl+V) करण्यासाठी</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportModal(false);
+                      handleExportSvg();
+                    }}
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                  >
+                    <span className="text-base">🎨</span>
+                    <div>
+                      <div>वेक्टर SVG डाउनलोड करा</div>
+                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">प्रिंटर्स व कोरलड्रॉसाठी अचूक</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportModal(false);
+                      handlePrint();
+                    }}
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                  >
+                    <span className="text-base">🖨️</span>
+                    <div>
+                      <div>३०० DPI प्रिंट / PDF</div>
+                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">प्रेस-रेडी छपाईसाठी</div>
+                    </div>
+                  </button>
+
+                  <div className="border-t border-[#dfb150]/20 my-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportModal(false);
+                      handleExportJson();
+                    }}
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                  >
+                    <span className="text-base">💾</span>
+                    <div>
+                      <div>प्रोजेक्ट फाइल सेव्ह करा (JSON)</div>
+                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">कधीही पुन्हा काम करण्यासाठी</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportModal(false);
+                      jsonInputRef.current?.click();
+                    }}
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                  >
+                    <span className="text-base">📂</span>
+                    <div>
+                      <div>प्रोजेक्ट फाइल उघडा (Restore JSON)</div>
+                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">सेव्ह केलेले डिझाइन लोड करा</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportModal(false);
+                      handleCopyShareLink();
+                    }}
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                  >
+                    <span className="text-base">🔗</span>
+                    <div>
+                      <div>{copiedLink ? "लिंक कॉपी झाली! ✓" : "डिझाइन लिंक कॉपी करा"}</div>
+                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">मित्रांना शेअर करण्यासाठी</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Inspector Toggle Button */}
           <button
             type="button"
-            onClick={handlePrint}
-            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full bg-gradient-to-r from-[#dfb150] to-[#ffd700] px-3.5 text-xs font-black text-[#240307] shadow-lg hover:brightness-110 transition"
+            onClick={() => setRightInspectorOpen((v) => !v)}
+            title={rightInspectorOpen ? "उजवे पॅनल लपवा (Hide Inspector)" : "उजवे पॅनल दाखवा (Show Inspector)"}
+            className="hidden lg:grid size-8 place-items-center rounded-lg border border-[#dfb150]/30 text-xs text-[#dfb150] hover:bg-white/10 transition"
           >
-            <span>📥</span>
-            <span>डाउनलोड / प्रिंट</span>
+            {rightInspectorOpen ? "▶" : "◀"}
           </button>
         </div>
       </header>
@@ -1222,12 +2285,24 @@ export function CanvaCanvasEditor({
       {/* ═══════════════════════════════════════════════════════════════
           CANVA WORKSPACE: DOCK (LEFT) + CANVAS (CENTER) + INSPECTOR (RIGHT)
       ═══════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-[80px_320px_1fr_290px] xl:grid-cols-[80px_340px_1fr_310px] min-h-[720px] bg-[#1a0c10]">
-
+      <div
+        className={`grid flex-1 overflow-hidden transition-all duration-300 ${
+          isFullView ? "h-[calc(100vh-56px)]" : "min-h-[740px]"
+        } ${
+          leftDockOpen && rightInspectorOpen
+            ? "grid-cols-1 lg:grid-cols-[72px_320px_1fr_310px]"
+            : leftDockOpen && !rightInspectorOpen
+            ? "grid-cols-1 lg:grid-cols-[72px_320px_1fr]"
+            : !leftDockOpen && rightInspectorOpen
+            ? "grid-cols-1 lg:grid-cols-[72px_1fr_310px]"
+            : "grid-cols-1 lg:grid-cols-[72px_1fr]"
+        } bg-[#1a0c10]`}
+      >
         {/* ── 1. CANVA PRIMARY TOOL DOCK (Left Narrow Icons) ── */}
-        <aside className="hidden lg:flex flex-col items-center gap-3 border-r border-[#dfb150]/20 bg-[#16080b] py-4">
+        <aside className="hidden lg:flex flex-col items-center gap-2.5 border-r border-[#dfb150]/20 bg-[#16080b] py-3">
           {[
             { id: "templates" as const, icon: "📁", label: "नमुने" },
+            { id: "blocks" as const, icon: "⚡", label: "तयार घटक" },
             { id: "text" as const, icon: "✏️", label: "मजकूर" },
             { id: "elements" as const, icon: "🎨", label: "आकार" },
             { id: "photos" as const, icon: "🖼️", label: "फोटो" },
@@ -1240,24 +2315,28 @@ export function CanvaCanvasEditor({
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`group flex w-16 flex-col items-center gap-1 rounded-2xl p-2.5 transition ${
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  if (!leftDockOpen) setLeftDockOpen(true);
+                }}
+                className={`group flex w-14 flex-col items-center gap-0.5 rounded-2xl p-2 transition ${
                   active
                     ? "bg-[#dfb150] text-[#240307] font-bold shadow-md shadow-[#dfb150]/20"
                     : "text-[#fef3c7]/70 hover:bg-white/5 hover:text-[#ffd700]"
                 }`}
               >
-                <span className="text-xl group-hover:scale-110 transition-transform">{tab.icon}</span>
-                <span className="text-[10px] font-semibold leading-tight">{tab.label}</span>
+                <span className="text-lg group-hover:scale-110 transition-transform">{tab.icon}</span>
+                <span className="text-[9.5px] font-semibold leading-tight">{tab.label}</span>
               </button>
             );
           })}
         </aside>
 
         {/* ── Mobile Horizontal Tool Tabs (Shown on small screens) ── */}
-        <div className="flex lg:hidden overflow-x-auto border-b border-[#dfb150]/20 bg-[#16080b] p-2 gap-2 scrollbar-none">
+        <div className="flex lg:hidden overflow-x-auto border-b border-[#dfb150]/20 bg-[#16080b] p-2 gap-1.5 scrollbar-none">
           {[
             { id: "templates" as const, icon: "📁", label: "नमुने" },
+            { id: "blocks" as const, icon: "⚡", label: "तयार घटक" },
             { id: "text" as const, icon: "✏️", label: "मजकूर" },
             { id: "elements" as const, icon: "🎨", label: "आकार" },
             { id: "photos" as const, icon: "🖼️", label: "फोटो" },
@@ -1269,7 +2348,7 @@ export function CanvaCanvasEditor({
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold ${
+              className={`flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold ${
                 activeTab === tab.id
                   ? "bg-[#dfb150] text-[#240307]"
                   : "bg-white/5 text-[#fef3c7]/80 hover:bg-white/10"
@@ -1282,6 +2361,7 @@ export function CanvaCanvasEditor({
         </div>
 
         {/* ── 2. EXPANDED TOOL PANEL (Left Drawer Content) ── */}
+        {leftDockOpen && (
         <div className="border-r border-[#dfb150]/20 bg-[#1e0d12]/95 p-4 overflow-y-auto max-h-[780px]">
           {/* TAB 1: 50+ MASTER TEMPLATES */}
           {activeTab === "templates" && (
@@ -1356,6 +2436,95 @@ export function CanvaCanvasEditor({
                       {tmpl.descMr}
                     </p>
                   </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: READY COMPONENT BLOCKS */}
+          {activeTab === "blocks" && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-display text-sm font-bold text-[#ffd700]">
+                  तयार डिझाइन विभाग (Ready Blocks)
+                </h3>
+                <p className="text-[11px] text-[#fef3c7]/65 mt-0.5">
+                  १-क्लिकमध्ये सुंदर संरेखित विभाग कॅनव्हासवर जोडा
+                </p>
+              </div>
+
+              <div className="space-y-2.5">
+                {[
+                  {
+                    id: "muhurat" as const,
+                    icon: "📅",
+                    title: "मुहूर्त व तारीख बॅज",
+                    desc: "तारीख, वार, वेळ व शुभमुहूर्त चौकट",
+                  },
+                  {
+                    id: "couple" as const,
+                    icon: "💍",
+                    title: "वर-वधू नाव पट्टी",
+                    desc: "चि. वर — सह — चि.सौ.कां. वधू सुवर्ण अक्षरे",
+                  },
+                  {
+                    id: "haldi" as const,
+                    icon: "🟡",
+                    title: "हळदी समारंभ व संगीत संध्या",
+                    desc: "पिवळा-सुवर्ण हळद बॅज व संगीत वेळ",
+                  },
+                  {
+                    id: "satyanarayan" as const,
+                    icon: "🥥",
+                    title: "सत्यनारायण व वास्तुशांती",
+                    desc: "महापूजा, तीर्थप्रसाद व मंगल कलश चौकट",
+                  },
+                  {
+                    id: "snehbhojan" as const,
+                    icon: "🍲",
+                    title: "सस्नेह प्रीतीभोजन बॅज",
+                    desc: "शाही मेजवानी वेळ व आदरातिथ्य",
+                  },
+                  {
+                    id: "inviter" as const,
+                    icon: "📜",
+                    title: "निमंत्रक व परिवार",
+                    desc: "पारंपरिक निमंत्रक व परिवार परिचय",
+                  },
+                  {
+                    id: "venue" as const,
+                    icon: "📍",
+                    title: "स्थळ व गुगल मॅप बॅज",
+                    desc: "कार्यस्थळ पत्ता व लोकेशन स्कॅनर",
+                  },
+                  {
+                    id: "rajmudra" as const,
+                    icon: "🚩",
+                    title: "छत्रपती शिवमुद्रा बॅनर",
+                    desc: "ऐतिहासिक राजमुद्रा श्लोक व सुवर्ण अक्षरे",
+                  },
+                ].map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => handleAddReadyBlock(b.id)}
+                    className="w-full flex items-start gap-3 rounded-2xl border border-[#dfb150]/25 bg-black/40 p-3 text-left hover:border-[#dfb150] hover:bg-[#dfb150]/15 transition group"
+                  >
+                    <span className="text-2xl rounded-xl bg-white/5 p-2 group-hover:scale-110 transition-transform">
+                      {b.icon}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-[#fef3c7] group-hover:text-[#ffd700]">
+                        {b.title}
+                      </div>
+                      <div className="text-[10.5px] text-[#fef3c7]/60 truncate mt-0.5">
+                        {b.desc}
+                      </div>
+                    </div>
+                    <span className="text-xs text-[#dfb150] font-bold self-center">
+                      + जोडा
+                    </span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -1440,6 +2609,15 @@ export function CanvaCanvasEditor({
                   {[
                     { id: "ganesha" as const, label: "गणेश", icon: "🕉️" },
                     { id: "swastik" as const, label: "स्वस्तिक", icon: "卐" },
+                    { id: "kalash" as const, label: "कलश", icon: "🏺" },
+                    { id: "mangalsutra" as const, label: "मंगळसूत्र", icon: "📿" },
+                    { id: "shehnai" as const, label: "सनई-चौघडा", icon: "🎺" },
+                    { id: "dhol" as const, label: "ढोल ताशा", icon: "🥁" },
+                    { id: "rajmudra" as const, label: "शिवमुद्रा", icon: "🚩" },
+                    { id: "lotus" as const, label: "पवित्र कमळ", icon: "🪷" },
+                    { id: "pheta" as const, label: "शाही फेटा", icon: "👳" },
+                    { id: "trishul" as const, label: "त्रिशूळ-ॐ", icon: "🔱" },
+                    { id: "paithani" as const, label: "पैठणी कोपरा", icon: "⚜️" },
                     { id: "diya" as const, label: "पणती", icon: "🪔" },
                     { id: "bells" as const, label: "घंटा", icon: "🔔" },
                     { id: "peacock" as const, label: "मोरपीस", icon: "🦚" },
@@ -1760,6 +2938,7 @@ export function CanvaCanvasEditor({
             </div>
           )}
         </div>
+        )}
 
         {/* ── 3. CENTER INTERACTIVE CANVAS WORKSPACE ── */}
         <main
@@ -1932,7 +3111,19 @@ export function CanvaCanvasEditor({
                           color: el.color || customTextColor,
                           letterSpacing: el.letterSpacing ? `${el.letterSpacing}px` : "normal",
                           lineHeight: el.lineHeight || 1.25,
-                          textShadow: el.shadow ? "0 2px 10px rgba(0,0,0,0.85)" : "none",
+                          textTransform: el.textTransform || "none",
+                          textShadow:
+                            el.textShadowPreset === "gold-glow"
+                              ? "0 0 16px rgba(223, 177, 80, 0.85), 0 0 32px rgba(223, 177, 80, 0.4)"
+                              : el.textShadowPreset === "deep-black"
+                              ? "0 4px 14px rgba(0, 0, 0, 0.95)"
+                              : el.textShadowPreset === "embossed"
+                              ? "1px 1px 0 #ffe082, 2px 2px 0 #b38728, 4px 4px 8px rgba(0,0,0,0.9)"
+                              : el.textShadowPreset === "neon-rose"
+                              ? "0 0 14px rgba(225, 29, 72, 0.8), 0 0 28px rgba(244, 63, 94, 0.5)"
+                              : el.shadow
+                              ? "0 2px 10px rgba(0,0,0,0.85)"
+                              : "none",
                         }}
                         className={`w-full h-full flex items-center justify-center ${
                           el.goldFoil ? "gold-foil" : ""
@@ -1956,6 +3147,33 @@ export function CanvaCanvasEditor({
                         )}
                         {el.ornamentType === "swastik" && (
                           <RoyalSwastikSvg size={Math.min(el.width, el.height)} accentColor={el.ornamentColor || customAccentColor} />
+                        )}
+                        {el.ornamentType === "kalash" && (
+                          <RoyalKalashSvg size={Math.min(el.width, el.height)} accentColor={el.ornamentColor || customAccentColor} />
+                        )}
+                        {el.ornamentType === "mangalsutra" && (
+                          <MangalsutraMotifSvg size={Math.min(el.width, el.height)} accentColor={el.ornamentColor || customAccentColor} />
+                        )}
+                        {el.ornamentType === "shehnai" && (
+                          <ShehnaiChoughadaSvg size={Math.min(el.width, el.height)} accentColor={el.ornamentColor || customAccentColor} />
+                        )}
+                        {el.ornamentType === "dhol" && (
+                          <DholTashaMotifSvg size={Math.min(el.width, el.height)} accentColor={el.ornamentColor || customAccentColor} />
+                        )}
+                        {el.ornamentType === "rajmudra" && (
+                          <RoyalRajmudraMotifSvg size={Math.min(el.width, el.height)} accentColor={el.ornamentColor || customAccentColor} />
+                        )}
+                        {el.ornamentType === "lotus" && (
+                          <SacredLotusSvg size={Math.min(el.width, el.height)} accentColor={el.ornamentColor || customAccentColor} />
+                        )}
+                        {el.ornamentType === "pheta" && (
+                          <RoyalPhetaSvg size={Math.min(el.width, el.height)} accentColor={el.ornamentColor || customAccentColor} />
+                        )}
+                        {el.ornamentType === "trishul" && (
+                          <TrishulOmSvg size={Math.min(el.width, el.height)} accentColor={el.ornamentColor || customAccentColor} />
+                        )}
+                        {el.ornamentType === "paithani" && (
+                          <PaithaniCornerSvg size={Math.min(el.width, el.height)} accentColor={el.ornamentColor || customAccentColor} />
                         )}
                         {el.ornamentType === "bells" && (
                           <HangingBrassTempleBells className="w-full h-full" />
@@ -2061,7 +3279,8 @@ export function CanvaCanvasEditor({
         </main>
 
         {/* ── 4. RIGHT PROPERTIES & INSPECTOR DOCK ── */}
-        <aside className="border-l border-[#dfb150]/20 bg-[#16080b] p-4 overflow-y-auto max-h-[780px]">
+        {rightInspectorOpen && (
+          <aside className="border-l border-[#dfb150]/20 bg-[#16080b] p-4 overflow-y-auto max-h-[780px]">
           {selectedElement ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-[#dfb150]/20 pb-2">
@@ -2187,6 +3406,95 @@ export function CanvaCanvasEditor({
                           }`}
                         >
                           {align === "left" ? "डावे" : align === "center" ? "मध्य" : "उजवे"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Letter Spacing & Line Height */}
+                  <div className="grid grid-cols-2 gap-2 border-t border-[#dfb150]/15 pt-2">
+                    <div>
+                      <label className="text-[10.5px] text-[#fef3c7] block mb-0.5">
+                        अंतर: {selectedElement.letterSpacing || 0}px
+                      </label>
+                      <input
+                        type="range"
+                        min="-2"
+                        max="10"
+                        value={selectedElement.letterSpacing || 0}
+                        onChange={(e) =>
+                          updateElement(selectedElement.id, "letterSpacing", parseInt(e.target.value))
+                        }
+                        className="w-full accent-[#dfb150]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10.5px] text-[#fef3c7] block mb-0.5">
+                        ओळ अंतर: {selectedElement.lineHeight || 1.2}
+                      </label>
+                      <input
+                        type="range"
+                        min="0.9"
+                        max="2.2"
+                        step="0.1"
+                        value={selectedElement.lineHeight || 1.2}
+                        onChange={(e) =>
+                          updateElement(selectedElement.id, "lineHeight", parseFloat(e.target.value))
+                        }
+                        className="w-full accent-[#dfb150]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Text Shadow & Glow Presets */}
+                  <div className="border-t border-[#dfb150]/15 pt-2">
+                    <label className="text-[11px] font-bold text-[#fef3c7] block mb-1.5">
+                      शॅडो व ग्लो इफेक्ट्स (Shadow & Glow)
+                    </label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { id: "none" as const, label: "काही नाही" },
+                        { id: "gold-glow" as const, label: "✨ सुवर्ण ग्लो" },
+                        { id: "deep-black" as const, label: "🌑 गडद शॅडो" },
+                        { id: "embossed" as const, label: "🏛️ 3D सुवर्ण" },
+                        { id: "neon-rose" as const, label: "🌹 गुलाबाची छटा" },
+                      ].map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => updateElement(selectedElement.id, "textShadowPreset", s.id)}
+                          className={`rounded-lg py-1 px-2 text-[10.5px] font-bold transition border ${
+                            selectedElement.textShadowPreset === s.id
+                              ? "bg-[#dfb150] text-[#240307] border-[#dfb150]"
+                              : "bg-black/30 border-[#dfb150]/20 text-[#fef3c7]/75 hover:bg-white/5"
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Text Transform */}
+                  <div className="border-t border-[#dfb150]/15 pt-2">
+                    <label className="text-[11px] text-[#fef3c7] block mb-1">कॅपिटलायझेशन</label>
+                    <div className="flex rounded-xl bg-black/40 p-1 border border-[#dfb150]/20 gap-1">
+                      {[
+                        { id: "none" as const, label: "Aa मूळ" },
+                        { id: "uppercase" as const, label: "AA मोठे" },
+                        { id: "capitalize" as const, label: "Ab शिर्षक" },
+                      ].map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => updateElement(selectedElement.id, "textTransform", c.id)}
+                          className={`flex-1 py-1 text-[10.5px] font-bold rounded-lg ${
+                            (selectedElement.textTransform || "none") === c.id
+                              ? "bg-[#dfb150] text-[#240307]"
+                              : "text-[#fef3c7]/60 hover:text-white"
+                          }`}
+                        >
+                          {c.label}
                         </button>
                       ))}
                     </div>
@@ -2325,6 +3633,7 @@ export function CanvaCanvasEditor({
             </div>
           )}
         </aside>
+        )}
       </div>
     </section>
   );

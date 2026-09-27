@@ -314,9 +314,21 @@ export function MultiEventStudio({
                       >
                         {tmpl.badge}
                       </span>
-                      {selected && (
-                        <span className="text-xs text-gold-400 font-bold">✓</span>
-                      )}
+                      <div className="flex items-center gap-1">
+                        <a
+                          href={`/studio/editor?template=${tmpl.id}#design-form`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          title={isEn ? "Open in New Tab (Full View)" : "नवीन टॅबमध्ये पूर्ण स्क्रीन उघडा"}
+                          className="rounded p-1 text-[10.5px] text-amber-500 hover:bg-amber-400/20 hover:text-amber-300 transition"
+                        >
+                          ⤢
+                        </a>
+                        {selected && (
+                          <span className="text-xs text-gold-400 font-bold">✓</span>
+                        )}
+                      </div>
                     </div>
                     <div className="mt-2">
                       <p className="font-marathi-display text-xs font-bold leading-tight line-clamp-1">
@@ -462,16 +474,28 @@ export function MultiEventStudio({
 
           {/* Action Toolbar */}
           <div className="flex flex-wrap items-center gap-3 pt-2">
+            <a
+              href={`/studio/editor?template=${selectedTemplateId}#design-form`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[46px] items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-rose-600 to-amber-600 px-6 py-3 text-sm font-black text-white shadow-xl hover:from-amber-400 hover:to-rose-500 transition transform hover:-translate-y-0.5 active:scale-95"
+            >
+              <span>🎨</span>
+              {isEn
+                ? "Open in New Tab (Full View) ⤢"
+                : "नवीन टॅबमध्ये पूर्ण स्क्रीन कॅनव्हास उघडा ⤢"}
+            </a>
+
             {onOpenCanvaPro && (
               <button
                 type="button"
                 onClick={() => onOpenCanvaPro(selectedTemplateId)}
-                className="inline-flex min-h-[46px] items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-rose-600 to-amber-600 px-6 py-3 text-sm font-black text-white shadow-xl hover:from-amber-400 hover:to-rose-500 transition transform hover:-translate-y-0.5 active:scale-95"
+                className="inline-flex min-h-[46px] items-center gap-2 rounded-full border border-maroon-800/30 bg-maroon-950 px-5 py-3 text-sm font-bold text-gold-300 shadow-md hover:bg-maroon-900 transition"
               >
-                <span>🎨</span>
+                <span>⚡</span>
                 {isEn
-                  ? "Open in Canva Pro Canvas Studio"
-                  : "कॅनव्हा प्रो स्टुडिओ कॅनव्हासवर उघडा (Canva Pro)"}
+                  ? "Edit on this page"
+                  : "याच पानावर कॅनव्हास उघडा"}
               </button>
             )}
 
@@ -512,23 +536,38 @@ export function MultiEventStudio({
             </div>
           </div>
 
-          {onOpenCanvaPro && (
-            <div className="mb-3">
+          <div className="mb-3 flex flex-col gap-2">
+            <a
+              href={`/studio/editor?template=${selectedTemplateId}#design-form`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-between rounded-xl bg-gradient-to-r from-amber-500 via-rose-600 to-amber-600 px-4 py-2.5 text-xs font-black text-white shadow-md hover:brightness-110 transition active:scale-98"
+            >
+              <span className="flex items-center gap-1.5">
+                <span>🎨</span>
+                <span>{isEn ? "Open in New Tab (Full View Mode) ⤢" : "नवीन टॅबमध्ये पूर्ण स्क्रीन कॅनव्हास उघडा ⤢"}</span>
+              </span>
+              <span className="rounded bg-black/30 px-2 py-0.5 text-[10px] uppercase tracking-wider font-extrabold text-amber-200">
+                FULL VIEW ⤢
+              </span>
+            </a>
+
+            {onOpenCanvaPro && (
               <button
                 type="button"
                 onClick={() => onOpenCanvaPro(selectedTemplateId)}
-                className="w-full flex items-center justify-between rounded-xl bg-gradient-to-r from-amber-500 via-rose-600 to-amber-600 px-4 py-2.5 text-xs font-black text-white shadow-md hover:brightness-110 transition active:scale-98"
+                className="w-full flex items-center justify-between rounded-xl border border-gold-500/30 bg-maroon-950/90 px-4 py-2 text-xs font-bold text-gold-300 hover:bg-maroon-900 transition"
               >
                 <span className="flex items-center gap-1.5">
-                  <span>🎨</span>
-                  <span>{isEn ? "Open & Customise in Canva Pro Studio" : "कॅनव्हा प्रो स्टुडिओ कॅनव्हासवर मनसोक्त एडिट करा"}</span>
+                  <span>⚡</span>
+                  <span>{isEn ? "Edit on This Page (Canva Pro)" : "याच पानावर कॅनव्हास मोडमध्ये उघडा"}</span>
                 </span>
-                <span className="rounded bg-black/30 px-2 py-0.5 text-[10px] uppercase tracking-wider font-extrabold text-amber-200">
-                  CANVA PRO
+                <span className="rounded bg-gold/20 px-2 py-0.5 text-[9px] uppercase tracking-wider font-black text-gold-300">
+                  IN-PAGE
                 </span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Master Template Card Rendering */}
           <div className="animate-fade-up">

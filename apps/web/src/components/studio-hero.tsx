@@ -49,15 +49,24 @@ export function StudioHero() {
           </dl>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <a
+              href="/studio/editor#design-form"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[46px] items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-rose-600 to-amber-600 px-6 py-3 text-[14.5px] font-black text-white shadow-xl hover:from-amber-400 hover:to-rose-500 transition transform hover:-translate-y-0.5 active:scale-95"
+            >
+              <span>🎨</span>
+              <span>{isEn ? "Open in New Tab (Full View) ⤢" : "नवीन टॅबमध्ये पूर्ण स्क्रीन उघडा ⤢"}</span>
+            </a>
+            <a
               href="#design-form"
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-gold-500 px-6 py-3 text-[14.5px] font-bold text-maroon-950 transition hover:bg-gold-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300"
+              className="inline-flex min-h-[46px] items-center gap-2 rounded-full bg-gold-500 px-6 py-3 text-[14.5px] font-bold text-maroon-950 transition hover:bg-gold-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300"
             >
               {copy.btnStart}
               <Icon name="arrowRight" className="h-4 w-4" strokeWidth={2.4} />
             </a>
             <a
               href="#studio-preview"
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-ivory-100/25 px-6 py-3 text-[14.5px] font-bold text-ivory-100 transition hover:border-gold-400/60 hover:text-gold-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300"
+              className="inline-flex min-h-[46px] items-center gap-2 rounded-full border border-ivory-100/25 px-6 py-3 text-[14.5px] font-bold text-ivory-100 transition hover:border-gold-400/60 hover:text-gold-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300"
             >
               <Icon name="eye" className="h-4 w-4" />
               {copy.btnPreview}

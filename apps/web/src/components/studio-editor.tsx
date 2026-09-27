@@ -938,6 +938,23 @@ export function StudioEditor({
               </button>
             );
           })}
+
+          {/* Direct Full View in New Tab Button */}
+          <a
+            href={`/studio/editor?template=${canvaTemplateId || "shubh-vivah"}#design-form`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={isEn ? "Open in New Tab (Full Space & Full View Mode)" : "नवीन टॅबमध्ये पूर्ण स्क्रीन उघडा"}
+            className="group relative min-h-[48px] rounded-xl px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm font-black transition-all duration-300 flex items-center gap-1.5 bg-gradient-to-r from-amber-500 via-rose-600 to-amber-600 text-white shadow-lg hover:brightness-110 active:scale-95"
+          >
+            <span className="text-base">⤢</span>
+            <span className="hidden md:inline">
+              {isEn ? "Full View (New Tab)" : "पूर्ण स्क्रीन (New Tab)"}
+            </span>
+            <span className="rounded-full bg-black/30 px-1.5 py-0.5 text-[8.5px] font-black text-amber-200">
+              PRO
+            </span>
+          </a>
         </div>
       </nav>
 

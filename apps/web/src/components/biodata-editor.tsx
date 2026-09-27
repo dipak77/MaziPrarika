@@ -492,6 +492,18 @@ export function BiodataEditor() {
             </div>
 
             <div className="flex items-center gap-1">
+              <a
+                href="/biodata/editor"
+                target="_blank"
+                rel="noopener noreferrer"
+                title={L(isEn, isHi, "Open in New Tab (Full View Mode)", "नए टैब में पूर्ण स्क्रीन खोलें", "नवीन टॅबमध्ये पूर्ण स्क्रीन उघडा")}
+                className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-rose-600 px-3 py-1.5 text-xs font-bold text-white shadow hover:brightness-110 transition active:scale-95"
+              >
+                <span>⤢</span>
+                <span className="hidden sm:inline">
+                  {L(isEn, isHi, "Full View (New Tab)", "पूर्ण स्क्रीन (New Tab)", "पूर्ण स्क्रीन (New Tab)")}
+                </span>
+              </a>
               <button type="button" onClick={undo} disabled={!canUndo} title={L(isEn, isHi, "Undo (Ctrl+Z)", "पूर्ववत (Ctrl+Z)", "पूर्ववत (Ctrl+Z)")}
                 className="grid size-9 place-items-center rounded-lg bg-ink-900/5 text-ink-600 transition hover:bg-ink-900/10 disabled:opacity-30">
                 <Icon name="undo" className="h-4 w-4" />
@@ -996,6 +1008,15 @@ export function BiodataEditor() {
 
           {/* ── Export / action bar ── */}
           <div className="mt-6 flex flex-wrap items-center gap-2.5 border-t border-maroon-900/10 pt-4">
+            <a
+              href="/biodata/editor"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[46px] items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-rose-600 to-amber-600 px-5 py-3 text-sm font-black text-white shadow-xl hover:from-amber-400 hover:to-rose-500 transition transform hover:-translate-y-0.5 active:scale-95"
+            >
+              <span>⤢</span>
+              {L(isEn, isHi, "Open in New Tab (Full View) ⤢", "नए टैब में खोलें (Full View) ⤢", "नवीन टॅबमध्ये उघडा (Full View) ⤢")}
+            </a>
             <button type="button" onClick={handlePrint}
               className="inline-flex min-h-[46px] items-center gap-2 rounded-full bg-maroon-800 px-6 py-3 text-sm font-bold text-ivory-100 shadow-luxe transition hover:bg-maroon-700 hover:shadow-glow">
               <Icon name="printer" className="h-4.5 w-4.5 text-gold-300" />
