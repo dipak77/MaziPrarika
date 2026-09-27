@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Chip, Eyebrow, Icon } from "@/components/ui";
 import { ConsoleBanner } from "@/components/console-banner";
 import { getStore } from "@/lib/store";
@@ -108,8 +109,17 @@ export default async function ConsolePage() {
           {["प्रतिसाद-वेळ < २ तास", `कोट→बुकिंग ${conversionLive}→२५%`, "पुण्यात २० नवे व्हेन्यू"].map((f) => (
             <Chip key={f} tone="maroon">{f}</Chip>
           ))}
-          <span className="ml-auto flex items-center gap-1.5 text-[12px] font-extrabold text-leaf-700">
-            <span className="h-2 w-2 animate-pulse-dot rounded-full bg-leaf-600" /> थेट · {toDevanagariDigits(leadsAll.length)} ताज्या चौकशा
+          <span className="ml-auto flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#0e0d26] px-3 py-1.5 text-[11.5px] font-bold text-white shadow-xs transition hover:bg-[#8247e5]"
+            >
+              <span className="size-2 rounded-full bg-[#8247e5] animate-pulse" />
+              <span>डारोमा मॉडर्न डॅशबोर्ड ↗</span>
+            </Link>
+            <span className="flex items-center gap-1.5 text-[12px] font-extrabold text-leaf-700">
+              <span className="h-2 w-2 animate-pulse-dot rounded-full bg-leaf-600" /> थेट · {toDevanagariDigits(leadsAll.length)} ताज्या चौकशा
+            </span>
           </span>
         </div>
 

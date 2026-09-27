@@ -35,8 +35,11 @@ async function exportStatic() {
   // 3. Static pre-rendered pages from next build
   const staticMap = [
     { src: 'apps/web/.next/server/app/index.html', dst: 'apps/web/out/index.html' },
+    { src: 'apps/web/.next/server/app/dashboard.html', dst: 'apps/web/out/dashboard/index.html' },
     { src: 'apps/web/.next/server/app/studio.html', dst: 'apps/web/out/studio/index.html' },
+    { src: 'apps/web/.next/server/app/studio/editor.html', dst: 'apps/web/out/studio/editor/index.html' },
     { src: 'apps/web/.next/server/app/biodata.html', dst: 'apps/web/out/biodata/index.html' },
+    { src: 'apps/web/.next/server/app/biodata/editor.html', dst: 'apps/web/out/biodata/editor/index.html' },
     { src: 'apps/web/.next/server/app/create.html', dst: 'apps/web/out/create/index.html' },
     { src: 'apps/web/.next/server/app/offline.html', dst: 'apps/web/out/offline/index.html' },
     { src: 'apps/web/.next/server/app/_not-found.html', dst: 'apps/web/out/404.html' },

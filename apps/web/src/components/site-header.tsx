@@ -460,6 +460,17 @@ const NAV_SECTIONS: NavSection[] = [
         mrD: 'एका वाक्यात बजेट, पाहुणे व विक्रेत्यांसह संपूर्ण नियोजन',
         hiD: 'एक वाक्य में बजट, अतिथि व विक्रेताओं सहित संपूर्ण योजना',
       },
+      {
+        icon: 'sparkle',
+        badge: 'DAROMA UI',
+        href: '/dashboard',
+        en: 'Daroma Modern Dashboard',
+        mr: 'डारोमा मॉडर्न डॅशबोर्ड',
+        hi: 'डारोमा मॉडर्न डैशबोर्ड',
+        enD: 'Midnight & violet SaaS studio analytics, accounting & timeline',
+        mrD: 'मिडनाइट व व्हायोलेट स्टुडिओ अनालिटिक्स, अकाउंटिंग व टाइमलाइन',
+        hiD: 'मिडनाइट व वायलेट स्टूडियो एनालिटिक्स, अकाउंटिंग व टाइमलाइन',
+      },
     ],
     footer: {
       bannerEn: '💼 Double-entry commerce ledger with automated WhatsApp lead reminders & CRM',
@@ -968,6 +979,16 @@ export function SiteHeader() {
 
             {/* Language Toggle */}
             <LangToggle compact />
+
+            {/* Daroma Modern Dashboard Direct Link */}
+            <Link
+              href="/dashboard"
+              onClick={handleCloseAll}
+              className="hidden min-h-11 items-center gap-1.5 rounded-full border border-[#7c3aed]/30 bg-[#7c3aed]/5 px-3.5 text-xs font-bold text-[#6d28d9] transition hover:border-[#7c3aed] hover:bg-[#7c3aed]/15 hover:text-[#5b21b6] xl:inline-flex"
+            >
+              <span className="size-2 rounded-full bg-[#7c3aed] animate-pulse" />
+              <span>{isEn ? 'Dashboard ✦' : 'डॅशबोर्ड ✦'}</span>
+            </Link>
 
             {/* Vendor Portal Direct Link */}
             <Link
