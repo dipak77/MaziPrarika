@@ -327,4 +327,10 @@ describe('marathi/transliteration', () => {
   it('passes Devanagari through untouched', () => {
     expect(transliterate('पुणे').output).toBe('पुणे');
   });
+
+  it('transliterates common Hindi words and Pune venues accurately', () => {
+    expect(transliterate('Namaste Shadi').output).toBe('नमस्ते शादी');
+    expect(transliterate('Shivneri Lawns Baner').output).toBe('शिवनेरी लॉन्स बाणेर');
+    expect(transliterate('Kumar Gupta').output).toBe('कुमार गुप्ता');
+  });
 });

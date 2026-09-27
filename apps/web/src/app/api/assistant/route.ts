@@ -19,7 +19,7 @@ const BodySchema = z.object({
   message: z.string().min(2).max(1200),
   confirm: z.boolean().optional(),
   eventSlug: z.string().max(80).optional(),
-  lang: z.enum(['mr', 'en']).optional(),
+  lang: z.enum(['mr', 'hi', 'en']).optional(),
 });
 
 // A simple per-instance rate limit: the assistant is the most expensive route.

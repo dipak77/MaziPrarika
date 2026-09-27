@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { toDevanagariDigits } from '@mazi/marathi';
 import { LangToggle } from '@/components/lang-toggle';
+import { TransliteratedTextarea } from '@/components/ui/transliterated-input';
 import { useLanguage } from '@/context/language-context';
 import {
   type CardLang,
@@ -43,6 +44,22 @@ const TOOL_LABELS_MR: Record<string, string> = {
   CreatePrintOrder: 'छपाई ऑर्डर तयार करणे',
 };
 
+const TOOL_LABELS_HI: Record<string, string> = {
+  CreateEvent: 'कार्यक्रम कार्यक्षेत्र बनाना',
+  UpdateEvent: 'कार्यक्रम अपडेट करना',
+  SearchVendors: 'विक्रेता खोजना',
+  GetAvailability: 'उपलब्धता जांचना',
+  GetPanchang: 'पंचांग निकालना',
+  FindMuhurat: 'शुभ मुहूर्त खोजना',
+  CalculateKundali: 'कुंडली मिलान (निजी)',
+  CreateInvitation: 'निमंत्रण पत्र बनाना',
+  CreateQuote: 'कोटेशन तैयार करना',
+  GetBudget: 'बजट आवंटन निकालना',
+  AddGuest: 'अतिथि जोड़ना',
+  SendReminder: 'आरएसवीपी रिमाइंडर भेजना',
+  CreatePrintOrder: 'प्रिंट ऑर्डर तैयार करना',
+};
+
 const TOOL_LABELS_EN: Record<string, string> = {
   CreateEvent: 'Create Event Workspace',
   UpdateEvent: 'Update Event',
@@ -66,6 +83,13 @@ const DEFAULT_EN_EXAMPLES = [
   'Satyanarayan Puja in Nashik, 60 guests, budget 1 Lakh — need bhatji and card printing.',
 ];
 
+const DEFAULT_HI_EXAMPLES = [
+  'पुणे में अप्रैल २०२७ में विवाह, ६५० मेहमान, १८ लाख बजट. शुभ मुहूर्त और फ़ोटोग्राफ़र चाहिए.',
+  'कोल्हापुर में गृहप्रवेश, १२० मेहमान, २ लाख बजट — गुरुजी और कैटरिंग चाहिए.',
+  'मुंबई में बेटी का जन्मदिन १०० मेहमान, ५० हजार बजट — केक और सजावट चाहिए.',
+  'नासिक में सत्यनारायण पूजा, ६० मेहमान, १ लाख बजट — भटजी और पत्रिका छपाई चाहिए.',
+];
+
 function isAssistantResponse(data: unknown): data is AssistantResponse {
   if (typeof data !== 'object' || data === null) return false;
   const value = data as Partial<AssistantResponse>;
@@ -86,7 +110,7 @@ function isAssistantResponse(data: unknown): data is AssistantResponse {
 }
 
 export function CreateWizard({ examples }: { examples: string[] }) {
-  const { lang, setLang, isEn } = useLanguage();
+  const { lang, setLang, isEn, isHi } = useLanguage();
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState(false);
   const [response, setResponse] = useState<AssistantResponse | null>(null);
@@ -113,28 +137,32 @@ export function CreateWizard({ examples }: { examples: string[] }) {
             ? (data as { error: string }).error
             : langChoice === 'en'
               ? 'Assistant is currently unreachable.'
-              : 'सहाय्यक उत्तर देत नाही.';
+              : langChoice === 'hi'
+                ? 'सहायक उत्तर नहीं दे रहा है.'
+                : 'सहाय्यक उत्तर देत नाही.';
         setError(failure);
         return;
       }
       if (isAssistantResponse(data)) {
         setResponse(data);
       } else {
-        setError(langChoice === 'en' ? 'Assistant is currently unreachable.' : 'सहाय्यक उत्तर देत नाही.');
+        setError(langChoice === 'en' ? 'Assistant is currently unreachable.' : langChoice === 'hi' ? 'सहायक उत्तर नहीं दे रहा है.' : 'सहाय्यक उत्तर देत नाही.');
       }
     } catch {
       setError(
         langChoice === 'en'
           ? 'Network trouble — please try again.'
-          : 'नेटवर्क अडचण — पुन्हा प्रयत्न करा.',
+          : langChoice === 'hi'
+            ? 'नेटवर्क समस्या — कृपया पुनः प्रयास करें.'
+            : 'नेटवर्क अडचण — पुन्हा प्रयत्न करा.',
       );
     } finally {
       setPending(false);
     }
   }, []);
 
-  const toolLabels = isEn ? TOOL_LABELS_EN : TOOL_LABELS_MR;
-  const activeExamples = isEn ? DEFAULT_EN_EXAMPLES : examples;
+  const toolLabels = isEn ? TOOL_LABELS_EN : isHi ? TOOL_LABELS_HI : TOOL_LABELS_MR;
+  const activeExamples = isEn ? DEFAULT_EN_EXAMPLES : isHi ? DEFAULT_HI_EXAMPLES : examples;
   const copy = onboardingCopy[lang];
 
   const view = response !== null && isAssistantResponse(response) ? response : null;
@@ -164,7 +192,7 @@ export function CreateWizard({ examples }: { examples: string[] }) {
                   {copy.langLabel}
                 </span>
                 <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold-ink ring-1 ring-gold/30">
-                  {isEn ? 'Selected: English' : 'डिफॉल्ट: मराठी'}
+                  {isEn ? 'Selected: English' : isHi ? 'चयनित: हिंदी' : 'डिफॉल्ट: मराठी'}
                 </span>
               </div>
               <p className="text-xs text-charcoal-soft">{copy.langHint}</p>
@@ -190,14 +218,16 @@ export function CreateWizard({ examples }: { examples: string[] }) {
         <p className="mt-2 text-sm leading-relaxed text-charcoal-soft">
           {isEn
             ? 'City, date (or month), guest count, and budget — the more you share, the sharper the plan.'
-            : 'शहर, तारीख (किंवा महिना), पाहुण्यांची संख्या आणि बजेट — जेवढे सांगाल तेवढे अचूक नियोजन.'}
+            : isHi
+              ? 'शहर, तारीख (या महीना), मेहमानों की संख्या और बजट — जितना बताएंगे, उतना सटीक नियोजन.'
+              : 'शहर, तारीख (किंवा महिना), पाहुण्यांची संख्या आणि बजेट — जेवढे सांगाल तेवढे अचूक नियोजन.'}
         </p>
 
         <div className="relative mt-4">
-          <textarea
+          <TransliteratedTextarea
             id="request"
             value={message}
-            onChange={(event) => setMessage(event.target.value)}
+            onValueChange={setMessage}
             rows={4}
             maxLength={1200}
             className="min-h-[7.5rem] w-full resize-none rounded-2xl border border-gold/30 bg-white px-4 py-3.5 text-base leading-relaxed text-charcoal placeholder:text-charcoal-muted/60 shadow-sm outline-none transition focus:border-maroon/60 focus:ring-2 focus:ring-maroon/12"
@@ -208,7 +238,11 @@ export function CreateWizard({ examples }: { examples: string[] }) {
 
         <p className="mt-2 flex items-center justify-between text-xs text-charcoal-soft" aria-live="polite">
           <span className="font-ui">
-            {isEn ? 'Tap an example → populates prompt' : 'उदाहरणावर टॅप करा → मजकूर भरेगा'}
+            {isEn
+              ? 'Tap an example → populates prompt'
+              : isHi
+                ? 'उदाहरण पर टैप करें → प्रॉम्प्ट भरेगा'
+                : 'उदाहरणावर टॅप करा → मजकूर भरेगा'}
           </span>
           <span className="font-ui font-medium">
             {isEn
@@ -223,19 +257,19 @@ export function CreateWizard({ examples }: { examples: string[] }) {
               key={example}
               type="button"
               onClick={() => setMessage(example)}
-              className="group inline-flex min-h-11 items-center gap-1.5 rounded-full border border-gold/30 bg-ivory-surface px-3.5 py-2 text-xs font-medium leading-tight text-charcoal-soft shadow-2xs transition hover:border-maroon/30 hover:bg-ivory-deep hover:text-maroon"
+              className="group inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full border border-gold/30 bg-ivory-surface px-3.5 py-2 text-xs font-medium leading-tight text-charcoal-soft shadow-2xs transition hover:border-maroon/30 hover:bg-ivory-deep hover:text-maroon"
             >
-              <span className="size-1.5 rounded-full bg-gold/60 group-hover:bg-maroon" aria-hidden />
-              {example.slice(0, 46)}…
+              <span className="size-1.5 shrink-0 rounded-full bg-gold/60 group-hover:bg-maroon" aria-hidden />
+              <span className="truncate">{example.slice(0, 46)}…</span>
             </button>
           ))}
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="mt-6 flex flex-col sm:flex-row sm:items-center gap-3">
           <button
             type="submit"
             disabled={pending || message.trim().length < 2}
-            className="btn-base btn-maroon px-7 text-sm shadow-sm disabled:opacity-60"
+            className="btn-base btn-maroon w-full sm:w-auto min-h-[44px] justify-center px-7 text-sm shadow-sm disabled:opacity-60"
           >
             {pending ? copy.generating : copy.generatePlan}
             <span aria-hidden>↗</span>
@@ -248,7 +282,7 @@ export function CreateWizard({ examples }: { examples: string[] }) {
                 setError(null);
                 setMessage('');
               }}
-              className="btn-base btn-outline px-5 text-sm"
+              className="btn-base btn-outline w-full sm:w-auto min-h-[44px] justify-center px-5 text-sm"
             >
               {copy.newRequest}
             </button>

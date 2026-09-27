@@ -7,10 +7,13 @@ import { MARATHI_MONTHS_SHORT, formatMarathiDate, toDevanagariDigits } from '@ma
 import type { Task } from '@mazi/store';
 
 import { addTaskAction, toggleTaskAction } from '@/app/studio/[slug]/actions';
+import { TransliteratedInput } from '@/components/ui/transliterated-input';
 
 const PRIORITY_LABEL: Record<number, string> = { 1: 'तातडीचे', 2: 'महत्त्वाचे', 3: 'सामान्य' };
 
 export function TaskPanel({ slug, tasks, overdue }: { slug: string; tasks: Task[]; overdue: number }) {
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('');
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [optimistic, toggleOptimistic] = useOptimistic(
@@ -76,6 +79,8 @@ export function TaskPanel({ slug, tasks, overdue }: { slug: string; tasks: Task[
               try {
                 await addTaskAction(formData);
                 setResult({ ok: true, message: 'कार्य जोडले — यादीत दिसेल.' });
+                setTitle('');
+                setCategory('');
               } catch (error) {
                 setResult({
                   ok: false,
@@ -88,19 +93,23 @@ export function TaskPanel({ slug, tasks, overdue }: { slug: string; tasks: Task[
         >
           <input type="hidden" name="slug" value={slug} />
           <label className="sr-only" htmlFor={`task-title-${slug}`}>नवीन कार्य</label>
-          <input
+          <TransliteratedInput
             id={`task-title-${slug}`}
             name="title"
             required
             maxLength={160}
+            value={title}
+            onValueChange={setTitle}
             placeholder="नवीन कार्य — उदा. हळदीचे हॉल आरक्षित करा"
-            className="min-h-11 rounded-xl border border-gold/40 bg-ivory px-3.5 py-2.5 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon focus:ring-2 focus:ring-maroon/10"
+            className="min-h-11 w-full rounded-xl border border-gold/40 bg-ivory px-3.5 py-2.5 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon focus:ring-2 focus:ring-maroon/10"
           />
-          <input
+          <TransliteratedInput
             name="category"
+            value={category}
+            onValueChange={setCategory}
             placeholder="श्रेणी — उदा. सजावट"
             aria-label="कार्य श्रेणी"
-            className="min-h-11 rounded-xl border border-gold/40 bg-ivory px-3.5 py-2.5 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon focus:ring-2 focus:ring-maroon/10"
+            className="min-h-11 w-full rounded-xl border border-gold/40 bg-ivory px-3.5 py-2.5 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon focus:ring-2 focus:ring-maroon/10"
           />
           <input
             name="dueDate"

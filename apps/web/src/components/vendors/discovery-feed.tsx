@@ -17,6 +17,8 @@ import { toDevanagariDigits } from '@mazi/marathi';
  * empty grid that looks like "no vendors exist".
  */
 
+import { TransliteratedInput } from '@/components/ui/transliterated-input';
+
 interface VendorRow {
   id: string;
   name: string;
@@ -117,9 +119,9 @@ export function DiscoveryFeed({
       <div className="surface grid gap-3 p-5 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <label className="text-sm">
           <span className="font-ui text-xs uppercase tracking-wider text-charcoal-soft">शोध</span>
-          <input
+          <TransliteratedInput
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onValueChange={setQuery}
             placeholder="नाव किंवा सेवा — उदा. कॅन्डिड"
             className="mt-1 w-full rounded-xl border border-gold/40 bg-ivory px-3 py-2 text-sm outline-none focus:border-maroon"
           />

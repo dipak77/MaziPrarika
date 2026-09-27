@@ -37,17 +37,20 @@ export const IMG = {
 };
 
 export const EVENT_TYPES = [
-  { value: "wedding", mr: "विवाह", en: "Wedding" },
-  { value: "engagement", mr: "साखरपुडा", en: "Engagement" },
-  { value: "birthday", mr: "वाढदिवस", en: "Birthday" },
-  { value: "naming", mr: "नामकरण", en: "Naming" },
-  { value: "gruhapravesh", mr: "गृहप्रवेश", en: "Gruha Pravesh" },
-  { value: "puja", mr: "सत्यनारायण पूजा", en: "Satyanarayan Puja" },
-  { value: "corporate", mr: "स्नेहसंमेलन", en: "Corporate" },
+  { value: "wedding", mr: "विवाह", hi: "विवाह / शादी", en: "Wedding" },
+  { value: "engagement", mr: "साखरपुडा", hi: "सगाई / रोका", en: "Engagement" },
+  { value: "birthday", mr: "वाढदिवस", hi: "जन्मदिन", en: "Birthday" },
+  { value: "naming", mr: "नामकरण", hi: "नामकरण संस्कार", en: "Naming" },
+  { value: "gruhapravesh", mr: "गृहप्रवेश", hi: "गृह प्रवेश", en: "Gruha Pravesh" },
+  { value: "puja", mr: "सत्यनारायण पूजा", hi: "सत्यनारायण पूजा", en: "Satyanarayan Puja" },
+  { value: "corporate", mr: "स्नेहसंमेलन", hi: "वार्षिक उत्सव", en: "Corporate" },
 ] as const;
 
 export const eventTypeMr = (v: string) =>
   EVENT_TYPES.find((t) => t.value === v)?.mr ?? v;
+
+export const eventTypeHi = (v: string) =>
+  EVENT_TYPES.find((t) => t.value === v)?.hi ?? v;
 
 export const CATEGORIES = [
   { value: "venue", mr: "लॉन आणि हॉल", en: "Venues" },
@@ -117,6 +120,35 @@ export const mrDateShort = (iso?: string | null) => {
   }
 };
 
+export const hiDate = (iso?: string | null) => {
+  if (!iso) return "दिनांक घोषित किया जाएगा";
+  const d = new Date(iso + (iso.length === 10 ? "T00:00:00" : ""));
+  try {
+    return new Intl.DateTimeFormat("hi-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      weekday: "long",
+    }).format(d);
+  } catch {
+    return iso;
+  }
+};
+
+export const hiDateShort = (iso?: string | null) => {
+  if (!iso) return "—";
+  const d = new Date(iso + (iso.length === 10 ? "T00:00:00" : ""));
+  try {
+    return new Intl.DateTimeFormat("hi-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(d);
+  } catch {
+    return iso;
+  }
+};
+
 export const enDate = (iso?: string | null) => {
   if (!iso) return "Date to be announced";
   const d = new Date(iso + (iso.length === 10 ? "T00:00:00" : ""));
@@ -153,7 +185,19 @@ export const daysUntil = (iso?: string | null) => {
 };
 
 /* ── Invitation design templates ──────────────────────────────────────── */
-export type TemplateId = "paithani" | "warli" | "shubhra" | "rajmudra";
+export type TemplateId =
+  | "paithani"
+  | "royal-purple"
+  | "temple-gold"
+  | "midnight-navy"
+  | "heritage-maroon"
+  | "rajmudra"
+  | "warli"
+  | "shubhra"
+  | "emerald-garden"
+  | "sapphire-moon"
+  | "rose-petal"
+  | "ivory-royal";
 
 export const TEMPLATES: {
   id: TemplateId;
@@ -163,11 +207,46 @@ export const TEMPLATES: {
   price: number;
 }[] = [
   {
+    id: "royal-purple",
+    name: "शाही जांभळा",
+    en: "Royal Purple",
+    desc: "जांभळा शाही पट, सुवर्ण श्रीगणेश सुलेखन व कोना-नक्षीकाम.",
+    price: 249,
+  },
+  {
+    id: "temple-gold",
+    name: "राजमहाल कमान",
+    en: "Temple Arch Gold",
+    desc: "३D सुवर्ण मंदिर कमान, कळसावर गणेशमुद्रा व राजसी नक्षी.",
+    price: 249,
+  },
+  {
+    id: "midnight-navy",
+    name: "शाही नीलवर्ण",
+    en: "Midnight Navy",
+    desc: "गहन निळी छटा, बॅरोक सुवर्ण चौकट व दरबारी शान.",
+    price: 229,
+  },
+  {
+    id: "heritage-maroon",
+    name: "हेरिटेज मारून",
+    en: "Heritage Floral",
+    desc: "पारंपरिक किरमिजी दमास्क, सुवर्ण कलश व राजसी सुलेखन.",
+    price: 239,
+  },
+  {
     id: "paithani",
     name: "पैठणी राजे",
     en: "Paithani Royal",
     desc: "गुलाबी-सोनेरी पैठणी काठ, सोन्याच्या अक्षरांत.",
     price: 199,
+  },
+  {
+    id: "rajmudra",
+    name: "राजमुद्रा",
+    en: "Rajmudra Deep",
+    desc: "गडद किरमिजीवर सुवर्ण राजमुद्रा — भव्य, दरबारी.",
+    price: 249,
   },
   {
     id: "warli",
@@ -184,11 +263,32 @@ export const TEMPLATES: {
     price: 129,
   },
   {
-    id: "rajmudra",
-    name: "राजमुद्रा",
-    en: "Rajmudra Deep",
-    desc: "गडद किरमिजीवर सुवर्ण राजमुद्रा — भव्य, दरबारी.",
+    id: "emerald-garden",
+    name: "पाचू वन",
+    en: "Emerald Garden",
+    desc: "निसर्गरम्य पाचू हिरवा पट, सुवर्ण कमळ व राजेशाही नक्षी.",
+    price: 239,
+  },
+  {
+    id: "sapphire-moon",
+    name: "नीलम चंद्र",
+    en: "Sapphire Moon",
+    desc: "गहन आकाशीय नीलम, चंद्र कोर व चांदी-सोनेरी चमक.",
     price: 249,
+  },
+  {
+    id: "rose-petal",
+    name: "गुलाबी रंग",
+    en: "Rose Petal",
+    desc: "नाजूक गुलाबी छटा, गुलाबाची नक्षी व आधुनिक राजेशाही शैली.",
+    price: 199,
+  },
+  {
+    id: "ivory-royal",
+    name: "राजेशाही हस्तिदंत",
+    en: "Ivory Royal Gold",
+    desc: "अभिजात हस्तिदंती पार्श्वभूमी, पैसले काठ व पारंपरिक गणेशमुद्रा.",
+    price: 219,
   },
 ];
 
@@ -197,6 +297,13 @@ export const BLESSINGS = [
   "॥ श्री स्वामी समर्थ ॥",
   "शुभं भवतु",
   "अथ श्रीविवाहकलशं पूजयिष्ये",
+];
+
+export const BLESSINGS_HI = [
+  "॥ श्री गणेशाय नमः ॥",
+  "॥ ॐ नमः शिवाय ॥",
+  "॥ सर्व मंगल मांगल्ये ॥",
+  "॥ शुभ विवाह ॥",
 ];
 
 export const BLESSINGS_EN = [
@@ -217,7 +324,7 @@ export type DesignData = {
   city: string;
   host: string;
   blessing: string;
-  lang?: "mr" | "en";
+  lang?: "mr" | "hi" | "en";
 };
 
 export const DEFAULT_DESIGN: DesignData = {

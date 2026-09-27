@@ -7,6 +7,7 @@ import { toDevanagariDigits } from '@mazi/marathi';
 import type { Guest } from '@mazi/store';
 
 import { addGuestAction } from '@/app/studio/[slug]/actions';
+import { TransliteratedInput } from '@/components/ui/transliterated-input';
 
 const SIDE_LABEL: Record<string, string> = {
   bride: 'वधूकडील',
@@ -32,6 +33,8 @@ export function GuestPanel({
   rsvp: { invited: number; responded: number; yes: number; no: number; maybe: number; expectedHeads: number };
   guests: Guest[];
 }) {
+  const [name, setName] = useState('');
+  const [relation, setRelation] = useState('');
   const [query, setQuery] = useState('');
   const [side, setSide] = useState<'all' | 'bride' | 'groom' | 'both'>('all');
   const [pending, startTransition] = useTransition();
@@ -116,6 +119,8 @@ export function GuestPanel({
               try {
                 await addGuestAction(formData);
                 setResult({ ok: true, message: 'पाहुणा जोडला — यादीत दिसेल.' });
+                setName('');
+                setRelation('');
               } catch (error) {
                 setResult({
                   ok: false,
@@ -128,13 +133,15 @@ export function GuestPanel({
         >
           <input type="hidden" name="slug" value={slug} />
           <label className="sr-only" htmlFor={`guest-name-${slug}`}>पाहुण्याचे नाव</label>
-          <input
+          <TransliteratedInput
             id={`guest-name-${slug}`}
             name="name"
             required
             maxLength={120}
+            value={name}
+            onValueChange={setName}
             placeholder="पाहुण्याचे नाव *"
-            className="min-h-11 rounded-xl border border-gold/30 bg-white px-3.5 py-2.5 text-sm font-medium text-charcoal shadow-2xs outline-none placeholder:text-charcoal-muted/60 focus:border-maroon/40 focus:ring-2 focus:ring-maroon/10"
+            className="min-h-11 w-full rounded-xl border border-gold/30 bg-white px-3.5 py-2.5 text-sm font-medium text-charcoal shadow-2xs outline-none placeholder:text-charcoal-muted/60 focus:border-maroon/40 focus:ring-2 focus:ring-maroon/10"
           />
           <input
             name="phone"
@@ -144,11 +151,13 @@ export function GuestPanel({
             aria-label="मोबाइल क्रमांक"
             className="min-h-11 rounded-xl border border-gold/30 bg-white px-3.5 py-2.5 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon/40 focus:ring-2 focus:ring-maroon/10"
           />
-          <input
+          <TransliteratedInput
             name="relation"
+            value={relation}
+            onValueChange={setRelation}
             placeholder="नाते — उदा. मामा"
             aria-label="नाते"
-            className="min-h-11 rounded-xl border border-gold/30 bg-white px-3.5 py-2.5 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon/40 focus:ring-2 focus:ring-maroon/10"
+            className="min-h-11 w-full rounded-xl border border-gold/30 bg-white px-3.5 py-2.5 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon/40 focus:ring-2 focus:ring-maroon/10"
           />
           <input
             name="guestCount"
@@ -193,14 +202,13 @@ export function GuestPanel({
         <div className="mt-5 flex flex-wrap items-center gap-2">
           <div className="relative min-w-56 flex-1">
             <label className="sr-only" htmlFor={`guest-search-${slug}`}>पाहुणे शोधा</label>
-            <input
+            <TransliteratedInput
               id={`guest-search-${slug}`}
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onValueChange={setQuery}
               placeholder="शोधा — नाव, नाते किंवा संहिता"
-              className="min-h-11 w-full rounded-full border border-gold/30 bg-white py-2 pl-10 pr-4 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon/40 focus:ring-2 focus:ring-maroon/10"
+              className="min-h-11 w-full rounded-full border border-gold/30 bg-white py-2 pl-4 pr-10 text-sm text-charcoal shadow-2xs outline-none focus:border-maroon/40 focus:ring-2 focus:ring-maroon/10"
             />
-            <span aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-charcoal-muted">⌕</span>
           </div>
           {(['all', 'groom', 'bride', 'both'] as const).map((option) => (
             <button

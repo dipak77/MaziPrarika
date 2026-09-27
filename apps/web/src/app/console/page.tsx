@@ -166,18 +166,18 @@ export default async function ConsolePage() {
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="overflow-hidden rounded-2xl border border-maroon-900/10 bg-white shadow-card">
-            <div className="border-b border-ivory-300 px-6 py-4">
+            <div className="border-b border-ivory-300 px-4 sm:px-6 py-4">
               <h3 className="text-[15px] font-extrabold text-ink-900">अलिकडची बुकिंग्स</h3>
             </div>
             <div className="divide-y divide-ivory-200">
               {renderedBookings.map((b) => (
-                <div key={b.fullId} className="flex flex-wrap items-center justify-between gap-4 px-6 py-3.5 text-[13px]">
+                <div key={b.fullId} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 px-4 sm:px-6 py-3.5 text-[13px]">
                   <div>
                     <span className="font-mono text-[11px] text-ink-400">{b.id} · </span>
                     <span className="font-bold text-ink-900">{b.ev}</span>
                     <span className="text-ink-500"> → {b.vendor}</span>
                   </div>
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 flex-wrap">
                     <span className="font-display font-semibold text-maroon-800">{b.amt}</span>
                     <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${b.cls}`}>{b.st}</span>
                     {b.canSettle && (
@@ -212,12 +212,12 @@ export default async function ConsolePage() {
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-maroon-900/10 bg-white shadow-card">
-            <div className="border-b border-ivory-300 px-6 py-4">
+            <div className="border-b border-ivory-300 px-4 sm:px-6 py-4">
               <h3 className="text-[15px] font-extrabold text-ink-900">व्हेंडर प्रतिसाद SLA</h3>
             </div>
             <div className="divide-y divide-ivory-200">
               {responseLive.map((r) => (
-                <div key={r.v} className="flex items-center justify-between px-6 py-3.5 text-[13px]">
+                <div key={r.v} className="flex items-center justify-between px-4 sm:px-6 py-3.5 text-[13px]">
                   <div>
                     <p className="font-bold text-ink-900">{r.v}</p>
                     <p className="text-[11.5px] text-ink-400">{r.cat}</p>

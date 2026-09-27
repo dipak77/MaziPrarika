@@ -113,29 +113,31 @@ export default async function VendorOsPage() {
       <div className="shell grid gap-6 lg:grid-cols-[240px_1fr]">
         <aside className="lg:sticky lg:top-28 lg:self-start">
           <div className="overflow-hidden rounded-2xl border border-maroon-900/10 bg-white shadow-card">
-            <div className="bg-paisley-dark p-5 text-ivory-100">
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-gold-500/20 text-2xl font-bold text-gold-300 ring-2 ring-gold-400/60">
+            <div className="bg-paisley-dark p-4 sm:p-5 text-ivory-100 flex items-center gap-3.5 lg:block">
+              <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-xl bg-gold-500/20 text-xl sm:text-2xl font-bold text-gold-300 ring-2 ring-gold-400/60 lg:mb-3">
                 {vendor.name.slice(0, 1)}
               </div>
-              <p className="font-marathi-display text-[17px] leading-snug font-bold">{vendor.name}</p>
-              <p className="mt-0.5 text-[11.5px] text-ivory-100/60">{categoryMr(vendor.category)} · {vendor.city}</p>
-              <div className="mt-2.5"><VerifiedBadge compact /></div>
+              <div className="min-w-0">
+                <p className="font-marathi-display text-[15px] sm:text-[17px] leading-snug font-bold truncate">{vendor.name}</p>
+                <p className="mt-0.5 text-[11px] sm:text-[11.5px] text-ivory-100/60 truncate">{categoryMr(vendor.category)} · {vendor.city}</p>
+                <div className="mt-1.5 sm:mt-2.5"><VerifiedBadge compact /></div>
+              </div>
             </div>
-            <nav className="p-3">
+            <nav className="flex lg:flex-col overflow-x-auto no-scrollbar gap-1.5 p-2 lg:p-3">
               {sidebar.map((s) => (
                 <Link
                   key={s.t}
                   href={s.href}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-[13.5px] font-bold transition ${
+                  className={`flex shrink-0 items-center gap-2 lg:gap-3 rounded-xl px-3.5 py-2 lg:px-4 lg:py-2.5 text-xs lg:text-[13.5px] font-bold whitespace-nowrap transition ${
                     s.active ? "bg-maroon-800 text-ivory-100 shadow-luxe" : "text-ink-500 hover:bg-ivory-100"
                   }`}
                 >
-                  <Icon name={s.icon} className={`h-4.5 w-4.5 ${s.active ? "text-gold-300" : ""}`} />
+                  <Icon name={s.icon} className={`h-4 w-4 lg:h-4.5 lg:w-4.5 ${s.active ? "text-gold-300" : ""}`} />
                   {s.t}
                 </Link>
               ))}
             </nav>
-            <div className="border-t border-ivory-300 p-4">
+            <div className="hidden lg:block border-t border-ivory-300 p-4">
               <div className="rounded-xl bg-gradient-to-br from-gold-400/20 to-gold-500/5 p-4 ring-1 ring-gold-500/30">
                 <p className="text-[11px] font-extrabold tracking-widest text-gold-700 uppercase">ग्रोथ प्लॅन</p>
                 <p className="mt-1 text-[12px] leading-relaxed text-ink-600">{vendor.plan} योजना · {toDevanagariDigits(openCount)} खुल्या चौकशा · एकूण {toDevanagariDigits(total)}</p>
@@ -147,8 +149,8 @@ export default async function VendorOsPage() {
         <div className="min-w-0 space-y-6">
           <div id="dashboard" className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="font-marathi-display text-3xl font-bold text-maroon-900">डॅशबोर्ड</h1>
-              <p className="mt-1 text-[13.5px] text-ink-500">
+              <h1 className="font-marathi-display text-2xl sm:text-3xl font-bold text-maroon-900">डॅशबोर्ड</h1>
+              <p className="mt-1 text-[13px] sm:text-[13.5px] text-ink-500">
                 शुभ सकाळ 👋 — आज {toDevanagariDigits(newCount)} नवीन चौकशा आल्या आहेत
               </p>
             </div>
@@ -157,7 +159,7 @@ export default async function VendorOsPage() {
             </Chip>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
             <Kpi icon="bell" label="एकूण चौकशा (३० दिवस)" value={toDevanagariDigits(total)} delta={`${toDevanagariDigits(booked)} जिंकल्या`} up />
             <Kpi icon="checklist" label="पाइपलाइनमध्ये" value={toDevanagariDigits(pipeline)} delta={`${toDevanagariDigits(booked)} बुकिंग्स`} />
             <Kpi icon="wallet" label="बुकिंग मूल्य (महिना)" value={formatLakh(revenue)} delta={`मध्यम प्रतिसाद ${toDevanagariDigits(stats.medianMinutes)} मि.`} up />
@@ -165,7 +167,7 @@ export default async function VendorOsPage() {
           </div>
 
           <div id="payments" className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
-            <div className="rounded-2xl border border-maroon-900/10 bg-white p-6 shadow-card">
+            <div className="rounded-2xl border border-maroon-900/10 bg-white p-4 sm:p-6 shadow-card">
               <div className="flex items-center justify-between">
                 <h3 className="text-[15px] font-extrabold text-ink-900">महसूल — गेली १२ महिने</h3>
                 {liveRoas !== null ? <Chip tone="leaf">ROAS {toDevanagariDigits(liveRoas)}×</Chip> : <Chip tone="outline">जाहिरात नाही</Chip>}
@@ -173,7 +175,7 @@ export default async function VendorOsPage() {
               <RevenueChart values={monthlyLakh} labels={monthLabels} amounts={monthlyRupees} />
             </div>
 
-            <div className="rounded-2xl border border-maroon-900/10 bg-white p-6 shadow-card">
+            <div className="rounded-2xl border border-maroon-900/10 bg-white p-4 sm:p-6 shadow-card">
               <h3 className="text-[15px] font-extrabold text-ink-900">चौकशा कुठून आल्या?</h3>
               <div className="mt-5 space-y-4">
                 {sources.map((l) => (
@@ -196,7 +198,7 @@ export default async function VendorOsPage() {
           </div>
 
           <div id="leads" className="overflow-hidden rounded-2xl border border-maroon-900/10 bg-white shadow-card">
-            <div className="flex items-center justify-between border-b border-ivory-300 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-ivory-300 px-4 sm:px-6 py-4">
               <h3 className="text-[15px] font-extrabold text-ink-900">लीड्स — चौकशी ते बुकिंग</h3>
               <span className="text-[12px] font-bold text-ink-400">एकूण {toDevanagariDigits(total)} · थेट डेटाबेसमधून</span>
             </div>
@@ -210,36 +212,38 @@ export default async function VendorOsPage() {
                   const st = STATUS_MR[l.status] ?? STATUS_MR.new ?? { t: l.status, cls: "bg-ivory-200 text-ink-700 ring-ink-900/20" };
                   const quoteCount = store.marketplace.quotesForLead(l.id).length;
                   return (
-                    <div key={l.id} className="flex flex-wrap items-center gap-4 px-6 py-4 transition hover:bg-ivory-50/70">
-                      <div className="min-w-[180px] flex-1">
-                        <p className="text-[14.5px] font-bold text-ink-900">
-                          {l.id} · {categoryMr(l.category)}
-                        </p>
+                    <div key={l.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6 py-4 transition hover:bg-ivory-50/70">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-[14.5px] font-bold text-ink-900">
+                            {l.id} · {categoryMr(l.category)}
+                          </p>
+                          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ring-1 ${st.cls}`}>{st.t}</span>
+                        </div>
                         <p className="mt-0.5 text-[12px] text-ink-400">
                           {mrDateShort(l.createdAt)} · प्रतिसाद मुदत {new Date(l.responseDueAt).toLocaleTimeString("mr-IN", { hour: "2-digit", minute: "2-digit" })}
                           {quoteCount > 0 ? ` · ${toDevanagariDigits(quoteCount)} कोट` : ""}
                         </p>
                       </div>
-                      <span className={`rounded-full px-3 py-1 text-[11.5px] font-extrabold ring-1 ${st.cls}`}>{st.t}</span>
-                      <div className="flex gap-2">
+                      <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
                         {(l.status === "new" || l.status === "viewed") && (
-                          <form action={async () => { "use server"; await respondLeadAction(l.id); }}>
-                            <button className="rounded-full bg-maroon-800 px-4 py-2 text-[12px] font-bold text-ivory-100 transition hover:bg-maroon-700">उत्तर द्या →</button>
+                          <form action={async () => { "use server"; await respondLeadAction(l.id); }} className="w-full sm:w-auto">
+                            <button className="w-full sm:w-auto min-h-9 justify-center rounded-full bg-maroon-800 px-4 py-2 text-[12px] font-bold text-ivory-100 transition hover:bg-maroon-700">उत्तर द्या →</button>
                           </form>
                         )}
                         {(l.status === "responded" || l.status === "quoting") && (
-                          <Link href={`/vendor/leads/${l.id}`} className="rounded-full bg-maroon-800 px-4 py-2 text-[12px] font-bold text-ivory-100 transition hover:bg-maroon-700">
+                          <Link href={`/vendor/leads/${l.id}`} className="w-full sm:w-auto min-h-9 inline-flex justify-center items-center rounded-full bg-maroon-800 px-4 py-2 text-[12px] font-bold text-ivory-100 transition hover:bg-maroon-700">
                             कोट पाठवा →
                           </Link>
                         )}
                         {l.status === "quoted" && (
-                          <Link href={`/vendor/leads/${l.id}`} className="rounded-full bg-maroon-800 px-4 py-2 text-[12px] font-bold text-ivory-100 transition hover:bg-maroon-700">
+                          <Link href={`/vendor/leads/${l.id}`} className="w-full sm:w-auto min-h-9 inline-flex justify-center items-center rounded-full bg-maroon-800 px-4 py-2 text-[12px] font-bold text-ivory-100 transition hover:bg-maroon-700">
                             बुकिंग पूर्ण करा →
                           </Link>
                         )}
                         {l.status !== "won" && l.status !== "lost" && l.status !== "expired" && (
-                          <form action={async () => { "use server"; await declineLeadAction(l.id); }}>
-                            <button className="rounded-full border border-maroon-800/20 px-4 py-2 text-[12px] font-bold text-ink-500 transition hover:border-maroon-700 hover:text-maroon-700">नाकारा</button>
+                          <form action={async () => { "use server"; await declineLeadAction(l.id); }} className="w-full sm:w-auto">
+                            <button className="w-full sm:w-auto min-h-9 justify-center rounded-full border border-maroon-800/20 px-4 py-2 text-[12px] font-bold text-ink-500 transition hover:border-maroon-700 hover:text-maroon-700">नाकारा</button>
                           </form>
                         )}
                       </div>

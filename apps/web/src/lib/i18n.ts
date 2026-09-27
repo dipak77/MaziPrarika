@@ -1,7 +1,7 @@
-export type CardLang = 'mr' | 'en';
+export type CardLang = 'mr' | 'hi' | 'en';
 
 export const DEFAULT_LANG: CardLang = 'mr';
-export const SUPPORTED_LANGS: readonly CardLang[] = ['mr', 'en'] as const;
+export const SUPPORTED_LANGS: readonly CardLang[] = ['mr', 'hi', 'en'] as const;
 export const PREF_LANG_COOKIE = 'mazi_lang';
 export const PREF_LANG_STORAGE_KEY = 'mazi_preferred_lang';
 
@@ -11,14 +11,16 @@ export const PREF_LANG_STORAGE_KEY = 'mazi_preferred_lang';
  * it strictly returns the DEFAULT_LANG ('mr' - Marathi).
  */
 export function parseCardLang(value: unknown): CardLang {
-  return value === 'en' ? 'en' : 'mr';
+  if (value === 'en') return 'en';
+  if (value === 'hi') return 'hi';
+  return 'mr';
 }
 
 /**
  * Resolves preferred language following strict precedence:
- * 1. Explicit query parameter ('mr' | 'en')
- * 2. Stored cookie preference ('mr' | 'en')
- * 3. Client localStorage preference ('mr' | 'en')
+ * 1. Explicit query parameter ('mr' | 'hi' | 'en')
+ * 2. Stored cookie preference ('mr' | 'hi' | 'en')
+ * 3. Client localStorage preference ('mr' | 'hi' | 'en')
  * 4. Default fallback: 'mr' (Marathi)
  */
 export function resolvePreferredLang(options?: {
@@ -26,13 +28,16 @@ export function resolvePreferredLang(options?: {
   cookie?: unknown;
   storage?: unknown;
 }): CardLang {
-  if (options?.query === 'en' || options?.query === 'mr') {
+  const isSupported = (val: unknown): val is CardLang =>
+    val === 'en' || val === 'hi' || val === 'mr';
+
+  if (isSupported(options?.query)) {
     return options.query;
   }
-  if (options?.cookie === 'en' || options?.cookie === 'mr') {
+  if (isSupported(options?.cookie)) {
     return options.cookie;
   }
-  if (options?.storage === 'en' || options?.storage === 'mr') {
+  if (isSupported(options?.storage)) {
     return options.storage;
   }
   return DEFAULT_LANG;
@@ -41,7 +46,7 @@ export function resolvePreferredLang(options?: {
 export const onboardingCopy = {
   mr: {
     langLabel: 'भाषा प्राधान्य',
-    langHint: 'डिफॉल्ट मराठी; आपण हवी असल्यास इंग्रजी निवडू शकता.',
+    langHint: 'डिफॉल्ट मराठी; आपण हवी असल्यास हिंदी किंवा इंग्रजी निवडू शकता.',
     defaultBadge: 'डिफॉल्ट',
     createEventTitle: 'एका वाक्यात कार्यक्रम उभा करा',
     wizardPlaceholder: 'उदा. पुण्यात एप्रिल २०२७ मध्ये लग्न आहे, ६५० पाहुणे, बजेट १८ लाख…',
@@ -51,9 +56,21 @@ export const onboardingCopy = {
     newRequest: 'नवीन विनंती',
     switchNotice: 'भाषा बदलली: मराठी',
   },
+  hi: {
+    langLabel: 'भाषा प्राथमिकता',
+    langHint: 'डिफ़ॉल्ट मराठी; आप हिंदी या अंग्रेज़ी चुन सकते हैं.',
+    defaultBadge: 'डिफ़ॉल्ट',
+    createEventTitle: 'एक वाक्य में उत्सव की योजना बनाएं',
+    wizardPlaceholder: 'उदा. पुणे में अप्रैल २०२७ में शादी है, ६५० मेहमान, बजट १८ लाख…',
+    tellAboutEvent: 'उत्सव के बारे में बताएं',
+    generatePlan: 'योजना तैयार करें',
+    generating: 'योजना बन रही है…',
+    newRequest: 'नया अनुरोध',
+    switchNotice: 'भाषा बदली: हिंदी',
+  },
   en: {
     langLabel: 'Preferred Language',
-    langHint: 'Default is Marathi; switch to English anytime.',
+    langHint: 'Default is Marathi; switch to Hindi or English anytime.',
     defaultBadge: 'Default',
     createEventTitle: 'Plan your celebration in one sentence',
     wizardPlaceholder: 'e.g. Wedding in Pune in April 2027, 650 guests, budget 18 Lakhs…',
@@ -308,6 +325,252 @@ export const uiCopy = {
       kicker: 'Public Celebrations',
       title: 'सार्वजनिक पत्रिका',
       desc: 'काही कुटुंबे आपली पत्रिका सार्वजनिक करतात — मग नातेवाईक, मित्र व नवीन पाहुणे ती शोधू शकतात.',
+      cityLabel: 'शहर',
+      typeLabel: 'प्रकार',
+    },
+  },
+  hi: {
+    header: {
+      mantra: '॥ श्री गणेशाय नमः ॥',
+      tagline: 'महाराष्ट्र संस्करण • सूर्यसिद्धांत पंचांग • सटीक छपाई व सुरक्षित बहीखाता',
+      livePanchang: 'लाइव पंचांग सक्रिय',
+      studio: 'क्रिएट स्टूडियो',
+      create: 'AI उत्सव',
+      vendors: 'विक्रेता खोजें',
+      events: 'इवेंट्स',
+      vendorOs: 'वेंडर ओएस',
+      console: 'कंसोल',
+      panchang: 'पंचांग',
+      vendorLogin: 'विक्रेता प्रवेश',
+      createCard: 'पत्रिका बनाएं',
+    },
+    footer: {
+      tagline: 'डिजिटल उत्सव और निमंत्रण पत्रिका मंच। पहले अक्षर से अंतिम आशीर्वाद तक।',
+      proofBadge: 'WYSIWYP प्रूफिंग · ६० FPS एडिटर · डबल-एंट्री लेजर',
+      rights: 'सर्वाधिकार सुरक्षित। सूर्यसिद्धांत खगोलीय गणना पर आधारित।',
+      col1Title: 'उत्सव मंच',
+      col2Title: 'साधन',
+      col3Title: 'विश्वसनीयता',
+      col4Title: 'छपाई व संपर्क',
+    },
+    home: {
+      heroBadge: 'पुणे · १२०+ सत्यापित विक्रेताओं के साथ लॉन्च',
+      heroPanchang: 'आज का पंचांग व शुभ मुहूर्त →',
+      heroTitle1: 'उत्सव तय किया?',
+      heroTitle2: 'बाकी सब कुछ',
+      heroTitle3: 'हम पर छोड़ें।',
+      heroDesc: 'पत्रिका बनाएं, इवेंट प्लान करें, वेंडर खोजें और बुक करें, प्रिंट कराएं और मनाएं — एक ही जुड़े हुए वर्कस्पेस से। AI को बताएं: “१५० मेहमान, पुणे, १ लाख बजट” — और पूरा उत्सव तैयार।',
+      ctaCreate: 'पत्रिका बनाएं — मुफ़्त',
+      ctaVendors: 'विक्रेता खोजें',
+      ctaEvents: 'इवेंट ओएस',
+      stat1Val: '४० से.',
+      stat1Lbl: 'पत्रिका तैयार — औसत समय',
+      stat2Val: '२५',
+      stat2Lbl: 'इवेंट श्रेणियां',
+      stat3Val: '₹०',
+      stat3Lbl: 'शुरुआती लागत',
+      readiness: 'तैयारी',
+      readinessVal: 'इवेंट ८२% तैयार',
+      bookingConfirmed: 'बुकिंग पुष्ट — उत्सव के लिए तैयार!',
+      catererRate: 'कैटरर · ₹४५०/थाली',
+      guestWelcome: '॥ सहर्ष स्वागतम् ॥ — ३४ मेहमान आ रहे हैं ✓',
+      marqueeItems: [
+        'शुभ विवाह', 'सगाई', 'जन्मदिन', 'नामकरण', 'गृह प्रवेश', 'सत्यनारायण पूजा',
+        'हल्दी समारोह', 'संगीत संध्या', 'पारिवारिक मिलन', 'दीक्षांत समारोह', 'उद्योग पूजा', 'वर्षगांठ',
+      ],
+      pillarsEyebrow: 'एक मंच · छह स्तंभ',
+      pillarsTitle1: 'तैयारी से लेकर',
+      pillarsTitle2: 'उत्सव तक',
+      pillarsTitle3: '— सब कुछ एक ही छत के नीचे',
+      pillars: [
+        { icon: 'brush', title: 'क्रिएट स्टूडियो', sub: 'Create Studio', desc: 'पैठणी, वारली, देवालय, मंडल — सांस्कृतिक पत्रिकाएं। QR वाला डिजिटल पृष्ठ और प्रिंट-रेडी निर्यात।', href: '/studio' },
+        { icon: 'layers', title: 'इवेंट ओएस', sub: 'Event OS', desc: 'अतिथि सूची, बजट ट्रैकर, चेकलिस्ट, मुहूर्त और तैयारी स्कोर। पूरे उत्सव का प्रबंधन एक ही पृष्ठ पर।', href: '/studio/patil-patil-vivah-2027' },
+        { icon: 'search', title: 'डिस्कवरी', sub: 'Discovery', desc: 'सत्यापित वेन्यू, डेकोरेटर, फोटोग्राफर, कैटरर — मूल्य, लाइव उपलब्धता और वास्तविक समीक्षाओं के साथ तुलना करें।', href: '/vendors' },
+        { icon: 'wallet', title: 'कॉमर्स', sub: 'Commerce', desc: 'पूछताछ → कोट → बुकिंग → भुगतान। प्रत्येक रुपये का स्पष्ट हिसाब, कोई छुपा शुल्क नहीं।', href: '/admin' },
+        { icon: 'building', title: 'वेंडर ओएस', sub: 'Vendor OS', desc: 'लीड्स, त्वरित कोट्स, बुकिंग कैलेंडर, भुगतान और समीक्षाएं — विक्रेताओं के लिए पूर्ण बिजनेस डैशबोर्ड।', href: '/vendor' },
+        { icon: 'printer', title: 'प्रिंट व प्रसार', sub: 'Print & Share', desc: 'छपाई में शून्य त्रुटि की गारंटी — जो स्क्रीन पर दिखे, वही कागज पर आए। २४–४८ घंटों में घरपहुंच।', href: '/studio' },
+      ],
+      studioShowcase: {
+        eyebrow: 'क्रिएट स्टूडियो',
+        title1: 'सिर्फ पत्रिका नहीं —',
+        titleHighlight: 'हस्तकला की छाप',
+        desc: 'सुंदर देवनागरी अक्षर और मनपसंद नमूने। नाम बदलें — कार्ड तुरंत अपने आप व्यवस्थित हो जाता है। छपाई में अक्षर कभी नहीं कटते — मन पूरी तरह शांत।',
+        features: [
+          { icon: 'sparkle', t: 'स्मार्ट लेआउट इंजन', d: 'लंबे नाम आने पर भी अक्षर अपने आप व्यवस्थित होते हैं — कुछ भी नहीं कटता' },
+          { icon: 'shield', t: 'प्रिंट-पूर्व गुणवत्ता जांच', d: 'डाउनलोड से पहले ५ जांचें — तारीख, नाम और विवरण बिल्कुल सटीक' },
+          { icon: 'printer', t: 'छपाई में शून्य त्रुटि', d: 'जो स्क्रीन पर दिखता है वही कागज पर आता है — तनावमुक्त तैयारी' },
+          { icon: 'qr', t: 'QR + लाइव इवेंट वेबसाइट', d: 'प्रत्येक पत्रिका के साथ अतिथियों के लिए लाइव डिजिटल पेज' },
+        ],
+        cta: 'स्टूडियो खोलें',
+      },
+      eventOsShowcase: {
+        eyebrow: 'इवेंट ओएस',
+        title1: 'आपका उत्सव,',
+        titleHighlight: 'एक कमांड सेंटर से',
+        desc: 'तैयारी स्कोर बताता है क्या बाकी है। बजट ट्रैकर दिखाता है कहां खर्च हो रहा है। अतिथियों के RSVP, भोजन की पसंद, मुहूर्त — सब कुछ रियल-टाइम।',
+        features: [
+          { icon: 'guests', t: 'अतिथि प्रबंधन — समूह, पक्ष, भोजन, आवास' },
+          { icon: 'wallet', t: 'बजट — अनुमान बनाम वास्तविक, श्रेणीवार' },
+          { icon: 'checklist', t: 'चेकलिस्ट — कार्य, समयसीमा, प्राथमिकता' },
+          { icon: 'calendar', t: 'सूर्यसिद्धांत पंचांग-आधारित मुहूर्त सूचनाएं' },
+        ],
+        cta: 'डेमो इवेंट देखें',
+        workspaceTag: 'mazi-patrika · इवेंट वर्कस्पेस',
+        scoreLabel: 'तैयारी-स्कोर',
+        statusItems: [
+          { t: 'वेन्यू — शिवनेरी लॉन्स', s: 'बुक हुआ ✓', ok: true },
+          { t: 'फोटोग्राफी — अथर्व मोमेंट्स', s: 'बुक हुआ ✓', ok: true },
+          { t: 'डेकोरेशन — कोट की प्रतीक्षा', s: 'प्रतीक्षित', ok: false },
+          { t: '३४ अतिथियों के RSVP बाकी', s: 'स्मरणपत्र भेजें', ok: false },
+        ],
+      },
+      marketplace: {
+        eyebrow: 'मार्केटप्लेस',
+        title1: 'सत्यापित विक्रेता।',
+        titleHighlight: 'पारदर्शी व्यवहार।',
+        desc: 'कोई मनमाना “सर्वश्रेष्ठ” खिताब नहीं — वास्तविक प्रमाण: पूर्ण हुई बुकिंग्स, प्रतिक्रिया दर, लाइव कैलेंडर और केवल सत्यापित बुकिंग के बाद की समीक्षाएं।',
+        verifiedBadge: 'सत्यापित',
+        suffix: 'पुणे →',
+        trust: [
+          { icon: 'shield', h: '७-स्तरीय सत्यापन', d: 'पहचान, व्यवसाय, GST, फोन, पता, पोर्टफोलियो, समीक्षाएं' },
+          { icon: 'wallet', h: 'पैसे का पारदर्शी हिसाब', d: 'प्रत्येक भुगतान की प्रविष्टि आपके सामने — पूर्ण वित्तीय सुरक्षा' },
+          { icon: 'bell', h: 'बैकअप वेंडर गारंटी', d: 'विक्रेता उपलब्ध नहीं? बजट-अनुकूल ३ विकल्प तुरंत तैयार' },
+        ],
+      },
+      journey: {
+        title1: 'चार कदम —',
+        titleHighlight: 'जीवन भर की स्मृति',
+        stepPrefix: 'कदम ०',
+        steps: [
+          { icon: 'brush', t: 'तैयार करें', d: '४० सेकंड में सुंदर पत्रिका — टेम्पलेट चुनें, विवरण भरें' },
+          { icon: 'checklist', t: 'योजना बनाएं', d: 'अतिथि, बजट, मुहूर्त और चेकलिस्ट एक ही वर्कस्पेस में' },
+          { icon: 'search', t: 'खोजें व बुक करें', d: 'कोट्स की तुलना करें, अग्रिम राशि दें, बुकिंग पक्की' },
+          { icon: 'diya', t: 'उत्सव मनाएं', d: 'QR स्कैन करके मेहमान आते हैं — आप सिर्फ आनंद लें' },
+        ],
+      },
+      pricing: {
+        eyebrow: 'वेंडर ओएस — मूल्य निर्धारण',
+        title1: 'विक्रेता की कमाई बढ़ेगी,',
+        titleHighlight: 'तभी हमारी कमाई',
+        popularBadge: 'सर्वाधिक लोकप्रिय',
+        cta: 'शुरुआत करें',
+        tiers: [
+          {
+            name: 'फ्री', price: '₹०', per: 'हमेशा के लिए मुफ़्त', hot: false,
+            feats: ['प्रोफाइल + पोर्टफोलियो प्रदर्शन', 'प्रति माह ५ पूछताछ', 'बुनियादी एनालिटिक्स'],
+          },
+          {
+            name: 'ग्रोथ', price: '₹१,४९९', per: '/माह + ८% कमीशन', hot: true,
+            feats: ['२५ पात्र लीड क्रेडिट्स', 'कैलेंडर, कोट्स व सीआरएम', 'व्हाट्सएप टूल्स', 'पहली २ बुकिंग ०% कमीशन'],
+          },
+          {
+            name: 'प्रो', price: '₹३,९९९', per: '/माह + ३% कमीशन', hot: false,
+            feats: ['उच्चतम लीड आवंटन', 'उन्नत सीआरएम व पैकेज', 'सर्च में प्राथमिकता', 'टीम सदस्य'],
+          },
+        ],
+      },
+      testimonials: {
+        eyebrow: 'मेजबान और विक्रेता कहते हैं',
+        title1: 'विश्वास ही हमारा',
+        titleHighlight: 'सच्चा आभूषण',
+        items: [
+          { q: 'बिटिया की शादी की पत्रिका १० मिनट में बन गई। घर के सभी बुजुर्गों के नाम बिना किसी कट के सुंदर आ गए!', a: 'स्नेहा कुलकर्णी', r: 'विवाह मेजबान · पुणे' },
+          { q: 'तीन कैटरर के कोट्स एक ही स्क्रीन पर देख कर तुलना की और तुरंत बुक किया — फोन पर परेशान होने की जरूरत नहीं पड़ी।', a: 'प्रभुलकर देशमुख', r: 'पिता · सगाई' },
+          { q: 'पहले हर हफ्ते फोन करके काम खोजना पड़ता था। अब सीधे कैलेंडर पर लीड्स आती हैं। व्यवसाय दोगुना हो गया।', a: 'संदीप जाधव', r: 'जाधव डेकोरेटर्स · ग्रोथ प्लान' },
+        ],
+      },
+      ctaBand: {
+        title1: 'अगला शुभ मुहूर्त नजदीक आ रहा है।',
+        titleHighlight: 'तैयारी शुरू करें!',
+        desc: 'मुफ़्त डिजिटल पत्रिका से शुरुआत करें — ४० सेकंड में। क्रेडिट कार्ड की आवश्यकता नहीं।',
+        btn1: 'अभी पत्रिका बनाएं',
+        btn2: 'डेमो इवेंट देखें',
+      },
+    },
+    studio: {
+      heroEyebrow: 'क्रिएट स्टूडियो · रीयलटाइम संपादन',
+      heroTitle: 'पत्रिका बनाएं —',
+      heroTitleHighlight: 'हस्तकला की छाप',
+      heroDesc: 'टेम्पलेट चुनें, विवरण भरें और लाइव प्रिव्यू देखें। नाम कितना भी लंबा हो, स्मार्ट लेआउट इंजन इसे सुंदर ढंग से बिठाता है — शून्य ओवरफ्लो, १००% प्रिंट रेडी।',
+      stat1Val: '४ प्रीमियम',
+      stat1Lbl: 'हस्तकला टेम्पलेट',
+      stat2Val: '१००% प्रिंट रेडी',
+      stat2Lbl: 'WYSIWYP · ब्लीड सहित',
+      stat3Val: '६० FPS',
+      stat3Lbl: 'लाइव प्रिव्यू',
+      btnStart: 'संपादन शुरू करें',
+      btnPreview: 'लाइव प्रिव्यू देखें',
+      langBannerTitle: 'पत्रिका भाषा प्राथमिकता',
+      langBannerBadge: 'चयनित: हिंदी',
+      langBannerHint: 'डिफ़ॉल्ट मराठी; आवश्यकतानुसार हिंदी या अंग्रेज़ी चुनें',
+      templateTitle: 'टेम्पलेट चुनें',
+      step1: '१ · कार्यक्रम',
+      step2: '२ · व्यक्ति',
+      step3: '३ · दिनांक व समय',
+      step4: '४ · स्थान व मेजबान',
+      lblEvent: 'कार्यक्रम प्रकार',
+      lblBlessing: 'मंगलाचरण / आशीर्वाद',
+      lblDate: 'दिनांक',
+      lblPersonA: 'वर / मुख्य व्यक्ति',
+      lblPersonB: 'वधू / द्वितीय व्यक्ति',
+      lblTime: 'समय',
+      lblVenue: 'स्थान',
+      lblCity: 'शहर',
+      lblHost: 'मेजबान परिवार / निमंत्रक',
+      btnSave: 'पत्रिका सहेजें',
+      btnSaving: 'सहेज रहे हैं…',
+      btnSaved: 'सहेजा गया! ✓',
+      btnPrint: 'छपाई ऑर्डर दें',
+      check1: 'पहला नाम भरा',
+      check2Couple: 'दूसरा नाम भरा',
+      check2Single: 'एक ही नाम — सही',
+      check3: 'दिनांक चुना',
+      check4: 'स्थान स्पष्ट है',
+      check5: 'नाम स्मार्ट-लेआउट सीमा में',
+      previewHeading: 'लाइव पत्रिका प्रिव्यू',
+    },
+    create: {
+      kicker: 'Create Studio',
+      title: 'एक वाक्य में उत्सव की योजना बनाएं',
+      desc: 'आप लिखें — मंच पंचांग गणना से मुहूर्त खोजता है, पारंपरिक बजट संरचना के अनुसार आवंटन करता है, कार्य सूची बनाता है और सत्यापित विक्रेताओं की सूची देता है।',
+      whatGenerates: 'क्या अपने आप तैयार होता है',
+      whatWeDontDo: 'हम क्या नहीं करते',
+      sampleWorkspaces: 'पहले से तैयार कार्यक्रम',
+      genItems: [
+        'मुहूर्त अनुकूलता — सूर्योदय-आधारित तिथि, नक्षत्र व चौघड़िया सहित',
+        'बजट का श्रेणीवार आवंटन — पारंपरिक भारतीय खर्च संरचना के अनुसार',
+        '२४+ चरणों में कार्यसूची — तिथियों और समयसीमा सहित',
+        'सत्यापित विक्रेता — उपलब्धता व प्रतिक्रिया समय के साथ',
+      ],
+      dontItems: [
+        'विवाह-मिलान या वर-वधू खोज',
+        '“शुभ/अशुभ दिन” जैसे रूढ़िवादी निर्णय — केवल अनुकूलता गणना',
+        'तुरंत बिना पुष्टि की बुकिंग — विक्रेता की सहमति आवश्यक',
+        'चिकित्सीय, कानूनी या वित्तीय सलाह',
+      ],
+      privacyNote: 'आपकी जानकारी सुरक्षित है — आधार, PAN या कार्ड नंबर कभी नहीं मांगे जाते।',
+      sampleSubtitle: 'नमूना वर्कस्पेस खोलकर देखें — लाइव प्रिव्यू व बजट सहित।',
+    },
+    panchang: {
+      kicker: 'Surya Siddhanta',
+      title: 'पंचांग व मुहूर्त — महाराष्ट्र',
+      desc: 'तिथि, नक्षत्र, चौघड़िया, राहुकाल व मुहूर्त अनुकूलता — शहर के अनुसार सटीक खगोलीय गणना।',
+      cityLabel: 'शहर',
+      dateLabel: 'दिनांक',
+      eventLabel: 'कार्यक्रम',
+      btnView: 'पंचांग देखें',
+    },
+    vendors: {
+      kicker: 'Verified Marketplace',
+      title: 'सत्यापित विक्रेता',
+      desc: 'पुणे, मुंबई, नासिक सहित प्रमुख शहरों के सत्यापित उत्सव-विक्रेता — उपलब्धता, दर और प्रतिक्रिया समय सहित।',
+      cityLabel: 'शहर',
+      categoryLabel: 'श्रेणी',
+    },
+    events: {
+      kicker: 'Public Celebrations',
+      title: 'सार्वजनिक पत्रिकाएं',
+      desc: 'कुछ परिवार अपनी पत्रिका सार्वजनिक करते हैं — जिससे रिश्तेदार, मित्र व नए अतिथि उसे खोज सकें।',
       cityLabel: 'शहर',
       typeLabel: 'प्रकार',
     },
@@ -644,6 +907,49 @@ export const cardCopy: Record<CardLang, CardStrings> = {
     createOwn: 'स्वतःची पत्रिका तयार करा →',
     footerLine1: 'माझी पत्रिका — मराठी कार्यक्रम व्यवस्थापन व छपाई प्लॅटफॉर्म',
     footerLine2: 'पंचांग गणना पारंपरिक पद्धतीने; अंतिम विधी-निर्णय कुटुंब व गुरुजींचा.',
+  },
+  hi: {
+    blessing: '॥ श्री गणेशाय नमः ॥',
+    digitalNote: 'डिजिटल निमंत्रण पत्रिका — छपाई की प्रति के समान।',
+    downloadSvg: 'पत्रिका डाउनलोड करें (SVG) ↓',
+    muhuratTitle: 'मुहूर्त व पंचांग',
+    agendaTitle: 'कार्यक्रम की रूपरेखा',
+    agendaWelcome: 'स्वागत व पंजीयन',
+    agendaRite: 'मुख्य विधि / संस्कार',
+    agendaReception: 'स्वागत समारोह व प्रीतिभोज',
+    vendorsTitle: 'सेवा प्रदाता',
+    rsvpTitle: 'उपस्थिति की पुष्टि करें',
+    rsvpThanks: '॥ सहर्ष स्वागतम् ॥ धन्यवाद! आपकी प्रविष्टि दर्ज हो गई — मिलते हैं।',
+    rsvpWhatsapp: 'व्हाट्सएप पर सूचित करें',
+    rsvpDashboardNote: 'फॉर्म भरने पर आपकी प्रविष्टि सीधे मेजबान के डैशबोर्ड पर दिखती है।',
+    rsvpPrivacy: 'हम केवल नाम व वैकल्पिक मोबाइल नंबर लेते हैं — अतिथियों की सूची गोपनीय रहती है।',
+    venueTitle: 'स्थान व मानचित्र',
+    venueParking: 'घर का पता — पार्किंग के लिए प्रवेश द्वार पर मार्गदर्शन उपलब्ध है।',
+    openMap: 'मानचित्र में खोलें →',
+    rideTitle: 'टैक्सी / ऑटो से आएं',
+    rideUber: 'Uber से आएं',
+    rideOla: 'Ola से आएं',
+    rideRapido: 'Rapido से आएं',
+    helpTitle: 'अतिथियों के लिए सहायता',
+    helpItems: [
+      'आवास की व्यवस्था चाहिए तो कृपया पहले सूचित करें',
+      'बच्चों के लिए बैठने की अलग व्यवस्था है',
+      'वाहन पार्किंग निःशुल्क — प्रवेश द्वार के पास',
+    ],
+    safetyNote: 'डिजिटल लिंक सुरक्षित है — इसे केवल परिजनों के साथ साझा करें। हम कभी आधार या कार्ड विवरण नहीं मांगते।',
+    printHubsTitle: 'प्रिंट केंद्र व घरपहुंच',
+    printHubs: ['सदाशिव पेठ, पुणे', 'दादर, मुंबई', 'कोल्हापुर'],
+    printDoorstep: 'घरपहुंच डिलीवरी — पूरे महाराष्ट्र व भारत में',
+    printHubsNote: 'छपाई की प्रति ऊपर दिए गए SVG से ही बनती है। केंद्र पर नाम बताएं व पत्रिका प्राप्त करें।',
+    shagunTitle: 'शगुन / उपहार',
+    shagunZero: 'शून्य कमीशन — शगुन सीधे परिवार को जाता है।',
+    shagunPay: 'UPI से शगुन दें',
+    shagunReceipt: 'शगुन देने के बाद स्क्रीनशॉट परिवार को भेजें — आपका नाम आभार पत्र में आएगा। धन्यवाद! ॥ सहर्ष स्वागतम् ॥',
+    shagunLedger: 'मंच पर कोई पैसा नहीं आता — सीधे परिवार के UPI खाते में।',
+    platformTitle: 'मंच जानकारी',
+    createOwn: 'अपनी पत्रिका खुद बनाएं →',
+    footerLine1: 'माझी पत्रिका — उत्सव प्रबंधन व छपाई मंच',
+    footerLine2: 'पंचांग गणना पारंपरिक सूर्यसिद्धांत पद्धति से; अंतिम निर्णय परिवार व पंडितजी का।',
   },
   en: {
     blessing: '॥ Shri Ganeshaya Namah ॥',

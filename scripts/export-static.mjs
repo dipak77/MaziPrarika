@@ -1,7 +1,7 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
-const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3001';
+const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
 const OUT_DIR = 'apps/web/out';
 
 async function exportStatic() {
@@ -36,6 +36,7 @@ async function exportStatic() {
   const staticMap = [
     { src: 'apps/web/.next/server/app/index.html', dst: 'apps/web/out/index.html' },
     { src: 'apps/web/.next/server/app/studio.html', dst: 'apps/web/out/studio/index.html' },
+    { src: 'apps/web/.next/server/app/biodata.html', dst: 'apps/web/out/biodata/index.html' },
     { src: 'apps/web/.next/server/app/create.html', dst: 'apps/web/out/create/index.html' },
     { src: 'apps/web/.next/server/app/offline.html', dst: 'apps/web/out/offline/index.html' },
     { src: 'apps/web/.next/server/app/_not-found.html', dst: 'apps/web/out/404.html' },

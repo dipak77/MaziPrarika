@@ -12,12 +12,16 @@ interface LanguageContextValue {
   lang: CardLang;
   setLang: (lang: CardLang) => void;
   isEn: boolean;
+  isHi: boolean;
+  isMr: boolean;
 }
 
 const LanguageContext = createContext<LanguageContextValue>({
   lang: DEFAULT_LANG,
   setLang: () => {},
   isEn: false,
+  isHi: false,
+  isMr: true,
 });
 
 export function LanguageProvider({
@@ -36,17 +40,17 @@ export function LanguageProvider({
       try {
         const params = new URLSearchParams(window.location.search);
         const queryLang = params.get('lang');
-        if (queryLang === 'en' || queryLang === 'mr') {
-          setLangState(queryLang);
+        if (queryLang === 'en' || queryLang === 'mr' || queryLang === 'hi') {
+          setLangState(queryLang as CardLang);
           return;
         }
         const stored = localStorage.getItem(PREF_LANG_STORAGE_KEY);
-        if (stored === 'en' || stored === 'mr') {
-          setLangState(stored);
+        if (stored === 'en' || stored === 'mr' || stored === 'hi') {
+          setLangState(stored as CardLang);
           return;
         }
         const match = document.cookie.match(new RegExp(`(?:^|; )${PREF_LANG_COOKIE}=([^;]*)`));
-        if (match && (match[1] === 'en' || match[1] === 'mr')) {
+        if (match && (match[1] === 'en' || match[1] === 'mr' || match[1] === 'hi')) {
           setLangState(match[1] as CardLang);
           return;
         }
@@ -79,7 +83,7 @@ export function LanguageProvider({
     } catch {}
 
     try {
-      document.documentElement.lang = nextLang === 'en' ? 'en-IN' : 'mr-IN';
+      document.documentElement.lang = nextLang === 'en' ? 'en-IN' : nextLang === 'hi' ? 'hi-IN' : 'mr-IN';
     } catch {}
 
     try {
@@ -90,7 +94,15 @@ export function LanguageProvider({
   }, []);
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, isEn: lang === 'en' }}>
+    <LanguageContext.Provider
+      value={{
+        lang,
+        setLang,
+        isEn: lang === 'en',
+        isHi: lang === 'hi',
+        isMr: lang === 'mr',
+      }}
+    >
       {children}
     </LanguageContext.Provider>
   );
