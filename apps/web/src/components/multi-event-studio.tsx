@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   type EventCategory,
   EVENT_CATEGORIES,
@@ -8,6 +8,12 @@ import {
   MASTER_TEMPLATES,
 } from "@/lib/templates-catalog";
 import { MasterTemplateCard, type CardRenderData } from "@/components/master-template-card";
+import {
+  ROYAL_BG_PALETTES,
+  ROYAL_FOIL_STYLES,
+  type RoyalBgColor,
+  type RoyalFoilType,
+} from "@/components/royal-velvet-card";
 import { Icon } from "@/components/ui";
 import { LangToggle } from "@/components/lang-toggle";
 import { TransliteratedInput } from "@/components/ui/transliterated-input";
@@ -15,15 +21,17 @@ import { useLanguage } from "@/context/language-context";
 import { toDevanagariDigits } from "@/lib/format";
 
 export function MultiEventStudio({
+  initialTemplateId,
   onOpenCanvaPro,
 }: {
+  initialTemplateId?: string;
   onOpenCanvaPro?: (templateId: string) => void;
 } = {}) {
   const { lang, setLang, isEn, isHi } = useLanguage();
 
   const [activeCategory, setActiveCategory] = useState<EventCategory | "all">("all");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
-    "wedding-shadi-katyar-arch"
+    initialTemplateId || "wedding-royal-purple-ganesh"
   );
   const [isBlankPlaceholder, setIsBlankPlaceholder] = useState<boolean>(false);
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("edit");
@@ -33,6 +41,73 @@ export function MultiEventStudio({
   const activeTemplate: MasterTemplate =
     MASTER_TEMPLATES.find((t) => t.id === selectedTemplateId) ||
     MASTER_TEMPLATES[0]!;
+
+  // Royal Velvet & Foil customization states
+  const [activeFoil, setActiveFoil] = useState<RoyalFoilType>(
+    activeTemplate.accentColor === "#e2e8f0" || activeTemplate.id.includes("silver") ? "silver" : "gold"
+  );
+  const [activeBgColor, setActiveBgColor] = useState<RoyalBgColor>(
+    activeTemplate.id.includes("navy")
+      ? "midnight-navy"
+      : activeTemplate.id.includes("emerald")
+        ? "imperial-emerald"
+        : activeTemplate.id.includes("maroon") || activeTemplate.id.includes("ruby")
+          ? "heritage-maroon"
+          : activeTemplate.id.includes("black") || activeTemplate.id.includes("obsidian")
+            ? "obsidian-black"
+            : activeTemplate.id.includes("bronze")
+              ? "burgundy-bronze"
+              : "royal-purple"
+  );
+
+  // Sync when initialTemplateId prop changes
+  useEffect(() => {
+    if (initialTemplateId) {
+      setSelectedTemplateId(initialTemplateId);
+      const tmpl = MASTER_TEMPLATES.find((t) => t.id === initialTemplateId);
+      if (tmpl) {
+        if (tmpl.accentColor === "#e2e8f0" || tmpl.id.includes("silver")) {
+          setActiveFoil("silver");
+        } else {
+          setActiveFoil("gold");
+        }
+        if (tmpl.id.includes("navy")) setActiveBgColor("midnight-navy");
+        else if (tmpl.id.includes("emerald")) setActiveBgColor("imperial-emerald");
+        else if (tmpl.id.includes("maroon") || tmpl.id.includes("ruby")) setActiveBgColor("heritage-maroon");
+        else if (tmpl.id.includes("black") || tmpl.id.includes("obsidian")) setActiveBgColor("obsidian-black");
+        else if (tmpl.id.includes("bronze")) setActiveBgColor("burgundy-bronze");
+        else if (tmpl.id.includes("purple")) setActiveBgColor("royal-purple");
+
+        setFormData({
+          personA: tmpl.sample.personA,
+          personB: tmpl.sample.personB,
+          surnames: tmpl.sample.surnames,
+          date: tmpl.sample.date,
+          time: tmpl.sample.time,
+          venue: tmpl.sample.venue,
+          city: tmpl.sample.city,
+          host: tmpl.sample.host,
+          parentsA: tmpl.sample.parentsA,
+          parentsB: tmpl.sample.parentsB,
+          tagline: tmpl.sample.tagline,
+          blessing: tmpl.defaultBlessing,
+          title: tmpl.defaultTitle,
+          qrLocation: tmpl.sample.qrLocation,
+          photoUrl: tmpl.sample.photoUrl,
+          foilColor: tmpl.accentColor === "#e2e8f0" || tmpl.id.includes("silver") ? "silver" : "gold",
+          bgColor: tmpl.id.includes("navy")
+            ? "midnight-navy"
+            : tmpl.id.includes("emerald")
+              ? "imperial-emerald"
+              : tmpl.id.includes("maroon") || tmpl.id.includes("ruby")
+                ? "heritage-maroon"
+                : tmpl.id.includes("black") || tmpl.id.includes("obsidian")
+                  ? "obsidian-black"
+                  : "royal-purple",
+        });
+      }
+    }
+  }, [initialTemplateId]);
 
   // Editable Form Data state (defaulted to active template sample)
   const [formData, setFormData] = useState<CardRenderData>(() => ({
@@ -348,6 +423,112 @@ export function MultiEventStudio({
             </div>
           </fieldset>
 
+          {/* ══════════════════════════════════════════════════════════════
+              ROYAL VELVET & 24K GOLD FOIL CUSTOMIZER
+              Allows switching 6 Velvet Backgrounds and 3 Metallic Foils
+              ══════════════════════════════════════════════════════════════ */}
+          <div className="rounded-2xl border-2 border-gold-500/40 bg-gradient-to-br from-maroon-950 via-purple-950 to-neutral-950 p-4 sm:p-5 text-white shadow-xl relative overflow-hidden">
+            {/* Ambient luxury glow */}
+            <div className="pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-gold-400/10 blur-2xl" />
+
+            <div className="flex items-center justify-between border-b border-gold-500/20 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">👑</span>
+                <div>
+                  <h3 className="font-marathi-display text-sm sm:text-base font-bold text-amber-200 leading-tight">
+                    {isEn ? "Royal Velvet & Metallic Foil Customizer" : "शाही मखमली पार्श्वभूमी व सुवर्ण/रुपेरी फॉइल"}
+                  </h3>
+                  <p className="text-[11px] text-amber-300/70">
+                    {isEn
+                      ? "Select 24K Gold / 925 Silver embossed font & dark velvet fabric tone"
+                      : "२४K सुवर्ण किंवा ९२५ रुपेरी फॉइल फॉन्ट व मखमली फॅब्रिक रंग निवडा"}
+                  </p>
+                </div>
+              </div>
+              <span className="rounded-full border border-gold-400/40 bg-gold-500/20 px-2 py-0.5 text-[10px] font-black text-amber-300 uppercase tracking-widest">
+                LUXURY PRO
+              </span>
+            </div>
+
+            {/* 1. Foil Metal Type Selector (Gold, Silver, Rose Gold) */}
+            <div className="mt-4">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-amber-300/80 mb-2 block">
+                {isEn ? "1. Metallic Foil Typography (Font Sheen):" : "१. मेटॅलिक फॉइल टायपोग्राफी (Font Sheen):"}
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {ROYAL_FOIL_STYLES.map((foil) => {
+                  const isSelected = activeFoil === foil.id;
+                  return (
+                    <button
+                      key={foil.id}
+                      type="button"
+                      onClick={() => setActiveFoil(foil.id)}
+                      className={`relative flex flex-col items-center justify-center rounded-xl p-2.5 text-center transition-all duration-200 ${
+                        isSelected
+                          ? "border-2 border-white ring-2 ring-gold-400 shadow-lg scale-[1.02] bg-white/10"
+                          : "border border-white/15 bg-black/40 hover:bg-white/5 opacity-80 hover:opacity-100"
+                      }`}
+                    >
+                      <span className="text-base mb-1">
+                        {foil.id === "gold" ? "🪙" : foil.id === "silver" ? "💍" : "💎"}
+                      </span>
+                      <span
+                        className="text-xs font-bold uppercase tracking-wide"
+                        style={{ color: foil.accentHex }}
+                      >
+                        {isEn ? foil.nameEn : foil.nameMr}
+                      </span>
+                      <span className="mt-0.5 text-[9px] text-neutral-300 font-mono tracking-tighter">
+                        {foil.badge}
+                      </span>
+                      {isSelected && (
+                        <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-amber-400 animate-pulse" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. Velvet Fabric Tone Selector (6 Dark Velvet Shades) */}
+            <div className="mt-4">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-amber-300/80 mb-2 block">
+                {isEn ? "2. Dark Velvet Fabric Background Color:" : "२. मखमली (Dark Velvet) पार्श्वभूमी रंग:"}
+              </label>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {ROYAL_BG_PALETTES.map((palette) => {
+                  const isSelected = activeBgColor === palette.id;
+                  return (
+                    <button
+                      key={palette.id}
+                      type="button"
+                      onClick={() => setActiveBgColor(palette.id)}
+                      title={isEn ? palette.nameEn : palette.nameMr}
+                      className={`group relative flex flex-col items-center rounded-xl p-2 transition-all duration-200 ${
+                        isSelected
+                          ? "ring-2 ring-gold-300 shadow-md scale-105 border-2 border-amber-300 bg-white/15"
+                          : "border border-white/20 bg-black/30 hover:bg-white/5 opacity-85 hover:opacity-100"
+                      }`}
+                    >
+                      <div
+                        className="size-8 rounded-lg shadow-inner border border-white/20 mb-1.5 transition group-hover:scale-105"
+                        style={{ background: palette.swatch }}
+                      />
+                      <span className="text-[10px] font-semibold text-neutral-200 text-center line-clamp-1">
+                        {isEn ? palette.nameEn.split(" ")[0] : palette.nameMr.split(" ")[0]}
+                      </span>
+                      {isSelected && (
+                        <span className="absolute -top-1 -right-1 text-xs text-amber-300 font-bold">
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
           {/* Form Fields Accordion / Groups */}
           <div className="space-y-4 rounded-2xl border border-maroon-900/10 bg-white/80 p-5 shadow-2xs">
             <div className="flex items-center justify-between border-b border-gold-500/20 pb-2">
@@ -431,20 +612,38 @@ export function MultiEventStudio({
               </div>
 
               <div className="sm:col-span-2">
-                <label className="label">{isEn ? "Parents Lineage (Person A)" : "कुटुंब परिचय (आजोबा व वडिलांचे नाव)"}</label>
+                <label className="label">{isEn ? "Parents Lineage (Person A / Bride)" : "कुटुंब परिचय (वधूचे आई-वडील / घराणे)"}</label>
                 <TransliteratedInput
                   value={formData.parentsA || ""}
                   onValueChange={(v) => updateField("parentsA", v)}
-                  placeholder={activeTemplate.placeholders.parentsA}
+                  placeholder={activeTemplate.placeholders.parentsA || "(Daughter of Maharaj R.S. Singh Dev & Maharani V. Kumari of Pratapgarh)"}
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="label">{isEn ? "Invited By (Host)" : "निमंत्रक परिवार"}</label>
+                <label className="label">{isEn ? "Parents Lineage (Person B / Groom)" : "कुटुंब परिचय (वराचे आई-वडील / घराणे)"}</label>
+                <TransliteratedInput
+                  value={formData.parentsB || ""}
+                  onValueChange={(v) => updateField("parentsB", v)}
+                  placeholder={activeTemplate.placeholders.parentsB || "(Son of Maharaj K.S. Rao & Maharani S. Lakshmi of Jaipur)"}
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="label">{isEn ? "Invitation Ribbon / Tagline" : "निमंत्रण मजकूर / टॅगलाईन"}</label>
+                <TransliteratedInput
+                  value={formData.tagline || ""}
+                  onValueChange={(v) => updateField("tagline", v)}
+                  placeholder={activeTemplate.placeholders.tagline || "WE CORDIALLY INVITE YOU TO CELEBRATE THE AUSPICIOUS ROYAL WEDDING OF"}
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="label">{isEn ? "Invited By (Host / Royal Compliments)" : "निमंत्रक परिवार (With Compliments)"}</label>
                 <TransliteratedInput
                   value={formData.host || ""}
                   onValueChange={(v) => updateField("host", v)}
-                  placeholder="उदा. समस्त परिवार"
+                  placeholder="उदा. WITH COMPLIMENTS FROM THE ROYAL FAMILIES"
                 />
               </div>
 
@@ -573,9 +772,15 @@ export function MultiEventStudio({
           <div className="animate-fade-up">
             <MasterTemplateCard
               template={activeTemplate}
-              data={formData}
+              data={{
+                ...formData,
+                foilColor: activeFoil,
+                bgColor: activeBgColor,
+              }}
               isBlankPlaceholder={isBlankPlaceholder}
               className="shadow-2xl ring-1 ring-gold-400/30"
+              foilColor={activeFoil}
+              bgColor={activeBgColor}
             />
           </div>
 

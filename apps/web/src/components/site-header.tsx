@@ -37,6 +37,13 @@ function I({ name, className = 'h-4 w-4' }: { name: string; className?: string }
     briefcase: <><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" /></>,
     flower: <><circle cx="12" cy="12" r="3" /><path d="M12 3a3 3 0 00-3 3c0 2 3 5 3 5s3-3 3-5a3 3 0 00-3-3zM12 21a3 3 0 003-3c0-2-3-5-3-5s-3 3-3 5a3 3 0 003 3zM3 12a3 3 0 003 3c2 0 5-3 5-3s-3-3-5-3a3 3 0 00-3 3zM21 12a3 3 0 00-3-3c-2 0-5 3-5 3s3 3 5 3a3 3 0 003-3z" /></>,
     home: <><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></>,
+    arrowUpRight: <path d="M7 17L17 7M7 7h10v10" />,
+    ring: <><circle cx="12" cy="14" r="6.5" /><path d="M12 2l2.5 3.5h-5L12 2z" fill="currentColor" opacity="0.9" /></>,
+    phone: <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />,
+    help: <><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></>,
+    idCard: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="2" /><line x1="14" y1="9" x2="18" y2="9" /><line x1="14" y1="13" x2="18" y2="13" /><line x1="6" y1="16" x2="18" y2="16" /></>,
+    palette: <><circle cx="13.5" cy="6.5" r=".7" fill="currentColor" /><circle cx="17.5" cy="10.5" r=".7" fill="currentColor" /><circle cx="8.5" cy="7.5" r=".7" fill="currentColor" /><circle cx="6.5" cy="12.5" r=".7" fill="currentColor" /><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16c3.3 0 6-2.7 6-6 0-5.5-4.5-8.6-10-8.6z" /></>,
+    cricket: <><circle cx="16" cy="8" r="4" /><path d="M4 20l8-8M3 21l2-2" /></>,
   };
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"
@@ -49,9 +56,12 @@ function I({ name, className = 'h-4 w-4' }: { name: string; className?: string }
 /* ═══════════════════════════════════════════════════════════════
    Sub-level Definitions for Multi-Category Navigation
 ═══════════════════════════════════════════════════════════════ */
+export type IconColor = 'violet' | 'indigo' | 'amber' | 'emerald' | 'rose' | 'blue' | 'slate';
+
 export interface SubItem {
   icon: string;
   badge?: string;
+  color?: IconColor;
   href: string;
   target?: string;
   en: string;
@@ -62,16 +72,29 @@ export interface SubItem {
   hiD: string;
 }
 
+export interface NavColumn {
+  titleEn: string;
+  titleMr: string;
+  titleHi: string;
+  href?: string;
+  items: SubItem[];
+}
+
 export interface NavSection {
   id: string;
   href: string;
+  icon?: string;
   labelEn: string;
   labelMr: string;
   labelHi: string;
   badge?: string;
   badgeVariant?: 'gold' | 'maroon' | 'leaf';
+  columns?: NavColumn[];
   items?: SubItem[];
   footer?: {
+    bannerHighlightEn?: string;
+    bannerHighlightMr?: string;
+    bannerHighlightHi?: string;
     bannerEn: string;
     bannerMr: string;
     bannerHi: string;
@@ -79,413 +102,699 @@ export interface NavSection {
     ctaMr: string;
     ctaHi: string;
     ctaHref: string;
+    secondaryLinks?: {
+      en: string;
+      mr: string;
+      hi: string;
+      href: string;
+    }[];
   };
 }
+
+export const ICON_COLOR_STYLES: Record<IconColor, string> = {
+  violet: 'bg-violet-50 text-violet-600 border border-violet-200/70 group-hover:bg-violet-600 group-hover:text-white group-hover:border-violet-600',
+  indigo: 'bg-indigo-50 text-indigo-600 border border-indigo-200/70 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600',
+  amber: 'bg-amber-50 text-amber-700 border border-amber-200/70 group-hover:bg-amber-500 group-hover:text-white group-hover:border-amber-500',
+  emerald: 'bg-emerald-50 text-emerald-600 border border-emerald-200/70 group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600',
+  rose: 'bg-rose-50 text-rose-600 border border-rose-200/70 group-hover:bg-rose-600 group-hover:text-white group-hover:border-rose-600',
+  blue: 'bg-sky-50 text-sky-600 border border-sky-200/70 group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-600',
+  slate: 'bg-slate-100 text-slate-800 border border-slate-200/70 group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900',
+};
 
 const NAV_SECTIONS: NavSection[] = [
   {
     id: 'studio',
     href: '/studio',
+    icon: 'sparkle',
     labelEn: 'Studio',
     labelMr: 'स्टुडिओ',
     labelHi: 'स्टूडियो',
-    badge: '६० FPS',
-    badgeVariant: 'gold',
-    items: [
+    columns: [
       {
-        icon: 'crown',
-        badge: '५०+',
+        titleEn: 'Design & Canvas Studios',
+        titleMr: 'डिझाइन व कॅनव्हास स्टुडिओ',
+        titleHi: 'डिज़ाइन व कैनवास स्टूडियो',
         href: '/studio',
-        en: 'All Event Studio',
-        mr: 'सर्व सोहळा स्टुडिओ',
-        hi: 'सभी इवेंट स्टूडियो',
-        enD: '60 FPS live animated templates',
-        mrD: '६० FPS लाइव्ह ॲनिमेटेड टेम्पलेट्स',
-        hiD: '60 FPS लाइव एनिमेटेड टेम्पलेट्स',
+        items: [
+          {
+            icon: 'sparkle',
+            color: 'violet',
+            badge: 'NEW TAB ⤢',
+            href: '/studio/editor',
+            target: '_blank',
+            en: 'Canva Pro Studio (Full View)',
+            mr: 'कॅनव्हा प्रो स्टुडिओ (फुल स्क्रीन)',
+            hi: 'कैनवा प्रो स्टूडियो (फुल स्क्रीन)',
+            enD: '100% full screen canvas workspace with zero distraction',
+            mrD: '१००% संपूर्ण स्क्रीन कॅनव्हास, अमर्याद जागा व टूल्स',
+            hiD: '100% फुल स्क्रीन कैनवास, संपूर्ण स्पेस व टूल्स',
+          },
+          {
+            icon: 'wand',
+            color: 'violet',
+            badge: 'PRO',
+            href: '/studio?mode=pro-editor',
+            en: 'Baroque Pro Editor',
+            mr: 'बारोक प्रो एडिटर',
+            hi: 'बारोक प्रो एडिटर',
+            enD: 'Pixel-perfect custom canvas design with Devanagari fonts',
+            mrD: 'पिक्सेल-परफेक्ट कस्टम कॅनव्हास डिझाइन व फॉन्ट्स',
+            hiD: 'पिक्सेल-परफेक्ट कस्टम कैनवास डिज़ाइन व फॉन्ट्स',
+          },
+          {
+            icon: 'sparkle',
+            color: 'amber',
+            badge: 'BETA',
+            href: '/studio?mode=effects-lab',
+            en: 'Effects Lab',
+            mr: 'इफेक्ट्स लॅब',
+            hi: 'इफेक्ट्स लैब',
+            enD: 'Particles · Real-time gold dust · Glow shaders',
+            mrD: 'पार्टिकल · सुवर्णकण · थेट ग्लो शेडर्स',
+            hiD: 'पार्टिकल · स्वर्णकण · लाइव ग्लो शेडर्स',
+          },
+        ],
       },
       {
-        icon: 'sparkle',
-        badge: 'NEW TAB ⤢',
-        href: '/studio/editor',
-        target: '_blank',
-        en: 'Canva Pro Studio (Full View)',
-        mr: 'कॅनव्हा प्रो स्टुडिओ (फुल स्क्रीन)',
-        hi: 'कैनवा प्रो स्टूडियो (फुल स्क्रीन)',
-        enD: '100% full screen canvas workspace with zero distraction',
-        mrD: '१००% संपूर्ण स्क्रीन कॅनव्हास, अमर्याद जागा व टूल्स',
-        hiD: '100% फुल स्क्रीन कैनवास, संपूर्ण स्पेस व टूल्स',
-      },
-      {
-        icon: 'wand',
-        badge: 'PRO',
-        href: '/studio?mode=pro-editor',
-        en: 'Baroque Pro Editor',
-        mr: 'बारोक प्रो एडिटर',
-        hi: 'बारोक प्रो एडिटर',
-        enD: 'Pixel-perfect custom canvas design',
-        mrD: 'पिक्सेल-परफेक्ट कस्टम कॅनव्हास डिझाइन',
-        hiD: 'पिक्सेल-परफेक्ट कस्टम कैनवास डिज़ाइन',
-      },
-      {
-        icon: 'video',
-        badge: 'NEW',
+        titleEn: 'Card & Video Engines',
+        titleMr: 'पत्रिका व व्हिडिओ इंजिन',
+        titleHi: 'पत्रिका व वीडियो इंजन',
         href: '/studio?mode=video-studio',
-        en: 'Video Studio',
-        mr: 'व्हिडिओ स्टुडिओ',
-        hi: 'वीडियो स्टूडियो',
-        enD: 'Full HD MP4 export · Reels & Status ready',
-        mrD: 'फुल HD MP4 एक्सपोर्ट · रील्स व स्टेटस रेडी',
-        hiD: 'फुल HD MP4 एक्सपोर्ट · रील्स व स्टेटस रेडी',
+        items: [
+          {
+            icon: 'video',
+            color: 'rose',
+            badge: 'NEW',
+            href: '/studio?mode=video-studio',
+            en: 'Video Studio',
+            mr: 'व्हिडिओ स्टुडिओ',
+            hi: 'वीडियो स्टूडियो',
+            enD: 'Full HD MP4 export · Reels (9:16) & Status ready',
+            mrD: 'फुल HD MP4 एक्सपोर्ट · रील्स व स्टेटस रेडी',
+            hiD: 'फुल HD MP4 एक्सपोर्ट · रील्स व स्टेटस रेडी',
+          },
+          {
+            icon: 'grid',
+            color: 'emerald',
+            badge: 'WYSIWYP',
+            href: '/studio?mode=invitation',
+            en: 'Classic Invitation Card',
+            mr: 'पारंपरिक लग्नपत्रिका',
+            hi: 'पारंपरिक विवाह पत्रिका',
+            enD: 'Zero print error · 3mm full-bleed CMYK safe export',
+            mrD: 'छपाईत शून्य चूक · ३ मिमी फुल ब्लीड एक्सपोर्ट',
+            hiD: 'छपाई में शून्य त्रुटि · 3 मिमी फुल ब्लीड एक्सपोर्ट',
+          },
+          {
+            icon: 'sparkle',
+            color: 'indigo',
+            badge: 'AI MAGIC',
+            href: '/create',
+            en: 'AI Smart Setup',
+            mr: 'AI स्मार्ट सेटअप',
+            hi: 'AI स्मार्ट सेटअप',
+            enD: 'Plan full wedding card suite in 1 sentence with AI',
+            mrD: 'एका वाक्यात संपूर्ण लग्नपत्रिका संच AI द्वारे तयार',
+            hiD: 'एक वाक्य में संपूर्ण विवाह पत्रिका AI द्वारा तैयार',
+          },
+        ],
       },
       {
-        icon: 'doc',
-        badge: 'POPULAR',
-        href: '/biodata',
-        en: 'Marriage Biodata',
-        mr: 'विवाह बायोडाटा',
-        hi: 'विवाह बायोडाटा',
-        enD: '8 Royal styles · 1-click WhatsApp PDF',
-        mrD: '८ राजेशाही शैली · १-क्लिक व्हॉट्सअॅप PDF',
-        hiD: '८ शाही शैलियाँ · १-क्लिक व्हाट्सएप PDF',
-      },
-      {
-        icon: 'sparkle',
-        badge: 'BETA',
-        href: '/studio?mode=effects-lab',
-        en: 'Effects Lab',
-        mr: 'इफेक्ट्स लॅब',
-        hi: 'इफेक्ट्स लैब',
-        enD: 'Particles · Gold dust · Glow shader',
-        mrD: 'पार्टिकल · सुवर्णकण · ग्लो शेडर',
-        hiD: 'पार्टिकल · स्वर्णकण · ग्लो शेडर',
-      },
-      {
-        icon: 'grid',
-        badge: 'WYSIWYP',
-        href: '/studio?mode=invitation',
-        en: 'Classic Invitation Card',
-        mr: 'पारंपरिक लग्नपत्रिका',
-        hi: 'पारंपरिक विवाह पत्रिका',
-        enD: 'Zero print error · Full bleed export',
-        mrD: 'छपाईत शून्य चूक · फुल ब्लीड एक्सपोर्ट',
-        hiD: 'छपाई में शून्य त्रुटि · फुल ब्लीड एक्सपोर्ट',
+        titleEn: 'Templates & Catalog',
+        titleMr: 'टेम्पलेट्स व कॅटलॉग',
+        titleHi: 'टेम्पलेट्स व कैटलॉग',
+        href: '/studio',
+        items: [
+          {
+            icon: 'crown',
+            color: 'amber',
+            badge: '५०+',
+            href: '/studio',
+            en: 'All Event Studio',
+            mr: 'सर्व सोहळा स्टुडिओ',
+            hi: 'सभी इवेंट स्टूडियो',
+            enD: '60 FPS live animated royal Devanagari templates',
+            mrD: '६० FPS थेट ॲनिमेटेड राजेशाही टेम्पलेट्स',
+            hiD: '60 FPS लाइव एनिमेटेड शाही टेम्पलेट्स',
+          },
+          {
+            icon: 'doc',
+            color: 'rose',
+            badge: 'POPULAR',
+            href: '/biodata',
+            en: 'Marriage Biodata',
+            mr: 'विवाह बायोडाटा',
+            hi: 'विवाह बायोडाटा',
+            enD: '8 Royal styles · 1-click WhatsApp PDF download',
+            mrD: '८ राजेशाही शैली · १-क्लिक व्हॉट्सअॅप PDF',
+            hiD: '८ शाही शैलियाँ · १-क्लिक व्हाट्सएप PDF',
+          },
+          {
+            icon: 'calendar',
+            color: 'blue',
+            badge: 'PUBLIC',
+            href: '/events',
+            en: 'Public Event Cards',
+            mr: 'सार्वजनिक सोहळा पत्रिका',
+            hi: 'सार्वजनिक उत्सव पत्रिका',
+            enD: 'Discover community celebrations across Maharashtra',
+            mrD: 'महाराष्ट्रातील कुटुंबांनी शेअर केलेल्या पत्रिका',
+            hiD: 'महाराष्ट्र भर में साझा की गई उत्सव पत्रिकाएं',
+          },
+        ],
       },
     ],
     footer: {
-      bannerEn: '✨ 50+ Artisan templates · Trilingual phonetic typing · Print & Video ready',
-      bannerMr: '✨ ५०+ हस्तकला टेम्पलेट्स · त्रिभाषिक फोनेटिक टायपिंग · प्रिंट व व्हिडिओ रेडी',
-      bannerHi: '✨ ५०+ हस्तकला टेम्पलेट्स · त्रिभाषी फोनेटिक टाइपिंग · प्रिंट व वीडियो रेडी',
+      bannerHighlightEn: '✨ Maha Canvas OS',
+      bannerHighlightMr: '✨ महा कॅनव्हास OS',
+      bannerHighlightHi: '✨ महा कैनवास OS',
+      bannerEn: '50+ Artisan templates · Trilingual typing · Print & Video ready',
+      bannerMr: '५०+ हस्तकला टेम्पलेट्स · त्रिभाषिक टायपिंग · प्रिंट व व्हिडिओ रेडी',
+      bannerHi: '५०+ हस्तकला टेम्पलेट्स · त्रिभाषी टाइपिंग · प्रिंट व वीडियो रेडी',
       ctaEn: 'Open Studio',
       ctaMr: 'स्टुडिओ उघडा',
       ctaHi: 'स्टूडियो खोलें',
       ctaHref: '/studio',
+      secondaryLinks: [
+        { en: 'Free Templates', mr: 'मोफत टेम्पलेट्स', hi: 'मुफ्त टेम्पलेट्स', href: '/studio' },
+        { en: 'Video Studio', mr: 'व्हिडिओ स्टुडिओ', hi: 'वीडियो स्टूडियो', href: '/studio?mode=video-studio' },
+        { en: 'Print Proofs', mr: 'प्रिंट प्रूफ्स', hi: 'प्रिंट प्रूफ्स', href: '/studio?mode=invitation' },
+      ],
     },
+  },
+  {
+    id: 'wedding',
+    href: '/studio?category=wedding',
+    icon: 'ring',
+    labelEn: 'Wedding Cards',
+    labelMr: 'विवाह पत्रिका',
+    labelHi: 'विवाह पत्रिका',
   },
   {
     id: 'biodata',
     href: '/biodata',
+    icon: 'doc',
     labelEn: 'Biodata',
-    labelMr: 'विवाह बायोडाटा',
-    labelHi: 'विवाह बायोडाटा',
-    badge: 'NEW',
-    badgeVariant: 'gold',
-    items: [
+    labelMr: 'बायोडेटा',
+    labelHi: 'बायोडाटा',
+    columns: [
       {
-        icon: 'sparkle',
-        badge: 'NEW TAB ⤢',
-        href: '/biodata/editor',
-        target: '_blank',
-        en: 'Biodata Maker (Full View)',
-        mr: 'विवाह बायोडाटा (फुल स्क्रीन)',
-        hi: 'विवाह बायोडाटा (फुल स्क्रीन)',
-        enD: '100% full view workspace for distraction-free editing',
-        mrD: 'संपूर्ण स्क्रीन जागेत बायोडाटा बनवा व प्रिंट करा',
-        hiD: 'संपूर्ण स्क्रीन में बायोडाटा बनाएँ व प्रिंट करें',
-      },
-      {
-        icon: 'crown',
-        badge: '८ TEMPLATES',
-        href: '/biodata#biodata-live',
-        en: 'All 8 Royal Templates',
-        mr: 'सर्व ८ राजेशाही टेम्पलेट्स',
-        hi: 'सभी ८ शाही टेम्पलेट्स',
-        enD: 'Shahi, Rajmahal, Damask, Heritage styles',
-        mrD: 'शाही, राजमहाल, दमास्क, हेरिटेज शैली',
-        hiD: 'शाही, राजमहल, दमास्क, हेरिटेज शैली',
-      },
-      {
-        icon: 'users',
-        badge: 'वर',
-        href: '/biodata?profile=groom',
-        en: 'Groom Biodata Maker',
-        mr: 'वर बायोडाटा मेकर',
-        hi: 'वर बायोडाटा मेकर',
-        enD: 'Education, profession, kul & family details',
-        mrD: 'शिक्षण, नोकरी/व्यवसाय, कुल व कौटुंबिक माहिती',
-        hiD: 'शिक्षा, व्यवसाय, कुल व पारिवारिक विवरण',
-      },
-      {
-        icon: 'heart',
-        badge: 'वधू',
-        href: '/biodata?profile=bride',
-        en: 'Bride Biodata Maker',
-        mr: 'वधू बायोडाटा मेकर',
-        hi: 'वधू बायोडाटा मेकर',
-        enD: 'Graceful fonts, horoscope & photo placement',
-        mrD: 'सुबक अक्षर, पत्रिका/कुंडली व सुंदर फोटो रचना',
-        hiD: 'सुरुचिपूर्ण अक्षर, कुंडली व फोटो संयोजन',
-      },
-      {
-        icon: 'sparkle',
-        badge: 'INSTANT',
+        titleEn: 'Royal Styles & Full View',
+        titleMr: 'राजेशाही शैली व फुल स्क्रीन',
+        titleHi: 'शाही शैलियाँ व फुल स्क्रीन',
         href: '/biodata',
-        en: '1-Click WhatsApp & PDF',
-        mr: '१-क्लिक व्हॉट्सअॅप व PDF',
-        hi: '१-क्लिक व्हाट्सएप व PDF',
-        enD: 'Instant HD download & direct family share',
-        mrD: 'थेट HD डाउनलोड व कुटुंबांना व्हॉट्सअॅप शेअर',
-        hiD: 'तुरंत HD डाउनलोड व सीधे व्हाट्सएप शेयर',
+        items: [
+          {
+            icon: 'sparkle',
+            color: 'violet',
+            badge: 'NEW TAB ⤢',
+            href: '/biodata/editor',
+            target: '_blank',
+            en: 'Biodata Maker (Full View)',
+            mr: 'विवाह बायोडाटा (फुल स्क्रीन)',
+            hi: 'विवाह बायोडाटा (फुल स्क्रीन)',
+            enD: '100% full view workspace for distraction-free editing',
+            mrD: 'संपूर्ण स्क्रीन जागेत बायोडाटा बनवा व प्रिंट करा',
+            hiD: 'संपूर्ण स्क्रीन में बायोडाटा बनाएँ व प्रिंट करें',
+          },
+          {
+            icon: 'crown',
+            color: 'amber',
+            badge: '८ STYLES',
+            href: '/biodata#biodata-live',
+            en: 'All 8 Royal Templates',
+            mr: 'सर्व ८ राजेशाही टेम्पलेट्स',
+            hi: 'सभी ८ शाही टेम्पलेट्स',
+            enD: 'Shahi, Rajmahal, Damask, Heritage & Peshwa styles',
+            mrD: 'शाही, राजमहाल, दमास्क, हेरिटेज व पेशवा शैली',
+            hiD: 'शाही, राजमहल, दमास्क, हेरिटेज व पेशवा शैली',
+          },
+          {
+            icon: 'sparkle',
+            color: 'emerald',
+            badge: 'INSTANT',
+            href: '/biodata',
+            en: '1-Click WhatsApp & PDF',
+            mr: '१-क्लिक व्हॉट्सअॅप व PDF',
+            hi: '१-क्लिक व्हाट्सएप व PDF',
+            enD: 'Instant HD download & direct family share',
+            mrD: 'थेट HD डाउनलोड व कुटुंबांना व्हॉट्सअॅप शेअर',
+            hiD: 'तुरंत HD डाउनलोड व सीधे व्हाट्सएप शेयर',
+          },
+        ],
+      },
+      {
+        titleEn: 'Profile Types',
+        titleMr: 'बायोडाटा प्रकार',
+        titleHi: 'बायोडाटा प्रकार',
+        href: '/biodata',
+        items: [
+          {
+            icon: 'users',
+            color: 'blue',
+            badge: 'वर',
+            href: '/biodata?profile=groom',
+            en: 'Groom Biodata Maker',
+            mr: 'वर बायोडाटा मेकर',
+            hi: 'वर बायोडाटा मेकर',
+            enD: 'Education, profession, kul, gotra & family details',
+            mrD: 'शिक्षण, नोकरी/व्यवसाय, कुल, गोत्र व कौटुंबिक माहिती',
+            hiD: 'शिक्षा, व्यवसाय, कुल, गोत्र व पारिवारिक विवरण',
+          },
+          {
+            icon: 'heart',
+            color: 'rose',
+            badge: 'वधू',
+            href: '/biodata?profile=bride',
+            en: 'Bride Biodata Maker',
+            mr: 'वधू बायोडाटा मेकर',
+            hi: 'वधू बायोडाटा मेकर',
+            enD: 'Graceful typography, horoscope placement & photo framing',
+            mrD: 'सुबक अक्षर, पत्रिका/कुंडली व सुंदर फोटो रचना',
+            hiD: 'सुरुचिपूर्ण अक्षर, कुंडली व फोटो संयोजन',
+          },
+          {
+            icon: 'sun',
+            color: 'amber',
+            badge: 'कुंडली',
+            href: '/biodata',
+            en: 'Horoscope & Kundali Format',
+            mr: 'कुंडली व पत्रिका मांडणी',
+            hi: 'कुंडली प्रारूप व विवरण',
+            enD: 'Accurate Rashee, Nakshatra, Gan & Nadi formatting',
+            mrD: 'रास, नक्षत्र, गण, नाडी व देवक अचूक मांडणी',
+            hiD: 'राशि, नक्षत्र, गण, नाड़ी व गोत्र की सटीक मांडणी',
+          },
+        ],
+      },
+      {
+        titleEn: 'Formats & Sharing',
+        titleMr: 'फॉर्मेट्स व शेअरिंग',
+        titleHi: 'फॉर्मेट व शेयरिंग',
+        href: '/biodata',
+        items: [
+          {
+            icon: 'doc',
+            color: 'violet',
+            badge: 'HD PRINT',
+            href: '/biodata',
+            en: 'High-Res Print PDF',
+            mr: 'हाय-रिझोल्यूशन प्रिंट PDF',
+            hi: 'हाई-रिज़ॉल्यूशन प्रिंट PDF',
+            enD: 'Vector-crisp A4 & letter format with gold border trims',
+            mrD: 'वेक्टर-क्रिस्प A4 फॉरमॅट व सुवर्ण बॉर्डर फिनिश',
+            hiD: 'वेक्टर-क्रिस्प A4 फॉर्मेट व गोल्ड बॉर्डर फिनिश',
+          },
+          {
+            icon: 'video',
+            color: 'emerald',
+            badge: '9:16',
+            href: '/biodata',
+            en: 'WhatsApp Status Story',
+            mr: 'व्हॉट्सअॅप स्टेटस स्टोरी',
+            hi: 'व्हाट्सएप स्टेटस स्टोरी',
+            enD: 'Vertical mobile-optimized single-page presentation',
+            mrD: 'मोबाईलसाठी अनुकूल ९:१६ व्हर्टिकल लेआउट',
+            hiD: 'मोबाइल हेतु अनुकूल 9:16 वर्टिकल लेआउट',
+          },
+          {
+            icon: 'shield',
+            color: 'blue',
+            badge: 'SECURE',
+            href: '/biodata',
+            en: 'Family Review Link',
+            mr: 'कौटुंबिक पुनरावलोकन लिंक',
+            hi: 'पारिवारिक समीक्षा लिंक',
+            enD: 'Secure private share link for immediate elder review',
+            mrD: 'कुटुंबातील ज्येष्ठांच्या मंजुरीसाठी खाजगी लिंक',
+            hiD: 'परिवार के बड़ों के अनुमोदन हेतु निजी लिंक',
+          },
+        ],
       },
     ],
     footer: {
-      bannerEn: '👑 Specially designed for Maharashtrian families with authentic Marathi typography',
-      bannerMr: '👑 अस्सल मराठी फॉन्ट व रुबाबदार मांडणीसह महाराष्ट्रातील कुटुंबांसाठी विशेष निर्मिती',
-      bannerHi: '👑 प्रामाणिक मराठी फॉन्ट व सुरुचिपूर्ण प्रारूप के साथ विशेष रूप से निर्मित',
+      bannerHighlightEn: '👑 Authentic Marathi Typography',
+      bannerHighlightMr: '👑 अस्सल मराठी फॉन्ट मांडणी',
+      bannerHighlightHi: '👑 प्रामाणिक मराठी फॉन्ट प्रारूप',
+      bannerEn: 'Specially designed for Maharashtrian families with authentic Devanagari typography',
+      bannerMr: 'महाराष्ट्रातील कुटुंबांसाठी पारंपरिक पद्धतीनुसार विशेष निर्मिती',
+      bannerHi: 'पारंपरिक पद्धति के अनुसार विशेष रूप से निर्मित',
       ctaEn: 'Create Biodata',
       ctaMr: 'बायोडाटा बनवा',
       ctaHi: 'बायोडाटा बनाएं',
       ctaHref: '/biodata',
+      secondaryLinks: [
+        { en: 'Groom Biodata', mr: 'वर बायोडाटा', hi: 'वर बायोडाटा', href: '/biodata?profile=groom' },
+        { en: 'Bride Biodata', mr: 'वधू बायोडाटा', hi: 'वधू बायोडाटा', href: '/biodata?profile=bride' },
+        { en: '8 Royal Styles', mr: '८ राजेशाही शैली', hi: '८ शाही शैलियाँ', href: '/biodata#biodata-live' },
+      ],
     },
   },
   {
-    id: 'vendors',
-    href: '/vendors',
-    labelEn: 'Vendors',
-    labelMr: 'विक्रेते',
-    labelHi: 'विक्रेता बाज़ार',
-    badge: '१२०+',
-    badgeVariant: 'maroon',
-    items: [
-      {
-        icon: 'shield',
-        badge: 'VERIFIED',
-        href: '/vendors',
-        en: 'All Verified Vendors',
-        mr: 'सर्व पडताळलेले विक्रेते',
-        hi: 'सभी सत्यापित विक्रेता',
-        enD: 'Pune, Mumbai, Nashik & Kolhapur networks',
-        mrD: 'पुणे, मुंबई, नाशिक व कोल्हापूर नेटवर्क',
-        hiD: 'पुणे, मुंबई, नासिक व कोल्हापुर नेटवर्क',
-      },
-      {
-        icon: 'home',
-        badge: 'LAWNS',
-        href: '/vendors?category=venue',
-        en: 'Venues & Royal Lawns',
-        mr: 'मंगल कार्यालये व लॉन्स',
-        hi: 'वेन्यू व मैरिज लॉन',
-        enD: 'AC halls, capacity, parking & real photos',
-        mrD: 'वातानुकूलित हॉल, क्षमता, पार्किंग व छायाचित्रे',
-        hiD: 'एसी हॉल, क्षमता, पार्किंग व वास्तविक तस्वीरें',
-      },
-      {
-        icon: 'camera',
-        badge: '4K',
-        href: '/vendors?category=photographer',
-        en: 'Photographers & Cinema',
-        mr: 'फोटोग्राफी व सिनेमॅटोग्राफी',
-        hi: 'फोटोग्राफी व सिनेमा',
-        enD: 'Pre-wedding, candid, drone & reels shoots',
-        mrD: 'प्री-वेडिंग, कॅन्डिड, ड्रोन व रील्स शूट्स',
-        hiD: 'प्री-वेडिंग, कैंडिड, ड्रोन व रील्स शूट',
-      },
-      {
-        icon: 'flower',
-        badge: 'MANDAP',
-        href: '/vendors?category=decorator',
-        en: 'Mandap & Decorators',
-        mr: 'मंडप व फुलांची सजावट',
-        hi: 'मंडप व फूलों की सजावट',
-        enD: 'Traditional Rajwada, floral arch & stage lighting',
-        mrD: 'पारंपरिक राजवाडा, फुलांची कमान व स्टेज रोषणाई',
-        hiD: 'पारंपरिक राजवाड़ा, पुष्प कमान व स्टेज लाइटिंग',
-      },
-      {
-        icon: 'utensils',
-        badge: 'FEAST',
-        href: '/vendors?category=caterer',
-        en: 'Caterers & Traditional Feast',
-        mr: 'कॅटरर्स व अस्सल मेजवानी',
-        hi: 'कैटरर्स व पारंपरिक दावत',
-        enD: 'Puran Poli, Ukadiche Modak & live counters',
-        mrD: 'पुरणपोळी, उकडीचे मोदक व थेट लाइव्ह काऊंटर्स',
-        hiD: 'पूरनपोली, मोदक व लाइव फूड काउंटर्स',
-      },
-      {
-        icon: 'sparkle',
-        badge: 'MEHENDI',
-        href: '/vendors?category=makeup',
-        en: 'Bridal Makeup & Mehendi',
-        mr: 'ब्राइडल मेकअप व मेहंदी',
-        hi: 'दुल्हन मेकअप व मेहंदी',
-        enD: 'HD airbrush, Nauvari draping & bridal art',
-        mrD: 'HD एअरब्रश, नऊवारी नेसवणे व नक्षीदार मेहंदी',
-        hiD: 'HD एयरब्रश, नौवारी ड्रेपिंग व सुंदर मेहंदी',
-      },
-    ],
-    footer: {
-      bannerEn: '🛡️ 7-Layer verification guarantee · Direct quotes with zero middlemen margin',
-      bannerMr: '🛡️ ७-पदरी पडताळणी खात्री · मध्यस्थांशिवाय थेट दर आणि खात्रीशीर उपलब्धता',
-      bannerHi: '🛡️ ७-स्तरीय सत्यापन गारंटी · बिना बिचौलियों के सीधे कोट और निश्चित उपलब्धता',
-      ctaEn: 'Browse Vendors',
-      ctaMr: 'विक्रेते शोधा',
-      ctaHi: 'विक्रेता देखें',
-      ctaHref: '/vendors',
-    },
+    id: 'create',
+    href: '/create',
+    icon: 'cricket',
+    labelEn: 'Cricket',
+    labelMr: 'क्रिकेटे',
+    labelHi: 'क्रिकेट',
   },
   {
     id: 'panchang',
     href: '/panchang',
+    icon: 'calendar',
     labelEn: 'Panchang',
     labelMr: 'पंचांग व मुहूर्त',
     labelHi: 'पंचांग व मुहूर्त',
-    badge: 'LIVE',
-    badgeVariant: 'leaf',
-    items: [
+    columns: [
       {
-        icon: 'sun',
-        badge: 'TODAY',
+        titleEn: 'Daily Ephemeris',
+        titleMr: 'दैनिक पंचांग व चौघडिया',
+        titleHi: 'दैनिक पंचांग व चौघड़िया',
         href: '/panchang',
-        en: 'Live Daily Panchang',
-        mr: 'दैनिक थेट पंचांग',
-        hi: 'दैनिक लाइव पंचांग',
-        enD: 'Tithi, Nakshatra, Choghadiya & Rahu Kaal',
-        mrD: 'तिथी, नक्षत्र, चौघडिया, राहुकाळ व शुभ योग',
-        hiD: 'तिथि, नक्षत्र, चौघड़िया, राहुकाल व शुभ योग',
+        items: [
+          {
+            icon: 'sun',
+            color: 'amber',
+            badge: 'TODAY',
+            href: '/panchang',
+            en: 'Live Daily Panchang',
+            mr: 'दैनिक थेट पंचांग',
+            hi: 'दैनिक लाइव पंचांग',
+            enD: 'Tithi, Nakshatra, Choghadiya & local sunrise timing',
+            mrD: 'तिथी, नक्षत्र, चौघडिया, राहुकाळ व शुभ योग',
+            hiD: 'तिथि, नक्षत्र, चौघड़िया, राहुकाल व शुभ योग',
+          },
+          {
+            icon: 'sparkle',
+            color: 'emerald',
+            badge: 'CHOGHADIYA',
+            href: '/panchang',
+            en: 'Live Choghadiya Slots',
+            mr: 'थेट चौघडिया वेळापत्रक',
+            hi: 'लाइव चौघड़िया समय',
+            enD: 'Amrit, Shubh & Labh auspicious daytime & night slots',
+            mrD: 'अमृत, शुभ, लाभ, चल या शुभ चौघडिया वेळा',
+            hiD: 'अमृत, शुभ, लाभ, चर आदि शुभ चौघड़िया समय',
+          },
+          {
+            icon: 'shield',
+            color: 'rose',
+            badge: 'ALERT',
+            href: '/panchang',
+            en: 'Rahu Kaal & Varjya Windows',
+            mr: 'राहुकाळ व वर्ज्य वेळा',
+            hi: 'राहुकाल व वर्ज्य समय',
+            enD: 'Inauspicious intervals calculated for your exact district',
+            mrD: 'जिल्ह्यानुसार अचूक राहुकाळ व टाळायच्या वेळा',
+            hiD: 'जिले के अनुसार सटीक राहुकाल व अशुभ समय',
+          },
+        ],
       },
       {
-        icon: 'heart',
-        badge: '२०२६-२७',
+        titleEn: 'Auspicious Muhurats',
+        titleMr: 'शुभ मुहूर्त २०२६-२७',
+        titleHi: 'शुभ मुहूर्त २०२६-२७',
         href: '/panchang?event=wedding',
-        en: 'Shubh Vivah Muhurat',
-        mr: 'शुभ विवाह मुहूर्त २०२६-२७',
-        hi: 'शुभ विवाह मुहूर्त २०२६-२७',
-        enD: 'Astronomical Surya Siddhanta calculations',
-        mrD: 'सूर्यसिद्धांत पद्धतीवर आधारित बिनचूक मुहूर्त',
-        hiD: 'सूर्यसिद्धांत पद्धति पर आधारित सटीक मुहूर्त',
+        items: [
+          {
+            icon: 'heart',
+            color: 'rose',
+            badge: '२०२६-२७',
+            href: '/panchang?event=wedding',
+            en: 'Shubh Vivah Muhurat',
+            mr: 'शुभ विवाह मुहूर्त २०२६-२७',
+            hi: 'शुभ विवाह मुहूर्त २०२६-२७',
+            enD: 'Surya Siddhanta astronomical calculations for wedding dates',
+            mrD: 'सूर्यसिद्धांत पद्धतीवर आधारित बिनचूक लग्न मुहूर्त',
+            hiD: 'सूर्यसिद्धांत पद्धति पर आधारित सटीक विवाह मुहूर्त',
+          },
+          {
+            icon: 'home',
+            color: 'violet',
+            badge: 'VASTU',
+            href: '/panchang?event=vastu',
+            en: 'Gruha Pravesh & Vastu',
+            mr: 'गृहप्रवेश व वास्तुशांती',
+            hi: 'गृह प्रवेश व वास्तु शांति',
+            enD: 'Auspicious dates for entering your new home',
+            mrD: 'नवीन घरात पाऊल ठेवण्यासाठी सर्वोत्तम तिथी',
+            hiD: 'नए घर में प्रवेश के लिए सर्वोत्तम शुभ तिथियां',
+          },
+          {
+            icon: 'flower',
+            color: 'blue',
+            badge: 'SAMSKARA',
+            href: '/panchang',
+            en: 'Naming & Samskaras',
+            mr: 'बारसे व मुंज मुहूर्त',
+            hi: 'नामकरण व संस्कार मुहूर्त',
+            enD: 'Namkaran, Mundan & Upanayan auspicious lagna timings',
+            mrD: 'नामकरण, जावळ व उपनयन संस्कारांसाठी शुभ तिथी',
+            hiD: 'नामकरण, मुंडन व उपनयन संस्कारों हेतु शुभ लग्न समय',
+          },
+        ],
       },
       {
-        icon: 'home',
-        badge: 'VASTU',
-        href: '/panchang?event=vastu',
-        en: 'Gruha Pravesh & Vastu',
-        mr: 'गृहप्रवेश व वास्तुशांती',
-        hi: 'गृह प्रवेश व वास्तु शांति',
-        enD: 'Auspicious dates for entering your new home',
-        mrD: 'नवीन घरात पाऊल ठेवण्यासाठी सर्वोत्तम तिथी',
-        hiD: 'नए घर में प्रवेश के लिए सर्वोत्तम शुभ तिथियां',
-      },
-      {
-        icon: 'calendar',
-        badge: 'PUBLIC',
-        href: '/events',
-        en: 'Public Event Cards',
-        mr: 'सार्वजनिक सोहळा पत्रिका',
-        hi: 'सार्वजनिक उत्सव पत्रिका',
-        enD: 'Discover community celebrations across Maharashtra',
-        mrD: 'महाराष्ट्रातील कुटुंबांनी शेअर केलेल्या पत्रिका',
-        hiD: 'महाराष्ट्र भर में साझा की गई उत्सव पत्रिकाएं',
+        titleEn: 'Astronomical Engine',
+        titleMr: 'खगोलीय इंजिन व सोहळे',
+        titleHi: 'खगोलीय इंजन व उत्सव',
+        href: '/panchang',
+        items: [
+          {
+            icon: 'calendar',
+            color: 'blue',
+            badge: 'PUBLIC',
+            href: '/events',
+            en: 'Public Event Cards',
+            mr: 'सार्वजनिक सोहळा पत्रिका',
+            hi: 'सार्वजनिक उत्सव पत्रिका',
+            enD: 'Discover community celebrations across Maharashtra',
+            mrD: 'महाराष्ट्रातील कुटुंबांनी शेअर केलेल्या पत्रिका',
+            hiD: 'महाराष्ट्र भर में साझा की गई उत्सव पत्रिकाएं',
+          },
+          {
+            icon: 'compass',
+            color: 'amber',
+            badge: 'ASTRONOMY',
+            href: '/panchang',
+            en: 'Surya Siddhanta Ephemeris',
+            mr: 'सूर्यसिद्धांत खगोलीय गणित',
+            hi: 'सूर्यसिद्धांत खगोलीय गणना',
+            enD: 'Micro-latitude calibrated calculations for 36 districts',
+            mrD: 'महाराष्ट्रातील ३६ जिल्ह्यांसाठी सूक्ष्म अक्षांश-रेखांश अचूकता',
+            hiD: 'महाराष्ट्र के ३६ जिलों हेतु सूक्ष्म अक्षांश-देशांतर सटीकता',
+          },
+          {
+            icon: 'grid',
+            color: 'emerald',
+            badge: 'LIVE API',
+            href: '/api/health',
+            en: 'Ephemeris Engine Health',
+            mr: 'पंचांग इंजिन स्थिती v2.4',
+            hi: 'पंचांग इंजन स्थिति v2.4',
+            enD: '99.99% uptime with planetary coordinates verification',
+            mrD: '९९.९९% अपटाइम व अचूक ग्रहस्थिती पडताळणी',
+            hiD: '99.99% अपटाइम व सटीक ग्रह स्थिति सत्यापन',
+          },
+        ],
       },
     ],
     footer: {
-      bannerEn: '☀️ Traditional Surya Siddhanta astronomical calculation fine-tuned for Maharashtra cities',
-      bannerMr: '☀️ महाराष्ट्रातील शहरांनुसार सूक्ष्म अक्षांश-रेखांश व सूर्यसिद्धांत खगोलीय गणित',
-      bannerHi: '☀️ महाराष्ट्र के शहरों हेतु सूर्यसिद्धांत खगोलीय गणना पर आधारित प्रामाणिक पंचांग',
-      ctaEn: 'View Full Calendar',
+      bannerHighlightEn: '☀️ Traditional Surya Siddhanta',
+      bannerHighlightMr: '☀️ सूर्यसिद्धांत खगोलीय गणित',
+      bannerHighlightHi: '☀️ सूर्यसिद्धांत खगोलीय गणना',
+      bannerEn: 'Astronomical calculation fine-tuned for Maharashtra city micro-coordinates',
+      bannerMr: 'महाराष्ट्रातील शहरांनुसार सूक्ष्म अक्षांश-रेखांश व सूर्यसिद्धांत खगोलीय गणित',
+      bannerHi: 'महाराष्ट्र के शहरों हेतु सूर्यसिद्धांत खगोलीय गणना पर आधारित प्रामाणिक पंचांग',
+      ctaEn: 'View Full Panchang',
       ctaMr: 'संपूर्ण पंचांग पाहा',
       ctaHi: 'पूरा पंचांग देखें',
       ctaHref: '/panchang',
+      secondaryLinks: [
+        { en: 'Vivah Muhurat', mr: 'विवाह मुहूर्त', hi: 'विवाह मुहूर्त', href: '/panchang?event=wedding' },
+        { en: 'Gruha Pravesh', mr: 'गृहप्रवेश', hi: 'गृह प्रवेश', href: '/panchang?event=vastu' },
+        { en: 'Daily Choghadiya', mr: 'दैनिक चौघडिया', hi: 'दैनिक चौघड़िया', href: '/panchang' },
+      ],
     },
   },
   {
     id: 'business',
     href: '/vendor-os',
+    icon: 'briefcase',
     labelEn: 'Business OS',
     labelMr: 'बिझनेस OS',
     labelHi: 'बिजनेस OS',
-    badge: 'CRM',
-    badgeVariant: 'maroon',
-    items: [
+    badge: 'NEW',
+    badgeVariant: 'gold',
+    columns: [
       {
-        icon: 'briefcase',
-        badge: 'DESK',
+        titleEn: 'Vendor Operating Desk',
+        titleMr: 'व्हेंडर ऑपरेटिंग डेस्क',
+        titleHi: 'विक्रेता ऑपरेटिंग डेस्क',
         href: '/vendor-os',
-        en: 'Vendor Operating Desk',
-        mr: 'व्हेंडर ऑपरेटिंग डेस्क',
-        hi: 'विक्रेता ऑपरेटिंग डेस्क',
-        enD: 'Lead pipeline, quotes, booking calendar & payouts',
-        mrD: 'लीड्स फनेल, कोट्स, बुकिंग कॅलेंडर व पेमेंट्स',
-        hiD: 'लीड पाइपलाइन, कोट्स, बुकिंग कैलेंडर व भुगतान',
+        items: [
+          {
+            icon: 'briefcase',
+            color: 'violet',
+            badge: 'DESK',
+            href: '/vendor-os',
+            en: 'Vendor Operating Desk',
+            mr: 'व्हेंडर ऑपरेटिंग डेस्क',
+            hi: 'विक्रेता ऑपरेटिंग डेस्क',
+            enD: 'Lead pipeline, quotes, booking calendar & payouts',
+            mrD: 'लीड्स फनेल, कोट्स, बुकिंग कॅलेंडर व पेमेंट्स',
+            hiD: 'लीड पाइपलाइन, कोट्स, बुकिंग कैलेंडर व भुगतान',
+          },
+          {
+            icon: 'grid',
+            color: 'emerald',
+            badge: 'LEDGER',
+            href: '/vendor-os',
+            en: 'Double-Entry Ledger',
+            mr: 'दुहेरी-नोंदणी लेजर',
+            hi: 'दोहरी प्रविष्टि बहीखाता',
+            enD: 'Zero-balance financial tracking with milestone escrow',
+            mrD: 'पैशाची प्रत्येक देवाणघेवाण शून्य-समतोल व सुरक्षित एस्क्रो',
+            hiD: 'प्रत्येक लेन-देन शून्य-संतुलन व सुरक्षित एस्क्रो',
+          },
+          {
+            icon: 'sparkle',
+            color: 'blue',
+            badge: 'CRM',
+            href: '/vendor-os',
+            en: 'Automated WhatsApp CRM',
+            mr: 'स्वयंचलित व्हॉट्सअॅप CRM',
+            hi: 'स्वचालित व्हाट्सएप CRM',
+            enD: 'Instant customer quotes, follow-up alerts & payment links',
+            mrD: 'ग्राहकांना थेट कोट्स, फॉलो-अप संदेश व पेमेंट लिंक्स',
+            hiD: 'ग्राहकों को तुरंत कोट, फॉलो-अप संदेश व पेमेंट लिंक',
+          },
+        ],
       },
       {
-        icon: 'grid',
-        badge: 'ADMIN',
+        titleEn: 'Marketplace Admin',
+        titleMr: 'प्लॅटफॉर्म ॲडमिन व नियंत्रण',
+        titleHi: 'प्लेटफ़ॉर्म एडमिन व नियंत्रण',
         href: '/console',
-        en: 'Admin & Metrics Console',
-        mr: 'कन्सोल व प्लॅटफॉर्म मेट्रिक्स',
-        hi: 'कंसोल व प्लेटफ़ॉर्म मेट्रिक्स',
-        enD: 'GMV, take-rate, SLA tracker & double-entry ledger',
-        mrD: 'GMV, व्हेंडर SLA ट्रॅकर व सुरक्षित खातेवही',
-        hiD: 'GMV, वेंडर SLA ट्रैकर व सुरक्षित बहीखाता',
+        items: [
+          {
+            icon: 'grid',
+            color: 'violet',
+            badge: 'ADMIN',
+            href: '/console',
+            en: 'Admin & Metrics Console',
+            mr: 'कन्सोल व प्लॅटफॉर्म मेट्रिक्स',
+            hi: 'कंसोल व प्लेटफ़ॉर्म मेट्रिक्स',
+            enD: 'GMV, take-rate, SLA tracker & governance ledger',
+            mrD: 'GMV, व्हेंडर SLA ट्रॅकर व सुरक्षित खातेवही नियंत्रण',
+            hiD: 'GMV, वेंडर SLA ट्रैकर व सुरक्षित बहीखाता नियंत्रण',
+          },
+          {
+            icon: 'store',
+            color: 'amber',
+            badge: 'PORTAL',
+            href: '/vendor',
+            en: 'Vendor Partner Portal',
+            mr: 'व्हेंडर पार्टनर पोर्टल',
+            hi: 'विक्रेता पार्टनर पोर्टल',
+            enD: 'Register new service, manage packages & staff',
+            mrD: 'नवीन सेवा नोंदणी, पॅकेजेस व सहकाऱ्यांचे नियोजन',
+            hiD: 'नई सेवा पंजीयन, पैकेज व सहकर्मियों का प्रबंधन',
+          },
+          {
+            icon: 'sparkle',
+            color: 'rose',
+            badge: 'DAROMA',
+            href: '/dashboard',
+            en: 'Daroma Modern Dashboard',
+            mr: 'डारोमा मॉडर्न डॅशबोर्ड',
+            hi: 'डारोमा मॉडर्न डैशबोर्ड',
+            enD: 'Midnight & violet SaaS studio analytics, accounting & timeline',
+            mrD: 'मिडनाइट व व्हायोलेट स्टुडिओ अनालिटिक्स, अकाउंटिंग व टाइमलाइन',
+            hiD: 'मिडनाइट व वायलेट स्टूडियो एनालिटिक्स, अकाउंटिंग व टाइमलाइन',
+          },
+        ],
       },
       {
-        icon: 'store',
-        badge: 'LOGIN',
-        href: '/vendor',
-        en: 'Vendor Partner Portal',
-        mr: 'व्हेंडर पार्टनर पोर्टल',
-        hi: 'विक्रेता पार्टनर पोर्टल',
-        enD: 'Register new service, manage packages & staff',
-        mrD: 'नवीन सेवा नोंदणी, पॅकेजेस व सहकाऱ्यांचे नियोजन',
-        hiD: 'नई सेवा पंजीयन, पैकेज व सहकर्मियों का प्रबंधन',
-      },
-      {
-        icon: 'sparkle',
-        badge: 'AI MAGIC',
+        titleEn: 'Platform Tools',
+        titleMr: 'प्लॅटफॉर्म टूल्स व हमी',
+        titleHi: 'प्लेटफ़ॉर्म टूल्स व गारंटी',
         href: '/create',
-        en: 'AI Celebration Planner',
-        mr: 'AI सोहळा नियोजक',
-        hi: 'AI उत्सव नियोजक',
-        enD: 'Plan full wedding in 1 sentence with budget & guests',
-        mrD: 'एका वाक्यात बजेट, पाहुणे व विक्रेत्यांसह संपूर्ण नियोजन',
-        hiD: 'एक वाक्य में बजट, अतिथि व विक्रेताओं सहित संपूर्ण योजना',
-      },
-      {
-        icon: 'sparkle',
-        badge: 'DAROMA UI',
-        href: '/dashboard',
-        en: 'Daroma Modern Dashboard',
-        mr: 'डारोमा मॉडर्न डॅशबोर्ड',
-        hi: 'डारोमा मॉडर्न डैशबोर्ड',
-        enD: 'Midnight & violet SaaS studio analytics, accounting & timeline',
-        mrD: 'मिडनाइट व व्हायोलेट स्टुडिओ अनालिटिक्स, अकाउंटिंग व टाइमलाइन',
-        hiD: 'मिडनाइट व वायलेट स्टूडियो एनालिटिक्स, अकाउंटिंग व टाइमलाइन',
+        items: [
+          {
+            icon: 'sparkle',
+            color: 'violet',
+            badge: 'AI MAGIC',
+            href: '/create',
+            en: 'AI Celebration Planner',
+            mr: 'AI सोहळा नियोजक',
+            hi: 'AI उत्सव नियोजक',
+            enD: 'Plan full wedding in 1 sentence with budget & guests',
+            mrD: 'एका वाक्यात बजेट, पाहुणे व विक्रेत्यांसह संपूर्ण नियोजन',
+            hiD: 'एक वाक्य में बजट, अतिथि व विक्रेताओं सहित संपूर्ण योजना',
+          },
+          {
+            icon: 'doc',
+            color: 'blue',
+            badge: 'WYSIWYP',
+            href: '/studio?mode=invitation',
+            en: 'WYSIWYP Print Proofing',
+            mr: 'WYSIWYP प्रिंट हमी',
+            hi: 'WYSIWYP प्रिंट गारंटी',
+            enD: 'What You See Is What You Print — zero error guarantee',
+            mrD: 'स्क्रीनप्रमाणेच अचूक छपाई — शून्य चूक हमी',
+            hiD: 'स्क्रीन के समान सटीक छपाई — शून्य त्रुटि गारंटी',
+          },
+          {
+            icon: 'shield',
+            color: 'emerald',
+            badge: 'STATUS',
+            href: '/api/health',
+            en: 'System Status & Telemetry',
+            mr: 'सिस्टम आरोग्य व व्हर्जन',
+            hi: 'सिस्टम स्थिति व वर्शन',
+            enD: 'Real-time uptime, API health & astronomical telemetry',
+            mrD: 'थेट अपटाइम, API आरोग्य व खगोलीय टेलिमेट्री',
+            hiD: 'लाइव अपटाइम, API स्थिति व खगोलीय टेलीमेट्री',
+          },
+        ],
       },
     ],
     footer: {
-      bannerEn: '💼 Double-entry commerce ledger with automated WhatsApp lead reminders & CRM',
-      bannerMr: '💼 दुहेरी-नोंदणी खातेवही, स्वयंचलित व्हॉट्सअॅप अपडेट्स व संपूर्ण बिझनेस व्यवस्थापन',
-      bannerHi: '💼 डबल-एंट्री बहीखाता, स्वचालित व्हाट्सएप अपडेट्स व संपूर्ण व्यापार प्रबंधन',
-      ctaEn: 'Open Vendor Desk',
+      bannerHighlightEn: '💼 Maha Commerce Engine',
+      bannerHighlightMr: '💼 महा कॉमर्स इंजिन',
+      bannerHighlightHi: '💼 महा कॉमर्स इंजन',
+      bannerEn: 'Enterprise operating system for wedding entrepreneurs, venues & caterers',
+      bannerMr: 'लग्नसोहळा व्यावसायिक, मंगल कार्यालये व कॅटरर्ससाठी आधुनिक ऑपरेटिंग सिस्टीम',
+      bannerHi: 'विवाह उद्यमियों, मंगल कार्यालयों व कैटरर्स हेतु आधुनिक ऑपरेटिंग सिस्टम',
+      ctaEn: 'Open Business Desk',
       ctaMr: 'व्हेंडर डेस्क उघडा',
       ctaHi: 'विक्रेता डेस्क खोलें',
       ctaHref: '/vendor-os',
+      secondaryLinks: [
+        { en: 'Admin Console', mr: 'कन्सोल', hi: 'कंसोल', href: '/console' },
+        { en: 'Vendor Portal', mr: 'पार्टनर पोर्टल', hi: 'पार्टनर पोर्टल', href: '/vendor' },
+        { en: 'Daroma SaaS', mr: 'डारोमा डॅशबोर्ड', hi: 'डारोमा डैशबोर्ड', href: '/dashboard' },
+      ],
     },
+  },
+  {
+    id: 'crm',
+    href: '/console',
+    icon: 'idCard',
+    labelEn: 'CRM',
+    labelMr: 'CRM',
+    labelHi: 'CRM',
   },
 ];
 
 /* Flattened search items for the ⌘K command palette */
-const ALL_SEARCH_ITEMS: SubItem[] = NAV_SECTIONS.flatMap((sec) => sec.items ?? []);
+const ALL_SEARCH_ITEMS: SubItem[] = NAV_SECTIONS.flatMap((sec) => {
+  if (sec.columns && sec.columns.length > 0) {
+    return sec.columns.flatMap((col) => col.items);
+  }
+  return sec.items ?? [];
+});
 
 /* ═══════════════════════════════════════════════════════════════
    SITE HEADER COMPONENT
@@ -622,6 +931,9 @@ export function SiteHeader() {
   const getItemDesc = (m: { enD: string; mrD: string; hiD: string }) =>
     isEn ? m.enD : isHi ? m.hiD : m.mrD;
 
+  const getColumnTitle = (col: { titleEn: string; titleMr: string; titleHi: string }) =>
+    isEn ? col.titleEn : isHi ? col.titleHi : col.titleMr;
+
   const activeSection = NAV_SECTIONS.find((s) => s.id === (pinnedDropdown || activeDropdown));
 
   return (
@@ -690,61 +1002,69 @@ export function SiteHeader() {
         ref={navContainerRef}
         className={`sticky top-0 z-50 transition-all duration-300 ${
           scrolled
-            ? 'bg-[#fffdf9]/98 shadow-[0_16px_45px_-12px_rgba(74,9,20,0.18)] backdrop-blur-2xl'
-            : 'bg-[#fffdf9]/95 shadow-[0_10px_35px_-12px_rgba(74,9,20,0.10)] backdrop-blur-xl'
-        } border-b border-[#dfb150]/35`}
+            ? 'bg-white/98 shadow-[0_16px_45px_-12px_rgba(14,13,38,0.08)] backdrop-blur-2xl'
+            : 'bg-white/95 shadow-[0_8px_30px_-10px_rgba(14,13,38,0.04)] backdrop-blur-xl'
+        } border-b border-gray-100`}
       >
         {/* ═══════════ 1 · AUSPICIOUS ROYAL MICRO-BAR ═══════════ */}
-        <div className="relative overflow-hidden bg-linear-to-r from-[#240307] via-[#430812] to-[#240307] px-3 py-1 sm:px-5">
-          {/* Subtle Golden Starlight Micro-Pattern */}
+        <div className="relative z-30 bg-[#22061f] text-white/90 px-3 py-1.5 sm:px-6 border-b border-white/10 text-xs">
+          {/* Subtle Golden Starlight Micro-Pattern - Isolated in its own overflow-hidden layer */}
           <div
             aria-hidden="true"
-            className="hdr-anim pointer-events-none absolute inset-0 opacity-[0.09]"
-            style={{
-              backgroundImage: 'radial-gradient(circle, #dfb150 1px, transparent 1px)',
-              backgroundSize: '24px 24px',
-              animation: 'hdr-shimmer 18s linear infinite',
-            }}
-          />
+            className="hdr-anim pointer-events-none absolute inset-0 overflow-hidden opacity-[0.12]"
+          >
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: 'radial-gradient(circle, #dfb150 1px, transparent 1px)',
+                backgroundSize: '20px 20px',
+                animation: 'hdr-shimmer 20s linear infinite',
+              }}
+            />
+          </div>
 
-          <div className="shell relative flex items-center justify-between text-xs">
-            {/* Mantra with Glowing Auspicious Pip */}
-            <span className="hidden items-center gap-2 font-serif text-[12px] font-medium tracking-wider text-[#fffdfa] sm:inline-flex">
-              <span className="relative flex size-2">
-                <span
-                  className="absolute inline-flex h-full w-full rounded-full bg-[#dfb150]"
-                  style={{ animation: 'hdr-ping 2.4s cubic-bezier(0,0,0.2,1) infinite' }}
-                />
-                <span className="relative inline-flex size-2 rounded-full bg-[#dfb150]" />
-              </span>
-              {t.mantra}
-            </span>
+          <div className="relative mx-auto flex max-w-[1440px] w-full items-center justify-between gap-4">
+            {/* Left: Shree Ganeshaya Namah with gold crown emblem */}
+            <div className="flex items-center gap-2 text-amber-200/95 font-serif tracking-wider font-semibold text-[11px] sm:text-xs">
+              <span className="text-amber-400 text-sm">👑</span>
+              <span>॥ श्री गणेशाय नमः ॥</span>
+            </div>
 
-            {/* Shimmering Center Tagline */}
-            <span className="hdr-shimmer-text mx-auto max-w-[340px] truncate text-[11px] font-bold tracking-wide sm:mx-0 sm:text-xs">
-              {t.tagline}
-            </span>
+            {/* Center: Auspicious Tagline matching reference 100% */}
+            <div className="hidden lg:block text-center font-medium tracking-wide text-[11.5px] text-[#f5e6d3]">
+              <span>महाराष्ट्राची संस्कृती</span>
+              <span className="mx-2 text-amber-400/80">•</span>
+              <span>सुरेख डिझाईन परंपरा</span>
+              <span className="mx-2 text-amber-400/80">•</span>
+              <span>आपल्या सर्व शुभकार्यांसाठी खास आमंत्रण</span>
+            </div>
 
-            {/* Live Panchang Status Pill */}
-            <Link
-              href="/panchang"
-              onClick={handleCloseAll}
-              className="group hidden items-center gap-2 rounded-full bg-white/5 px-2.5 py-0.5 text-[11.5px] font-medium text-[#ffd700] transition hover:bg-white/10 hover:text-white md:inline-flex"
-            >
-              <span
-                className="size-1.5 rounded-full bg-[#10b981]"
-                style={{ animation: 'hdr-pulse-dot 2s ease-in-out infinite' }}
-              />
-              <span>{t.livePanchang}</span>
-              <I name="arrow" className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5" />
-            </Link>
+            {/* Right: Quick Links & Language Toggle */}
+            <div className="relative z-40 flex items-center gap-3.5 sm:gap-4 text-[11px] sm:text-[11.5px] text-white">
+              <Link href="/about" className="hidden sm:flex items-center gap-1.5 text-white/90 hover:text-white transition">
+                <I name="heart" className="h-3.5 w-3.5 text-rose-300" />
+                <span>आमच्याबद्दल</span>
+              </Link>
+              <Link href="/contact" className="hidden sm:flex items-center gap-1.5 text-white/90 hover:text-white transition">
+                <I name="phone" className="h-3.5 w-3.5 text-amber-300" />
+                <span>संपर्क</span>
+              </Link>
+              <Link href="/faq" className="flex items-center gap-1.5 text-white/90 hover:text-white transition">
+                <I name="help" className="h-3.5 w-3.5 text-sky-300" />
+                <span>मदत केंद्र</span>
+              </Link>
+
+              <div className="h-3 w-px bg-white/20 hidden sm:block" />
+
+              <LangToggle compact />
+            </div>
           </div>
         </div>
 
         {/* ═══════════ 2 · MAIN NAVIGATION BAR ═══════════ */}
         <div
-          className={`shell flex items-center justify-between gap-2 transition-all duration-300 sm:gap-4 ${
-            scrolled ? 'h-14 sm:h-16' : 'h-16 sm:h-[4.5rem]'
+          className={`relative z-10 mx-auto flex max-w-[1440px] w-full items-center justify-between gap-2 px-3 sm:px-6 xl:px-8 transition-all duration-300 ${
+            scrolled ? 'h-14 sm:h-16' : 'h-16 sm:h-[4.25rem]'
           }`}
         >
           {/* ── Brand Logo & Royal Identity ── */}
@@ -752,66 +1072,44 @@ export function SiteHeader() {
             href="/"
             onClick={handleCloseAll}
             aria-label={isEn ? 'Mazi Patrika home' : 'माझी पत्रिका — मुख्यपृष्ठ'}
-            className="group relative flex shrink-0 items-center gap-3 rounded-2xl p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dfb150]"
+            className="group relative flex shrink-0 items-center gap-2.5 sm:gap-3 rounded-2xl p-1 focus-visible:outline-none"
           >
+            {/* Medallion with "मा" Script */}
             <div className="relative">
-              {/* Rotating 12-point Devanagari Mandala Ring */}
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 100 100"
-                className="hdr-anim absolute -inset-2 text-[#dfb150]/60 transition-colors duration-500 group-hover:text-[#dfb150]"
-                style={{ animation: 'hdr-spin 28s linear infinite' }}
-              >
-                <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="1.3" strokeDasharray="3 7" />
-                {Array.from({ length: 12 }, (_, i) => {
-                  const a = (i / 12) * Math.PI * 2;
-                  return (
-                    <circle
-                      key={i}
-                      cx={50 + Math.cos(a) * 46}
-                      cy={50 + Math.sin(a) * 46}
-                      r="1.8"
-                      fill="currentColor"
-                    />
-                  );
-                })}
-              </svg>
-
-              {/* Medallion with "मा" Script */}
-              <span className="relative grid size-11 place-items-center rounded-2xl bg-linear-to-br from-[#4a0914] via-[#6b1d2a] to-[#2d050a] text-[#fffdfa] shadow-md ring-1 ring-[#dfb150]/45 transition-all duration-300 group-hover:scale-105 group-hover:ring-[#dfb150] group-hover:shadow-[0_0_20px_rgba(212,175,55,0.4)]">
-                <span className="font-script text-2xl font-bold leading-none drop-shadow-sm text-[#ffe599]">
+              <div className="grid size-10 sm:size-11 place-items-center rounded-full bg-gradient-to-br from-[#26042b] via-[#35083a] to-[#1c0320] text-white shadow-md ring-2 ring-purple-900/15 group-hover:scale-105 transition-transform duration-300">
+                <span className="font-script text-xl sm:text-2xl font-bold text-white drop-shadow-sm">
                   मा
                 </span>
-              </span>
-              <span className="absolute -bottom-1 -right-1 size-3 rounded-full border-2 border-[#fffdf9] bg-[#dfb150] shadow-sm" />
+              </div>
             </div>
 
             <div className="hidden leading-tight xs:block">
-              <div className="flex items-center gap-2">
-                <span className="font-display text-xl font-bold tracking-tight text-[#4a0914] transition group-hover:text-[#8a1f32]">
+              <div className="flex items-center gap-1.5">
+                <span className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-[#1c081e] group-hover:text-purple-800 transition">
                   माझी पत्रिका
                 </span>
-                <span className="hdr-shimmer-text rounded-md border border-[#dfb150]/50 bg-[#2d050a] px-2 py-0.5 text-[10px] font-black tracking-widest">
+                <span className="rounded-full bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white px-2 py-0.5 text-[9.5px] font-black tracking-wider uppercase shadow-xs">
                   PRO
                 </span>
               </div>
-              <span className="font-ui block text-[10.5px] uppercase tracking-[0.22em] text-[#7a6e68]">
-                Mazi Patrika • Maha OS
+              <span className="block text-[9.5px] uppercase tracking-[0.2em] font-semibold text-[#877a73]">
+                MAZI PATRIKA • MAHA OS
               </span>
             </div>
           </Link>
 
           {/* ── Desktop Navigation Bar ── */}
-          <nav aria-label={isEn ? 'Main navigation' : 'मुख्य नेव्हिगेशन'} className="hidden items-center gap-1 xl:gap-1.5 lg:flex">
+          <nav aria-label={isEn ? 'Main navigation' : 'मुख्य नेव्हिगेशन'} className="hidden items-center gap-0.5 xl:gap-1 lg:flex shrink-0">
             {NAV_SECTIONS.map((sec) => {
               const active = isSectionActive(sec.href);
               const isOpen = (activeDropdown === sec.id) || (pinnedDropdown === sec.id);
+              const hasDropdown = (sec.columns && sec.columns.length > 0) || (sec.items && sec.items.length > 0);
 
               return (
                 <div
                   key={sec.id}
                   className="relative"
-                  onMouseEnter={() => handleTriggerEnter(sec.id)}
+                  onMouseEnter={() => hasDropdown && handleTriggerEnter(sec.id)}
                   onMouseLeave={handleTriggerLeave}
                 >
                   <div className="flex items-center">
@@ -819,57 +1117,38 @@ export function SiteHeader() {
                     <Link
                       href={sec.href}
                       onClick={() => {
-                        // If it's a section, toggle pin or let user navigate directly
                         setActiveDropdown(null);
                         setPinnedDropdown(null);
                       }}
-                      className={`relative flex items-center gap-1.5 rounded-xl px-3 py-2 text-[14px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dfb150] ${
+                      className={`relative flex items-center gap-1 rounded-xl px-1.5 xl:px-2 py-1.5 text-[12.5px] xl:text-[13px] font-semibold whitespace-nowrap transition focus-visible:outline-none ${
                         active
-                          ? 'text-[#4a0914] font-bold'
-                          : 'text-[#241915] hover:bg-[#dfb150]/14 hover:text-[#4a0914]'
+                          ? 'text-[#7c3aed] bg-purple-50/80 font-bold'
+                          : 'text-[#1c081e] hover:bg-gray-100/70 hover:text-[#7c3aed]'
                       }`}
                     >
+                      {sec.icon && (
+                        <span className="text-amber-600 transition-colors group-hover:text-amber-500">
+                          <I name={sec.icon} className="h-4 w-4" />
+                        </span>
+                      )}
                       <span>{getLabel(sec)}</span>
                       {sec.badge && (
                         <span
-                          className={`rounded-full px-1.5 py-0.5 text-[9px] font-black tracking-wider ${
+                          className={`rounded-full px-1.5 py-0.5 text-[8.5px] font-black tracking-wider ${
                             sec.badgeVariant === 'leaf'
                               ? 'bg-[#10b981]/15 text-[#047857] border border-[#10b981]/30'
-                              : sec.badgeVariant === 'maroon'
-                              ? 'bg-[#6b1d2a]/10 text-[#6b1d2a] border border-[#6b1d2a]/20'
-                              : 'bg-[#dfb150]/20 text-[#8a6a2b] border border-[#dfb150]/40'
+                              : sec.badgeVariant === 'gold'
+                              ? 'bg-amber-100 text-amber-800 border border-amber-300 font-bold'
+                              : 'bg-violet-100 text-violet-700 border border-violet-200'
                           }`}
                         >
                           {sec.badge}
                         </span>
                       )}
-
-                      {/* Active / Hover Underline Bar */}
-                      <span
-                        className={`absolute inset-x-2.5 -bottom-0.5 h-[2.5px] rounded-full bg-linear-to-r from-[#dfb150] via-[#ffd700] to-[#dfb150] transition-transform duration-300 ${
-                          active || isOpen ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                        }`}
-                      />
+                      {hasDropdown && (
+                        <I name="chevron" className={`h-3 w-3 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-violet-600' : ''}`} />
+                      )}
                     </Link>
-
-                    {/* Chevron Toggle Button for Quick Sub-level Pinning */}
-                    {sec.items && sec.items.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleTogglePin(sec.id);
-                        }}
-                        aria-expanded={isOpen}
-                        aria-label={isEn ? `Toggle ${sec.labelEn} menu` : `${getLabel(sec)} मेनू टॉगल करा`}
-                        className={`grid size-7 place-items-center rounded-lg text-[#7a6e68] transition hover:bg-[#dfb150]/20 hover:text-[#4a0914] ${
-                          isOpen ? 'rotate-180 text-[#4a0914] bg-[#dfb150]/20' : ''
-                        }`}
-                      >
-                        <I name="chevron" className="h-3.5 w-3.5 transition-transform duration-300" />
-                      </button>
-                    )}
                   </div>
                 </div>
               );
@@ -877,8 +1156,8 @@ export function SiteHeader() {
           </nav>
 
           {/* ── Right Cluster: Search, Notifications, Lang, Vendor, CTA, Mobile ── */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5">
-            {/* ⌘K Quick Search Button */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Search Icon Button */}
             <div className="relative" ref={searchRef}>
               <button
                 type="button"
@@ -887,11 +1166,10 @@ export function SiteHeader() {
                   setActiveDropdown(null);
                   setPinnedDropdown(null);
                 }}
-                aria-label={isEn ? 'Quick search (Ctrl+K)' : 'जलद शोध (Ctrl+K)'}
-                aria-expanded={searchOpen}
-                className="grid size-10 place-items-center rounded-xl border border-[#dfb150]/35 bg-[#fffdfa] text-[#4a403c] transition hover:border-[#dfb150] hover:bg-[#dfb150]/15 hover:text-[#4a0914] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dfb150] sm:size-11"
+                aria-label={isEn ? 'Quick search' : 'शोधा'}
+                className="grid size-9 sm:size-10 place-items-center rounded-full border border-gray-200 bg-white text-gray-700 hover:border-purple-300 hover:bg-purple-50/50 hover:text-purple-900 transition shadow-2xs"
               >
-                <I name="search" className="h-[18px] w-[18px]" />
+                <I name="search" className="h-4 w-4" />
               </button>
 
               {/* ⌘K Search Dropdown Panel */}
@@ -960,70 +1238,47 @@ export function SiteHeader() {
               )}
             </div>
 
-            {/* Notifications / Console Direct Link */}
+            {/* Notification Bell Button */}
             <Link
               href="/console"
               onClick={handleCloseAll}
-              aria-label={isEn ? 'Notifications & Console' : 'सूचना व कन्सोल'}
-              className="relative hidden size-10 place-items-center rounded-xl border border-[#dfb150]/35 bg-[#fffdfa] text-[#4a403c] transition hover:border-[#dfb150] hover:bg-[#dfb150]/15 hover:text-[#4a0914] sm:grid sm:size-11"
+              aria-label={isEn ? 'Notifications' : 'सूचना'}
+              className="relative hidden sm:grid size-9 sm:size-10 place-items-center rounded-full border border-gray-200 bg-white text-gray-700 hover:border-purple-300 hover:bg-purple-50/50 hover:text-purple-900 transition shadow-2xs"
             >
-              <I name="bell" className="h-[18px] w-[18px]" />
-              <span className="absolute right-2 top-2 flex size-2">
-                <span
-                  className="absolute inline-flex h-full w-full rounded-full bg-[#6b1d2a]"
-                  style={{ animation: 'hdr-ping 2s cubic-bezier(0,0,0.2,1) infinite' }}
-                />
-                <span className="relative inline-flex size-2 rounded-full bg-[#8a1f32] ring-2 ring-[#fffdfa]" />
+              <I name="bell" className="h-4 w-4" />
+              <span className="absolute top-1.5 right-1.5 flex size-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75 animate-ping" />
+                <span className="relative inline-flex size-2 rounded-full bg-rose-600 ring-2 ring-white" />
               </span>
             </Link>
 
-            {/* Language Toggle */}
-            <LangToggle compact />
-
-            {/* Daroma Modern Dashboard Direct Link */}
+            {/* AI Assistant Button (Electric Violet Gradient - ईम्रेस) */}
             <Link
-              href="/dashboard"
+              href="/studio/editor"
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={handleCloseAll}
-              className="hidden min-h-11 items-center gap-1.5 rounded-full border border-[#7c3aed]/30 bg-[#7c3aed]/5 px-3.5 text-xs font-bold text-[#6d28d9] transition hover:border-[#7c3aed] hover:bg-[#7c3aed]/15 hover:text-[#5b21b6] xl:inline-flex"
+              className="group relative inline-flex min-h-9 sm:min-h-10 items-center gap-1.5 overflow-hidden rounded-full bg-gradient-to-r from-[#6b21a8] via-[#7c3aed] to-[#8b5cf6] px-3.5 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-md shadow-purple-500/25 ring-1 ring-purple-300/40 hover:shadow-purple-500/40 hover:scale-105 transition-all shrink-0"
             >
-              <span className="size-2 rounded-full bg-[#7c3aed] animate-pulse" />
-              <span>{isEn ? 'Dashboard ✦' : 'डॅशबोर्ड ✦'}</span>
+              <I name="sparkle" className="h-3.5 w-3.5 text-yellow-300" />
+              <span>ईम्रेस</span>
             </Link>
 
-            {/* Vendor Portal Direct Link */}
+            {/* Vendor Login Button (Warm Golden Pill Matching Image 100%) */}
             <Link
               href="/vendor"
               onClick={handleCloseAll}
-              className="hidden min-h-11 items-center rounded-full border border-[#dfb150]/45 bg-[#fffdfa] px-3.5 text-xs font-bold text-[#4a403c] transition hover:border-[#dfb150] hover:bg-[#f8f2e6] hover:text-[#4a0914] xl:inline-flex"
+              className="inline-flex min-h-8 sm:min-h-9 items-center rounded-full border border-amber-400/80 bg-gradient-to-r from-[#f7ca75] via-[#f5bf55] to-[#ebb042] px-4 sm:px-4.5 text-xs sm:text-[13px] font-bold text-[#3b1c00] hover:brightness-105 transition shadow-sm shrink-0 whitespace-nowrap"
             >
-              {t.vendorLogin}
-            </Link>
-
-            {/* Primary Action Button: Create Card */}
-            <Link
-              href="/create"
-              onClick={handleCloseAll}
-              className="group relative inline-flex min-h-10 sm:min-h-11 items-center overflow-hidden rounded-full bg-linear-to-r from-[#4a0914] via-[#6b1d2a] to-[#4a0914] px-3 sm:px-5 text-xs font-bold text-[#fffdfa] shadow-md ring-1 ring-[#dfb150]/40 transition-all duration-300 hover:shadow-[0_0_24px_rgba(212,175,55,0.45)] hover:ring-[#dfb150] sm:text-sm shrink-0"
-              style={{ animation: 'hdr-glow 4s ease-in-out infinite' }}
-            >
-              <span
-                aria-hidden="true"
-                className="absolute inset-y-0 w-1/3 bg-linear-to-r from-transparent via-white/25 to-transparent"
-                style={{ animation: 'hdr-shine 3.2s ease-in-out infinite' }}
-              />
-              <span className="relative flex items-center gap-1 sm:gap-1.5">
-                <I name="sparkle" className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#ffd700]" />
-                <span className="hidden xs:inline">{t.createCard}</span>
-                <I name="arrow" className="hidden md:inline h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-              </span>
+              विक्रेता प्रवेश
             </Link>
 
             {/* Mobile Hamburger Toggle */}
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              aria-label={isEn ? 'Open menu' : isHi ? 'मेनू खोलें' : 'मेनू उघडा'}
-              className="grid size-10 place-items-center rounded-xl border border-[#dfb150]/35 bg-[#fffdfa] text-[#4a0914] transition hover:bg-[#dfb150]/15 shrink-0 lg:hidden"
+              aria-label={isEn ? 'Open menu' : 'मेनू उघडा'}
+              className="grid size-9 sm:size-10 place-items-center rounded-xl border border-gray-200 bg-white text-[#4a0914] transition hover:bg-gray-100 shrink-0 lg:hidden"
             >
               <I name="menu" className="h-5 w-5" />
             </button>
@@ -1031,79 +1286,167 @@ export function SiteHeader() {
         </div>
 
         {/* ═══════════ 3 · DESKTOP MEGA-MENU / SUB-LEVEL DROPDOWN ═══════════ */}
-        {activeSection && activeSection.items && activeSection.items.length > 0 && (
+        {activeSection && ((activeSection.columns && activeSection.columns.length > 0) || (activeSection.items && activeSection.items.length > 0)) && (
           <div
             className="absolute inset-x-0 top-full pt-1.5 before:absolute before:-top-5 before:inset-x-0 before:h-6 before:content-[''] hidden lg:block"
             onMouseEnter={() => handleTriggerEnter(activeSection.id)}
             onMouseLeave={handleTriggerLeave}
           >
             <div
-              className="relative mx-auto w-full max-w-5xl px-6"
+              className="relative mx-auto w-full max-w-6xl px-4 sm:px-6"
               style={{ animation: 'hdr-pop 0.24s cubic-bezier(0.2,0.9,0.3,1.15) both' }}
             >
-              <div className="overflow-hidden rounded-3xl border border-[#dfb150]/45 bg-[#fffdfa]/98 shadow-[0_32px_90px_-20px_rgba(45,5,10,0.38)] backdrop-blur-3xl">
-                {/* 24K Gold Shimmer Top Ribbon */}
+              <div className="overflow-hidden rounded-3xl border border-gray-200/90 bg-white shadow-[0_30px_90px_-20px_rgba(14,13,38,0.20)] backdrop-blur-3xl ring-1 ring-black/[0.04]">
+                {/* Modern Violet Top Ribbon */}
                 <div
                   aria-hidden="true"
-                  className="h-1 bg-linear-to-r from-transparent via-[#ffd700] to-transparent"
+                  className="h-1 bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600"
                 />
 
-                {/* Sub-item Grid with Micro-Cards */}
-                <div className="grid gap-2 p-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {activeSection.items.map((m, i) => (
-                    <Link
-                      key={m.href + m.en + i}
-                      href={m.href}
-                      target={m.target}
-                      rel={m.target === '_blank' ? 'noopener noreferrer' : undefined}
-                      onClick={handleCloseAll}
-                      className="group flex items-start gap-3.5 rounded-2xl border border-[#dfb150]/20 bg-white/70 p-3.5 transition-all duration-300 hover:border-[#dfb150]/70 hover:bg-linear-to-br hover:from-[#dfb150]/15 hover:via-white hover:to-transparent hover:shadow-md"
-                      style={{ animation: `hdr-fade-up 0.3s ${i * 35}ms both` }}
-                    >
-                      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-linear-to-br from-[#4a0914] via-[#6b1d2a] to-[#2d050a] text-[#fffdfa] shadow-md ring-1 ring-[#dfb150]/35 transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 group-hover:ring-[#dfb150]">
-                        <I name={m.icon} className="h-5 w-5" />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="flex items-center gap-1.5 text-sm font-bold text-[#1e1917] group-hover:text-[#6b1d2a]">
-                          <span>{getItemLabel(m)}</span>
-                          {m.badge && (
-                            <span className="rounded-full bg-[#dfb150]/20 px-1.5 py-0.5 text-[8.5px] font-black tracking-wider text-[#8a6a2b] border border-[#dfb150]/40">
-                              {m.badge}
-                            </span>
-                          )}
-                        </span>
-                        <span className="mt-1 block text-[12px] leading-snug text-[#7a6e68]">
-                          {getItemDesc(m)}
-                        </span>
-                      </span>
-                    </Link>
-                  ))}
-                </div>
+                {/* Qualtrics-Style Multi-Column Grid */}
+                {activeSection.columns && activeSection.columns.length > 0 ? (
+                  <div className="grid grid-cols-3 divide-x divide-gray-100 p-6 lg:p-7 gap-6 lg:gap-8 bg-white">
+                    {activeSection.columns.map((col, colIdx) => (
+                      <div key={col.titleEn + colIdx} className="space-y-3.5">
+                        {/* Column Header with ↗ */}
+                        <div className="flex items-center justify-between pb-2.5 border-b border-gray-100">
+                          <Link
+                            href={col.href || activeSection.href}
+                            onClick={handleCloseAll}
+                            className="group/head flex items-center gap-1.5 text-[13px] font-bold text-slate-900 transition hover:text-violet-600"
+                          >
+                            <span>{getColumnTitle(col)}</span>
+                            <I name="arrowUpRight" className="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 group-hover/head:text-violet-600 group-hover/head:translate-x-0.5 group-hover/head:-translate-y-0.5" />
+                          </Link>
+                        </div>
 
-                {/* Bottom Auspicious Banner with Quick CTA */}
+                        {/* Column Items */}
+                        <div className="space-y-2">
+                          {col.items.map((m, i) => (
+                            <Link
+                              key={m.href + m.en + i}
+                              href={m.href}
+                              target={m.target}
+                              rel={m.target === '_blank' ? 'noopener noreferrer' : undefined}
+                              onClick={handleCloseAll}
+                              className="group flex items-start gap-3.5 rounded-2xl p-2.5 transition-all duration-200 hover:bg-slate-50/90 hover:shadow-xs"
+                            >
+                              <span className={`grid size-10 shrink-0 place-items-center rounded-xl transition-all duration-200 group-hover:scale-105 shadow-xs ${ICON_COLOR_STYLES[m.color || 'violet']}`}>
+                                <I name={m.icon} className="h-5 w-5" />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[13.5px] font-bold text-slate-900 transition-colors group-hover:text-violet-600">
+                                    {getItemLabel(m)}
+                                  </span>
+                                  {m.badge && (
+                                    <span className="rounded-full bg-violet-50 px-1.5 py-0.5 text-[8.5px] font-black tracking-wider text-violet-700 border border-violet-200/60">
+                                      {m.badge}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="mt-1 text-[11.5px] leading-snug text-slate-500 line-clamp-2">
+                                  {getItemDesc(m)}
+                                </p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  /* Fallback for sections with flat items */
+                  <div className="grid gap-2 p-5 sm:grid-cols-2 lg:grid-cols-3">
+                    {activeSection.items?.map((m, i) => (
+                      <Link
+                        key={m.href + m.en + i}
+                        href={m.href}
+                        target={m.target}
+                        rel={m.target === '_blank' ? 'noopener noreferrer' : undefined}
+                        onClick={handleCloseAll}
+                        className="group flex items-start gap-3.5 rounded-2xl border border-gray-100 bg-white/70 p-3.5 transition-all duration-300 hover:border-violet-300 hover:bg-violet-50/30 hover:shadow-md"
+                        style={{ animation: `hdr-fade-up 0.3s ${i * 35}ms both` }}
+                      >
+                        <span className={`grid size-11 shrink-0 place-items-center rounded-xl shadow-xs transition-all duration-300 group-hover:scale-105 ${ICON_COLOR_STYLES[m.color || 'violet']}`}>
+                          <I name={m.icon} className="h-5 w-5" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="flex items-center gap-1.5 text-sm font-bold text-[#1e1917] group-hover:text-violet-600">
+                            <span>{getItemLabel(m)}</span>
+                            {m.badge && (
+                              <span className="rounded-full bg-violet-50 px-1.5 py-0.5 text-[8.5px] font-black tracking-wider text-violet-700 border border-violet-200/60">
+                                {m.badge}
+                              </span>
+                            )}
+                          </span>
+                          <span className="mt-1 block text-[12px] leading-snug text-[#7a6e68]">
+                            {getItemDesc(m)}
+                          </span>
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* Qualtrics-Style Bottom Dark Highlight Bar */}
                 {activeSection.footer && (
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#dfb150]/30 bg-linear-to-r from-[#240307] via-[#430812] to-[#240307] px-6 py-3">
-                    <p className="hdr-shimmer-text text-xs font-bold tracking-wide">
-                      {isEn
-                        ? activeSection.footer.bannerEn
-                        : isHi
-                        ? activeSection.footer.bannerHi
-                        : activeSection.footer.bannerMr}
-                    </p>
+                  <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 bg-[#0e0d26] px-7 py-3.5 text-white">
                     <Link
                       href={activeSection.footer.ctaHref}
                       onClick={handleCloseAll}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-[#dfb150] px-4 py-1.5 text-xs font-black text-[#2d050a] transition hover:scale-105 hover:bg-[#ffd700]"
+                      className="group/banner flex items-center gap-2.5 text-xs font-semibold text-white/90 transition hover:text-white"
                     >
-                      <span>
+                      {activeSection.footer.bannerHighlightEn && (
+                        <span className="font-bold text-white flex items-center gap-1 group-hover/banner:underline">
+                          {isEn
+                            ? activeSection.footer.bannerHighlightEn
+                            : isHi
+                            ? activeSection.footer.bannerHighlightHi
+                            : activeSection.footer.bannerHighlightMr}
+                          <I name="arrowUpRight" className="h-3 w-3 inline text-amber-400" />
+                        </span>
+                      )}
+                      <span className="hidden sm:inline text-white/70">
                         {isEn
-                          ? activeSection.footer.ctaEn
+                          ? activeSection.footer.bannerEn
                           : isHi
-                          ? activeSection.footer.ctaHi
-                          : activeSection.footer.ctaMr}
+                          ? activeSection.footer.bannerHi
+                          : activeSection.footer.bannerMr}
                       </span>
-                      <I name="arrow" className="h-3.5 w-3.5" />
                     </Link>
+
+                    <div className="flex items-center gap-3">
+                      {activeSection.footer.secondaryLinks?.map((secLink, idx) => (
+                        <span key={idx} className="flex items-center gap-3">
+                          <Link
+                            href={secLink.href}
+                            onClick={handleCloseAll}
+                            className="text-[11.5px] text-white/75 hover:text-white transition font-medium"
+                          >
+                            {isEn ? secLink.en : isHi ? secLink.hi : secLink.mr}
+                          </Link>
+                          {idx < (activeSection.footer?.secondaryLinks?.length ?? 0) - 1 && (
+                            <span className="text-white/25">|</span>
+                          )}
+                        </span>
+                      ))}
+
+                      <Link
+                        href={activeSection.footer.ctaHref}
+                        onClick={handleCloseAll}
+                        className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-1.5 text-xs font-bold text-white transition hover:scale-105 shadow-sm"
+                      >
+                        <span>
+                          {isEn
+                            ? activeSection.footer.ctaEn
+                            : isHi
+                            ? activeSection.footer.ctaHi
+                            : activeSection.footer.ctaMr}
+                        </span>
+                        <I name="arrow" className="h-3.5 w-3.5" />
+                      </Link>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1111,10 +1454,10 @@ export function SiteHeader() {
           </div>
         )}
 
-        {/* ═══════════ 4 · PAISLEY GOLD FILIGREE EDGE ═══════════ */}
+        {/* ═══════════ 4 · SUBTLE CLEAN BOTTOM BORDER ═══════════ */}
         <div
           aria-hidden="true"
-          className="h-[3px] bg-[repeating-linear-gradient(90deg,#dfb150_0px,#dfb150_8px,transparent_8px,transparent_14px,#8a6a2b_14px,#8a6a2b_16px,transparent_16px,transparent_22px)] opacity-70"
+          className="h-px bg-stone-200/60"
         />
       </header>
 
@@ -1212,13 +1555,13 @@ export function SiteHeader() {
                         )}
                       </Link>
 
-                      {sec.items && sec.items.length > 0 && (
+                      {((sec.columns && sec.columns.length > 0) || (sec.items && sec.items.length > 0)) && (
                         <button
                           type="button"
                           onClick={() => setExpandedAccordion(isExpanded ? null : sec.id)}
                           aria-label={isExpanded ? 'Collapse section' : 'Expand section'}
-                          className={`grid size-9 place-items-center rounded-xl text-[#7a6e68] transition hover:bg-[#dfb150]/20 ${
-                            isExpanded ? 'rotate-180 text-[#4a0914] bg-[#dfb150]/15' : ''
+                          className={`grid size-9 place-items-center rounded-xl text-slate-500 transition hover:bg-violet-100 ${
+                            isExpanded ? 'rotate-180 text-violet-700 bg-violet-100' : ''
                           }`}
                         >
                           <I name="chevron" className="h-4 w-4 transition-transform duration-200" />
@@ -1227,34 +1570,70 @@ export function SiteHeader() {
                     </div>
 
                     {/* Accordion Sub-levels */}
-                    {isExpanded && sec.items && (
-                      <div className="border-t border-[#dfb150]/20 bg-[#fffdfa] p-2 space-y-1">
-                        {sec.items.map((sub) => (
-                          <Link
-                            key={sub.href + sub.en}
-                            href={sub.href}
-                            target={sub.target}
-                            rel={sub.target === '_blank' ? 'noopener noreferrer' : undefined}
-                            onClick={handleCloseAll}
-                            className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-[#dfb150]/15"
-                          >
-                            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-linear-to-br from-[#4a0914] to-[#2d050a] text-[#fffdfa] shadow-xs ring-1 ring-[#dfb150]/30">
-                              <I name={sub.icon} className="h-3.5 w-3.5" />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-bold text-[#1e1917] truncate">{getItemLabel(sub)}</span>
-                                {sub.badge && (
-                                  <span className="rounded-full bg-[#dfb150]/20 px-1 py-0.2 text-[8px] font-bold text-[#8a6a2b]">
-                                    {sub.badge}
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 bg-[#fffdfa] p-2 space-y-2">
+                        {sec.columns && sec.columns.length > 0 ? (
+                          sec.columns.map((col, cIdx) => (
+                            <div key={cIdx} className="space-y-1">
+                              <p className="px-2 pt-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                {getColumnTitle(col)}
+                              </p>
+                              {col.items.map((sub) => (
+                                <Link
+                                  key={sub.href + sub.en}
+                                  href={sub.href}
+                                  target={sub.target}
+                                  rel={sub.target === '_blank' ? 'noopener noreferrer' : undefined}
+                                  onClick={handleCloseAll}
+                                  className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-violet-50"
+                                >
+                                  <span className={`grid size-8 shrink-0 place-items-center rounded-lg shadow-2xs ${ICON_COLOR_STYLES[sub.color || 'violet']}`}>
+                                    <I name={sub.icon} className="h-3.5 w-3.5" />
                                   </span>
-                                )}
-                              </div>
-                              <p className="text-[10.5px] text-[#7a6e68] truncate">{getItemDesc(sub)}</p>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-xs font-bold text-slate-900 truncate">{getItemLabel(sub)}</span>
+                                      {sub.badge && (
+                                        <span className="rounded-full bg-violet-50 px-1 py-0.2 text-[8px] font-bold text-violet-700 border border-violet-200/60">
+                                          {sub.badge}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10.5px] text-slate-500 truncate">{getItemDesc(sub)}</p>
+                                  </div>
+                                  <I name="arrow" className="h-3 w-3 text-slate-400" />
+                                </Link>
+                              ))}
                             </div>
-                            <I name="arrow" className="h-3 w-3 text-[#7a6e68]" />
-                          </Link>
-                        ))}
+                          ))
+                        ) : (
+                          sec.items?.map((sub) => (
+                            <Link
+                              key={sub.href + sub.en}
+                              href={sub.href}
+                              target={sub.target}
+                              rel={sub.target === '_blank' ? 'noopener noreferrer' : undefined}
+                              onClick={handleCloseAll}
+                              className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-violet-50"
+                            >
+                              <span className={`grid size-8 shrink-0 place-items-center rounded-lg shadow-2xs ${ICON_COLOR_STYLES[sub.color || 'violet']}`}>
+                                <I name={sub.icon} className="h-3.5 w-3.5" />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-slate-900 truncate">{getItemLabel(sub)}</span>
+                                  {sub.badge && (
+                                    <span className="rounded-full bg-violet-50 px-1 py-0.2 text-[8px] font-bold text-violet-700 border border-violet-200/60">
+                                      {sub.badge}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[10.5px] text-slate-500 truncate">{getItemDesc(sub)}</p>
+                              </div>
+                              <I name="arrow" className="h-3 w-3 text-slate-400" />
+                            </Link>
+                          ))
+                        )}
                       </div>
                     )}
                   </div>

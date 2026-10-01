@@ -265,12 +265,14 @@ export type StudioMode =
 // ─── Premium Studio Editor Component ────────────────────────────────────────────
 export function StudioEditor({
   initialMode = "all-events",
+  initialTemplateId,
 }: {
   initialMode?: StudioMode;
+  initialTemplateId?: string;
 }) {
   const { lang, setLang, isEn, isHi, isMr } = useLanguage();
   const [studioMode, setStudioMode] = useState<StudioMode>(initialMode);
-  const [canvaTemplateId, setCanvaTemplateId] = useState<string | undefined>(undefined);
+  const [canvaTemplateId, setCanvaTemplateId] = useState<string | undefined>(initialTemplateId);
 
   // Synchronize hash: when /studio#design-form is visited or clicked, automatically switch to pro-editor mode
   useEffect(() => {
@@ -963,6 +965,7 @@ export function StudioEditor({
       ═══════════════════════════════════════════════════════════════════════ */}
       {studioMode === "all-events" ? (
         <MultiEventStudio
+          initialTemplateId={initialTemplateId}
           onOpenCanvaPro={(tmplId) => {
             setCanvaTemplateId(tmplId);
             setStudioMode("pro-editor");

@@ -1962,8 +1962,8 @@ export function CanvaCanvasEditor({
       aria-label={isEn ? "Canva Pro Free Design Studio" : "कॅनव्हा प्रो फ्री डिझाइन स्टुडिओ"}
       className={`relative select-none transition-all duration-300 ${
         isFullView
-          ? "fixed inset-0 z-[9999] w-screen h-screen flex flex-col bg-[#0f090c] overflow-hidden text-ivory"
-          : "my-8 overflow-hidden rounded-3xl border border-[#dfb150]/40 bg-[#140a0d] text-ivory shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
+          ? "fixed inset-0 z-[9999] w-screen h-screen flex flex-col bg-[#0e0d26] overflow-hidden text-white"
+          : "my-8 overflow-hidden rounded-3xl border border-white/15 bg-[#0e0d26] text-white shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
       }`}
     >
       {/* Hidden file input for Project JSON restoration */}
@@ -1978,19 +1978,19 @@ export function CanvaCanvasEditor({
       {/* ═══════════════════════════════════════════════════════════════
           CANVA PRO TOP HEADER WORKSPACE BAR
       ═══════════════════════════════════════════════════════════════ */}
-      <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-[#dfb150]/30 bg-gradient-to-r from-[#240307] via-[#3d0711] to-[#240307] px-3 py-2.5 sm:px-6">
+      <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-white/10 bg-[#111026] px-3 py-2.5 sm:px-6">
         {/* Left Side: Document Title & Aspect Ratio Pill */}
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             type="button"
             onClick={() => setLeftDockOpen((v) => !v)}
             title={leftDockOpen ? "डावे पॅनल लपवा (Hide Left Dock)" : "डावे पॅनल दाखवा (Show Left Dock)"}
-            className="hidden lg:grid size-8 place-items-center rounded-lg border border-[#dfb150]/30 text-xs text-[#dfb150] hover:bg-white/10 transition"
+            className="hidden lg:grid size-8 place-items-center rounded-lg border border-white/15 text-xs text-slate-300 hover:bg-white/10 transition"
           >
             {leftDockOpen ? "◀" : "▶"}
           </button>
 
-          <div className="grid size-8 sm:size-9 place-items-center rounded-xl bg-gradient-to-br from-[#dfb150] to-[#8a6a2b] text-[#240307] shadow-md font-black text-sm">
+          <div className="grid size-8 sm:size-9 place-items-center rounded-xl bg-gradient-to-br from-[#7c3aed] to-[#4f46e5] text-white shadow-md font-black text-sm">
             🎨
           </div>
           <div>
@@ -1999,13 +1999,13 @@ export function CanvaCanvasEditor({
                 type="text"
                 value={docTitle}
                 onChange={(e) => setDocTitle(e.target.value)}
-                className="bg-transparent font-display text-xs sm:text-base font-bold text-[#fef3c7] outline-none border-b border-transparent hover:border-[#dfb150]/40 focus:border-[#dfb150] transition truncate max-w-[170px] sm:max-w-xs"
+                className="bg-transparent font-display text-xs sm:text-base font-bold text-white outline-none border-b border-transparent hover:border-[#7c3aed]/40 focus:border-[#7c3aed] transition truncate max-w-[170px] sm:max-w-xs"
               />
-              <span className="rounded-full bg-gradient-to-r from-amber-500 to-rose-600 px-2 py-0.5 text-[8.5px] sm:text-[9px] font-black uppercase text-white shadow-xs">
+              <span className="rounded-full bg-gradient-to-r from-[#7c3aed] to-[#6366f1] px-2 py-0.5 text-[8.5px] sm:text-[9px] font-black uppercase text-white shadow-xs">
                 PRO CANVAS
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-[#dfb150]/75">
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-violet-300/80">
               <span>{dimensions.name}</span>
               <span>•</span>
               <span>{dimensions.width} × {dimensions.height} px</span>
@@ -2014,7 +2014,7 @@ export function CanvaCanvasEditor({
         </div>
 
         {/* Aspect Ratio Switcher */}
-        <div className="hidden xl:flex items-center gap-1 rounded-xl bg-black/40 p-1 border border-[#dfb150]/20">
+        <div className="hidden xl:flex items-center gap-1 rounded-xl bg-white/5 p-1 border border-white/10">
           {(["2:3", "9:16", "16:9", "1:1"] as AspectRatio[]).map((ratio) => (
             <button
               key={ratio}
@@ -2022,8 +2022,8 @@ export function CanvaCanvasEditor({
               onClick={() => setAspectRatio(ratio)}
               className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
                 aspectRatio === ratio
-                  ? "bg-[#dfb150] text-[#240307] shadow-sm"
-                  : "text-[#fef3c7]/70 hover:text-[#ffd700] hover:bg-white/5"
+                  ? "bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white shadow-sm"
+                  : "text-slate-300 hover:text-white hover:bg-white/5"
               }`}
             >
               {ratio}
@@ -2034,13 +2034,13 @@ export function CanvaCanvasEditor({
         {/* Center / Right Action Cluster */}
         <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Undo / Redo */}
-          <div className="flex items-center gap-0.5 rounded-xl bg-white/5 p-1 border border-[#dfb150]/20">
+          <div className="flex items-center gap-0.5 rounded-xl bg-white/5 p-1 border border-white/10">
             <button
               type="button"
               onClick={handleUndo}
               disabled={historyIndex <= 0}
               aria-label="Undo"
-              className="grid size-7 sm:size-8 place-items-center rounded-lg text-[#fef3c7] hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-sm"
+              className="grid size-7 sm:size-8 place-items-center rounded-lg text-white hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-sm"
               title="पूर्ववत करा (Ctrl+Z)"
             >
               ↩
@@ -2050,7 +2050,7 @@ export function CanvaCanvasEditor({
               onClick={handleRedo}
               disabled={historyIndex >= history.length - 1}
               aria-label="Redo"
-              className="grid size-7 sm:size-8 place-items-center rounded-lg text-[#fef3c7] hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-sm"
+              className="grid size-7 sm:size-8 place-items-center rounded-lg text-white hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-sm"
               title="पुन्हा करा (Ctrl+Y)"
             >
               ↪
@@ -2058,28 +2058,28 @@ export function CanvaCanvasEditor({
           </div>
 
           {/* Zoom Selector */}
-          <div className="hidden sm:flex items-center gap-1 rounded-xl bg-white/5 px-2 py-1 border border-[#dfb150]/20 text-xs">
+          <div className="hidden sm:flex items-center gap-1 rounded-xl bg-white/5 px-2 py-1 border border-white/10 text-xs">
             <button
               type="button"
               onClick={() => setZoom((z) => Math.max(0.4, Number((z - 0.1).toFixed(1))))}
-              className="hover:text-[#ffd700] font-bold px-1"
+              className="hover:text-white font-bold px-1"
             >
               -
             </button>
-            <span className="w-10 text-center font-bold text-[#ffd700]">
+            <span className="w-10 text-center font-bold text-violet-300">
               {Math.round(zoom * 100)}%
             </span>
             <button
               type="button"
               onClick={() => setZoom((z) => Math.min(1.8, Number((z + 0.1).toFixed(1))))}
-              className="hover:text-[#ffd700] font-bold px-1"
+              className="hover:text-white font-bold px-1"
             >
               +
             </button>
             <button
               type="button"
               onClick={() => setZoom(1)}
-              className="ml-1 text-[10px] text-[#fef3c7]/60 hover:text-white"
+              className="ml-1 text-[10px] text-slate-400 hover:text-white"
             >
               Fit
             </button>
@@ -2092,8 +2092,8 @@ export function CanvaCanvasEditor({
             title="ग्रिड मार्गदर्शक (Toggle Grid)"
             className={`hidden md:grid size-8 place-items-center rounded-lg border transition ${
               showGrid
-                ? "bg-[#dfb150] text-[#240307] border-[#dfb150]"
-                : "border-[#dfb150]/30 text-[#fef3c7]/70 hover:bg-white/10"
+                ? "bg-[#7c3aed] text-white border-[#7c3aed]"
+                : "border-white/15 text-slate-300 hover:bg-white/10"
             }`}
           >
             ▦
@@ -2105,8 +2105,8 @@ export function CanvaCanvasEditor({
             onClick={() => setIsFullView((v) => !v)}
             className={`inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-xs font-bold transition ${
               isFullView
-                ? "bg-amber-500 text-maroon-950 border-amber-400 font-extrabold shadow-sm animate-pulse"
-                : "border-[#dfb150]/30 text-[#fef3c7] hover:border-[#dfb150] hover:bg-white/10"
+                ? "bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white border-violet-400 font-extrabold shadow-sm"
+                : "border-white/15 text-slate-200 hover:border-violet-400 hover:bg-white/10"
             }`}
             title={isFullView ? "सामान्य दृश्यावर परत या (Exit Full View - Esc)" : "संपूर्ण स्क्रीन स्पेस उघडा (Full View Workspace)"}
           >
@@ -2121,7 +2121,7 @@ export function CanvaCanvasEditor({
             href={`/studio/editor${initialTemplateId ? `?template=${initialTemplateId}` : ""}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border border-[#dfb150]/30 bg-black/40 px-2.5 sm:px-3 text-xs font-bold text-[#fef3c7] hover:border-[#ffd700] hover:text-[#ffd700] hover:bg-white/5 transition"
+            className="inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-2.5 sm:px-3 text-xs font-bold text-slate-200 hover:border-violet-400 hover:text-white hover:bg-white/10 transition"
             title="नवीन टॅबमध्ये स्टुडिओ उघडा (Open in New Tab with 100% Space)"
           >
             <span>⤢</span>
@@ -2143,7 +2143,7 @@ export function CanvaCanvasEditor({
             <button
               type="button"
               onClick={() => setShowExportModal((m) => !m)}
-              className="inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1.5 rounded-full bg-gradient-to-r from-[#dfb150] via-[#ffd700] to-[#dfb150] px-3 sm:px-4 text-xs font-black text-[#240307] shadow-lg hover:brightness-110 transition"
+              className="inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1.5 rounded-full bg-gradient-to-r from-[#7c3aed] via-[#6366f1] to-[#8247e5] px-3 sm:px-4 text-xs font-black text-white shadow-lg shadow-violet-900/30 hover:brightness-110 transition"
             >
               <span>📥</span>
               <span>एक्सपोर्ट / प्रिंट ▾</span>
@@ -2157,12 +2157,12 @@ export function CanvaCanvasEditor({
               />
             )}
             {showExportModal && (
-              <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-[#dfb150]/40 bg-[#1c080d] p-2 text-ivory shadow-[0_20px_50px_rgba(0,0,0,0.85)] z-50 backdrop-blur-xl">
-                <div className="px-3 py-2 border-b border-[#dfb150]/20">
-                  <div className="text-xs font-bold text-[#ffd700]">
+              <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-white/15 bg-[#111026] p-2 text-white shadow-[0_20px_50px_rgba(0,0,0,0.85)] z-50 backdrop-blur-xl">
+                <div className="px-3 py-2 border-b border-white/10">
+                  <div className="text-xs font-bold text-white">
                     प्रो एक्सपोर्ट पर्याय (Export Options)
                   </div>
-                  <div className="text-[10.5px] text-[#fef3c7]/60">
+                  <div className="text-[10.5px] text-slate-400">
                     उच्च दर्जाचे आउटपुट पर्याय
                   </div>
                 </div>
@@ -2174,12 +2174,12 @@ export function CanvaCanvasEditor({
                       setShowExportModal(false);
                       handleExportPng();
                     }}
-                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="text-base">🖼️</span>
                     <div>
                       <div>PNG इमेज डाउनलोड करा</div>
-                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">२x हाय-रिझोल्यूशन इमेज</div>
+                      <div className="text-[10px] text-slate-400 font-normal">२x हाय-रिझोल्यूशन इमेज</div>
                     </div>
                   </button>
 
@@ -2189,12 +2189,12 @@ export function CanvaCanvasEditor({
                       setShowExportModal(false);
                       handleCopyImageToClipboard();
                     }}
-                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="text-base">📋</span>
                     <div>
                       <div>क्लिपबोर्डवर कॉपी करा</div>
-                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">थेट Paste (Ctrl+V) करण्यासाठी</div>
+                      <div className="text-[10px] text-slate-400 font-normal">थेट Paste (Ctrl+V) करण्यासाठी</div>
                     </div>
                   </button>
 
@@ -2204,12 +2204,12 @@ export function CanvaCanvasEditor({
                       setShowExportModal(false);
                       handleExportSvg();
                     }}
-                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="text-base">🎨</span>
                     <div>
                       <div>वेक्टर SVG डाउनलोड करा</div>
-                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">प्रिंटर्स व कोरलड्रॉसाठी अचूक</div>
+                      <div className="text-[10px] text-slate-400 font-normal">प्रिंटर्स व कोरलड्रॉसाठी अचूक</div>
                     </div>
                   </button>
 
@@ -2219,16 +2219,16 @@ export function CanvaCanvasEditor({
                       setShowExportModal(false);
                       handlePrint();
                     }}
-                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="text-base">🖨️</span>
                     <div>
                       <div>३०० DPI प्रिंट / PDF</div>
-                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">प्रेस-रेडी छपाईसाठी</div>
+                      <div className="text-[10px] text-slate-400 font-normal">प्रेस-रेडी छपाईसाठी</div>
                     </div>
                   </button>
 
-                  <div className="border-t border-[#dfb150]/20 my-1" />
+                  <div className="border-t border-white/10 my-1" />
 
                   <button
                     type="button"
@@ -2236,12 +2236,12 @@ export function CanvaCanvasEditor({
                       setShowExportModal(false);
                       handleExportJson();
                     }}
-                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="text-base">💾</span>
                     <div>
                       <div>प्रोजेक्ट फाइल सेव्ह करा (JSON)</div>
-                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">कधीही पुन्हा काम करण्यासाठी</div>
+                      <div className="text-[10px] text-slate-400 font-normal">कधीही पुन्हा काम करण्यासाठी</div>
                     </div>
                   </button>
 
@@ -2251,12 +2251,12 @@ export function CanvaCanvasEditor({
                       setShowExportModal(false);
                       jsonInputRef.current?.click();
                     }}
-                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="text-base">📂</span>
                     <div>
                       <div>प्रोजेक्ट फाइल उघडा (Restore JSON)</div>
-                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">सेव्ह केलेले डिझाइन लोड करा</div>
+                      <div className="text-[10px] text-slate-400 font-normal">सेव्ह केलेले डिझाइन लोड करा</div>
                     </div>
                   </button>
 
@@ -2266,12 +2266,12 @@ export function CanvaCanvasEditor({
                       setShowExportModal(false);
                       handleCopyShareLink();
                     }}
-                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-[#fef3c7] hover:bg-[#dfb150]/15 hover:text-[#ffd700] transition"
+                    className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="text-base">🔗</span>
                     <div>
                       <div>{copiedLink ? "लिंक कॉपी झाली! ✓" : "डिझाइन लिंक कॉपी करा"}</div>
-                      <div className="text-[10px] text-[#fef3c7]/60 font-normal">मित्रांना शेअर करण्यासाठी</div>
+                      <div className="text-[10px] text-slate-400 font-normal">मित्रांना शेअर करण्यासाठी</div>
                     </div>
                   </button>
                 </div>
@@ -2284,7 +2284,7 @@ export function CanvaCanvasEditor({
             type="button"
             onClick={() => setRightInspectorOpen((v) => !v)}
             title={rightInspectorOpen ? "उजवे पॅनल लपवा (Hide Inspector)" : "उजवे पॅनल दाखवा (Show Inspector)"}
-            className="hidden lg:grid size-8 place-items-center rounded-lg border border-[#dfb150]/30 text-xs text-[#dfb150] hover:bg-white/10 transition"
+            className="hidden lg:grid size-8 place-items-center rounded-lg border border-white/15 text-xs text-slate-300 hover:bg-white/10 transition"
           >
             {rightInspectorOpen ? "▶" : "◀"}
           </button>
@@ -2305,10 +2305,10 @@ export function CanvaCanvasEditor({
             : !leftDockOpen && rightInspectorOpen
             ? "grid-cols-1 lg:grid-cols-[72px_1fr_310px]"
             : "grid-cols-1 lg:grid-cols-[72px_1fr]"
-        } bg-[#1a0c10]`}
+        } bg-[#0e0d26]`}
       >
         {/* ── 1. CANVA PRIMARY TOOL DOCK (Left Narrow Icons) ── */}
-        <aside className="hidden lg:flex flex-col items-center gap-2.5 border-r border-[#dfb150]/20 bg-[#16080b] py-3">
+        <aside className="hidden lg:flex flex-col items-center gap-2.5 border-r border-white/10 bg-[#111026] py-3">
           {[
             { id: "templates" as const, icon: "📁", label: "नमुने" },
             { id: "blocks" as const, icon: "⚡", label: "तयार घटक" },
@@ -2330,8 +2330,8 @@ export function CanvaCanvasEditor({
                 }}
                 className={`group flex w-14 flex-col items-center gap-0.5 rounded-2xl p-2 transition ${
                   active
-                    ? "bg-[#dfb150] text-[#240307] font-bold shadow-md shadow-[#dfb150]/20"
-                    : "text-[#fef3c7]/70 hover:bg-white/5 hover:text-[#ffd700]"
+                    ? "bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white font-bold shadow-md shadow-violet-900/40"
+                    : "text-slate-400 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <span className="text-lg group-hover:scale-110 transition-transform">{tab.icon}</span>
@@ -2342,7 +2342,7 @@ export function CanvaCanvasEditor({
         </aside>
 
         {/* ── Mobile Horizontal Tool Tabs (Shown on small screens) ── */}
-        <div className="flex lg:hidden overflow-x-auto border-b border-[#dfb150]/20 bg-[#16080b] p-2 gap-1.5 scrollbar-none">
+        <div className="flex lg:hidden overflow-x-auto border-b border-white/10 bg-[#111026] p-2 gap-1.5 scrollbar-none">
           {[
             { id: "templates" as const, icon: "📁", label: "नमुने" },
             { id: "blocks" as const, icon: "⚡", label: "तयार घटक" },
@@ -2359,8 +2359,8 @@ export function CanvaCanvasEditor({
               onClick={() => setActiveTab(tab.id)}
               className={`flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold ${
                 activeTab === tab.id
-                  ? "bg-[#dfb150] text-[#240307]"
-                  : "bg-white/5 text-[#fef3c7]/80 hover:bg-white/10"
+                  ? "bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white"
+                  : "bg-white/5 text-slate-300 hover:bg-white/10"
               }`}
             >
               <span>{tab.icon}</span>
@@ -2371,12 +2371,12 @@ export function CanvaCanvasEditor({
 
         {/* ── 2. EXPANDED TOOL PANEL (Left Drawer Content) ── */}
         {leftDockOpen && (
-        <div className="border-r border-[#dfb150]/20 bg-[#1e0d12]/95 p-4 overflow-y-auto max-h-[780px]">
+        <div className="border-r border-white/10 bg-[#0e0d26]/98 p-4 overflow-y-auto max-h-[780px]">
           {/* TAB 1: 50+ MASTER TEMPLATES */}
           {activeTab === "templates" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-display text-sm font-bold text-[#ffd700]">
+                <h3 className="font-display text-sm font-bold text-white">
                   ५०+ राजेशाही टेम्पलेट्स
                 </h3>
                 <button
@@ -2951,7 +2951,7 @@ export function CanvaCanvasEditor({
 
         {/* ── 3. CENTER INTERACTIVE CANVAS WORKSPACE ── */}
         <main
-          className="relative flex items-center justify-center p-4 sm:p-8 overflow-auto bg-[#12070a]"
+          className="relative flex items-center justify-center p-4 sm:p-8 overflow-auto bg-[#09081a]"
           onClick={() => setSelectedId(null)}
         >
           {/* Zoom Scaled Wrapper */}
@@ -3289,17 +3289,17 @@ export function CanvaCanvasEditor({
 
         {/* ── 4. RIGHT PROPERTIES & INSPECTOR DOCK ── */}
         {rightInspectorOpen && (
-          <aside className="border-l border-[#dfb150]/20 bg-[#16080b] p-4 overflow-y-auto max-h-[780px]">
+          <aside className="border-l border-white/10 bg-[#111026] p-4 overflow-y-auto max-h-[780px]">
           {selectedElement ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[#dfb150]/20 pb-2">
-                <span className="text-xs font-bold text-[#ffd700]">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <span className="text-xs font-bold text-white">
                   संपादक: {selectedElement.name}
                 </span>
                 <button
                   type="button"
                   onClick={() => setSelectedId(null)}
-                  className="text-xs text-[#fef3c7]/60 hover:text-white"
+                  className="text-xs text-slate-400 hover:text-white"
                 >
                   ✕
                 </button>
@@ -3604,24 +3604,24 @@ export function CanvaCanvasEditor({
           ) : (
             /* CANVAS INSPECTOR (When no element is selected) */
             <div className="space-y-4">
-              <h3 className="font-display text-sm font-bold text-[#ffd700] border-b border-[#dfb150]/20 pb-2">
+              <h3 className="font-display text-sm font-bold text-white border-b border-white/10 pb-2">
                 कॅनव्हास सेटिंग्ज (Canvas Workspace)
               </h3>
               <div>
-                <p className="text-xs text-[#fef3c7]/70">
+                <p className="text-xs text-slate-300">
                   कॅनव्हासवरील कोणत्याही घटकावर (मजकूर, फोटो, नक्षी) क्लिक करा आणि थेट संपादन करा.
                 </p>
               </div>
 
-              <div className="rounded-xl bg-black/30 p-3 border border-[#dfb150]/20 space-y-2">
-                <p className="text-xs font-bold text-[#ffd700]">📐 निवडलेले प्रमाण</p>
-                <p className="text-xs text-[#fef3c7]">{dimensions.name}</p>
-                <p className="text-[11px] text-[#fef3c7]/60">रिझोल्यूशन: {dimensions.width} × {dimensions.height} px</p>
+              <div className="rounded-xl bg-white/5 p-3 border border-white/10 space-y-2">
+                <p className="text-xs font-bold text-white">📐 निवडलेले प्रमाण</p>
+                <p className="text-xs text-slate-200">{dimensions.name}</p>
+                <p className="text-[11px] text-slate-400">रिझोल्यूशन: {dimensions.width} × {dimensions.height} px</p>
               </div>
 
-              <div className="rounded-xl bg-black/30 p-3 border border-[#dfb150]/20 space-y-2">
-                <p className="text-xs font-bold text-[#ffd700]">🎨 सक्रिय थीम</p>
-                <p className="text-xs text-[#fef3c7]">{activePalette.nameMr}</p>
+              <div className="rounded-xl bg-white/5 p-3 border border-white/10 space-y-2">
+                <p className="text-xs font-bold text-white">🎨 सक्रिय थीम</p>
+                <p className="text-xs text-slate-200">{activePalette.nameMr}</p>
                 <div className="flex items-center gap-2 pt-1">
                   <span className="size-5 rounded-full border" style={{ background: customBgColor }} />
                   <span className="size-5 rounded-full border" style={{ background: customAccentColor }} />

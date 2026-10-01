@@ -32,6 +32,7 @@ const config: NextConfig = {
     optimizePackageImports: ['lucide-react', '@mazi/marathi', '@mazi/commerce', '@mazi/panchang', '@mazi/renderer'],
   },
   images: {
+    unoptimized: true,
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 2_592_000,
     dangerouslyAllowSVG: true,

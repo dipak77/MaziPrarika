@@ -23,6 +23,7 @@ import {
   TutariVadakMusicians,
   VelvetCurtainDrapes,
 } from "./event-ornaments";
+import { RoyalVelvetGaneshCard, type RoyalBgColor, type RoyalFoilType } from "./royal-velvet-card";
 
 export interface CardRenderData {
   personA: string;
@@ -40,6 +41,8 @@ export interface CardRenderData {
   title?: string;
   qrLocation?: string;
   photoUrl?: string;
+  foilColor?: RoyalFoilType;
+  bgColor?: RoyalBgColor;
 }
 
 export function MasterTemplateCard({
@@ -48,12 +51,16 @@ export function MasterTemplateCard({
   isBlankPlaceholder = false,
   className = "",
   id,
+  foilColor,
+  bgColor,
 }: {
   template: MasterTemplate;
   data: CardRenderData;
   isBlankPlaceholder?: boolean;
   className?: string;
   id?: string;
+  foilColor?: RoyalFoilType;
+  bgColor?: RoyalBgColor;
 }) {
   const [photoError, setPhotoError] = useState(false);
 
@@ -120,6 +127,24 @@ export function MasterTemplateCard({
       : template.sample.photoUrl);
 
   const hasPhoto = Boolean(photoUrl && !photoError);
+
+  /* ══════════════════════════════════════════════════════════════════════
+     STYLE 0: ROYAL VELVET GANESHA EMBOSSED FOIL (Exact Match to User Reference)
+     24K Gold & 925 Silver on Deep Velvet (Purple, Navy, Emerald, Maroon, Black)
+     ══════════════════════════════════════════════════════════════════════ */
+  if (template.cardStyle === "royal-velvet-ganesh") {
+    return (
+      <RoyalVelvetGaneshCard
+        template={template}
+        data={data}
+        isBlankPlaceholder={isBlankPlaceholder}
+        className={className}
+        foilType={data.foilColor || foilColor}
+        bgColor={data.bgColor || bgColor}
+        id={id}
+      />
+    );
+  }
 
   /* ══════════════════════════════════════════════════════════════════════
      STYLE 1: SPLIT PHOTO & FLORAL ARCH (Reference Image 2 Style)

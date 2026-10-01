@@ -19,10 +19,11 @@ const VALID_MODES: StudioMode[] = [
 export default async function StudioPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ mode?: string }>;
+  searchParams?: Promise<{ mode?: string; template?: string }>;
 }) {
   const params = await searchParams;
   const rawMode = params?.mode;
+  const initialTemplateId = params?.template;
   const initialMode: StudioMode =
     typeof rawMode === "string" && (rawMode === "canva" || rawMode === "canvas")
       ? "pro-editor"
@@ -35,7 +36,11 @@ export default async function StudioPage({
       <StudioHero />
       <Reveal delay={120}>
         <div id="studio-live" className="mt-10 border-t border-gold/30 pt-10">
-          <StudioEditor key={initialMode} initialMode={initialMode} />
+          <StudioEditor
+            key={`${initialMode}-${initialTemplateId || "default"}`}
+            initialMode={initialMode}
+            initialTemplateId={initialTemplateId}
+          />
         </div>
       </Reveal>
     </div>

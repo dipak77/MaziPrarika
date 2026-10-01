@@ -45,14 +45,14 @@ export default function BiodataPage() {
                 href="/biodata/editor"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-[46px] items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-rose-600 to-amber-600 px-6 py-3 text-[14.5px] font-black text-white shadow-xl hover:from-amber-400 hover:to-rose-500 transition transform hover:-translate-y-0.5 active:scale-95"
+                className="inline-flex min-h-[46px] items-center gap-2 rounded-full bg-gradient-to-r from-[#7c3aed] to-[#6366f1] px-6 py-3 text-[14.5px] font-black text-white shadow-xl hover:from-[#6d28d9] hover:to-[#4f46e5] transition transform hover:-translate-y-0.5 active:scale-95"
               >
                 <span>⤢</span>
                 नवीन टॅबमध्ये पूर्ण स्क्रीन उघडा (Full View Mode)
               </a>
               <a
                 href="#biodata-live"
-                className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-gold-500 px-6 py-3 text-[14.5px] font-bold text-maroon-950 transition hover:bg-gold-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white px-6 py-3 text-[14.5px] font-bold text-[#0e0d26] shadow-md transition hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
               >
                 याच पानावर एडिट करा
                 <Icon name="arrowRight" className="h-4 w-4" strokeWidth={2.4} />
@@ -61,7 +61,7 @@ export default function BiodataPage() {
                 href="/studio/editor"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-ivory-100/25 px-6 py-3 text-[14.5px] font-bold text-ivory-100 transition hover:border-gold-400/60 hover:text-gold-200"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-[14.5px] font-bold text-white transition hover:border-violet-400 hover:bg-white/10"
               >
                 लग्नाची पत्रिका बनवा (New Tab) ⤢
               </a>

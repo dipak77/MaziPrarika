@@ -65,7 +65,7 @@ function LangToggleControl({
     <div
       ref={containerRef}
       id={id}
-      className={`relative inline-block text-left ${className}`}
+      className={`relative inline-block text-left ${isOpen ? 'z-[80]' : ''} ${className}`}
     >
       {/* Short Name Dropdown Trigger Button */}
       <button
@@ -76,7 +76,7 @@ function LangToggleControl({
         aria-label={`भाषा निवडा (सध्या: ${activeLang.label})`}
         className={
           compact
-            ? 'inline-flex min-h-[34px] items-center gap-1.5 rounded-full border border-gold/45 bg-white/95 px-2.5 py-1 text-xs font-bold text-maroon shadow-2xs backdrop-blur-xs transition hover:border-gold hover:bg-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold'
+            ? 'inline-flex min-h-[30px] items-center gap-1.5 rounded-full border border-amber-400/50 bg-white px-2.5 py-0.5 text-xs font-bold text-slate-900 shadow-2xs backdrop-blur-xs transition hover:border-amber-400 hover:shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400'
             : 'inline-flex min-h-[40px] items-center gap-2 rounded-full border border-gold/45 bg-white/95 px-3.5 py-1.5 text-sm font-bold text-maroon shadow-2xs backdrop-blur-xs transition hover:border-gold hover:bg-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold'
         }
       >
@@ -102,7 +102,7 @@ function LangToggleControl({
         <div
           role="listbox"
           aria-label="भाषा निवडा / भाषा चुनें / Select Language"
-          className="absolute right-0 z-50 mt-1.5 w-44 origin-top-right overflow-hidden rounded-2xl border border-gold/35 bg-white/98 p-1.5 shadow-lift backdrop-blur-md animate-fade-in"
+          className="absolute right-0 top-full z-[100] mt-2 w-48 origin-top-right overflow-hidden rounded-2xl border border-amber-300/80 bg-white p-2 shadow-[0_24px_50px_-12px_rgba(14,13,38,0.35),0_0_0_1px_rgba(0,0,0,0.06)] backdrop-blur-xl animate-fade-in"
         >
           <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-charcoal-muted">
             भाषा निवडा / भाषा चुनें
