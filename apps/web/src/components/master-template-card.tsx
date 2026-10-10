@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { type MasterTemplate } from "@/lib/templates-catalog";
+import { getPrintArt, type ArtVariant } from "@/lib/print-art";
 import {
   BaroqueCorner,
   FloralFlourishDivider,
@@ -24,6 +25,7 @@ import {
   VelvetCurtainDrapes,
 } from "./event-ornaments";
 import { RoyalVelvetGaneshCard, type RoyalBgColor, type RoyalFoilType } from "./royal-velvet-card";
+import { LagnPatrikaCard } from "./lagn-patrika-card";
 
 export interface CardRenderData {
   personA: string;
@@ -53,6 +55,8 @@ export function MasterTemplateCard({
   id,
   foilColor,
   bgColor,
+  variant,
+  onUpdateField,
 }: {
   template: MasterTemplate;
   data: CardRenderData;
@@ -61,6 +65,8 @@ export function MasterTemplateCard({
   id?: string;
   foilColor?: RoyalFoilType;
   bgColor?: RoyalBgColor;
+  variant?: ArtVariant;
+  onUpdateField?: (field: keyof CardRenderData, value: string) => void;
 }) {
   const [photoError, setPhotoError] = useState(false);
 
@@ -127,6 +133,34 @@ export function MasterTemplateCard({
       : template.sample.photoUrl);
 
   const hasPhoto = Boolean(photoUrl && !photoError);
+
+  const printSpec = variant ? getPrintArt(template.id) : undefined;
+  const variantBg = variant && printSpec ? variant.bgGradient : undefined;
+  const variantAccent = variant && printSpec ? variant.accentColor : undefined;
+
+  if (template.cardStyle === "lagn-panel") {
+    return (
+      <LagnPatrikaCard
+        template={template}
+        blessing={blessing}
+        title={title}
+        personA={personA}
+        personB={personB}
+        surnames={surnames}
+        date={date}
+        time={time}
+        venue={venue}
+        city={city}
+        host={host}
+        parentsA={parentsA}
+        parentsB={parentsB}
+        tagline={tagline}
+        className={className}
+        id={id}
+        onUpdateField={onUpdateField}
+      />
+    );
+  }
 
   /* ══════════════════════════════════════════════════════════════════════
      STYLE 0: ROYAL VELVET GANESHA EMBOSSED FOIL (Exact Match to User Reference)
@@ -680,16 +714,16 @@ export function MasterTemplateCard({
       id={id}
       className={`relative w-full max-w-[540px] mx-auto overflow-hidden rounded-2xl shadow-premium text-ivory-100 select-none print:shadow-none print:max-w-none print:rounded-none ${className}`}
       style={{
-        background: template.bgGradient || "linear-gradient(165deg, #320b4d 0%, #1f0631 55%, #12031d 100%)",
+        background: variantBg || template.bgGradient || "linear-gradient(165deg, #320b4d 0%, #1f0631 55%, #12031d 100%)",
       }}
     >
       <div className="absolute inset-[8px] rounded-xl border-2 border-gold-500/70 pointer-events-none" />
       <div className="absolute inset-[13px] rounded-md border border-gold-400/40 pointer-events-none" />
 
-      <BaroqueCorner color="#dfb150" className="absolute top-2.5 left-2.5" />
-      <BaroqueCorner color="#dfb150" className="absolute top-2.5 right-2.5 -scale-x-100" />
-      <BaroqueCorner color="#dfb150" className="absolute bottom-2.5 left-2.5 -scale-y-100" />
-      <BaroqueCorner color="#dfb150" className="absolute bottom-2.5 right-2.5 -scale-x-100 -scale-y-100" />
+      <BaroqueCorner color={variantAccent || "#dfb150"} className="absolute top-2.5 left-2.5" />
+      <BaroqueCorner color={variantAccent || "#dfb150"} className="absolute top-2.5 right-2.5 -scale-x-100" />
+      <BaroqueCorner color={variantAccent || "#dfb150"} className="absolute bottom-2.5 left-2.5 -scale-y-100" />
+      <BaroqueCorner color={variantAccent || "#dfb150"} className="absolute bottom-2.5 right-2.5 -scale-x-100 -scale-y-100" />
 
       <div className="relative px-6 py-9 sm:px-9 sm:py-11 text-center">
         <ShreeGaneshayCalligraphy color="#f3e1a6" />

@@ -1,5 +1,7 @@
 /* ── Mazi Patrika — 50+ Premium Multi-Event Master Templates Catalog ──── */
 
+import { LAGN_TEMPLATES } from "./lagn-templates";
+
 export type EventCategory =
   | "wedding"
   | "engagement"
@@ -41,7 +43,8 @@ export interface MasterTemplate {
     | "shubhra-ivory"
     | "rajmudra-deep"
     | "crown-luxury"
-    | "festive-garland";
+    | "festive-garland"
+    | "lagn-panel";
   defaultBlessing: string;
   defaultTitle: string;
   price: number;
@@ -88,7 +91,7 @@ export const EVENT_CATEGORIES: {
   en: string;
   icon: string;
 }[] = [
-  { id: "all", mr: "सर्व ५०+ डिझाइन्स", hi: "सभी ५०+ टेम्पलेट्स", en: "All 50+ Templates", icon: "✨" },
+  { id: "all", mr: "सर्व पत्रिका डिझाइन्स", hi: "सभी पत्रिका टेम्पलेट्स", en: "All patrika templates", icon: "✨" },
   { id: "wedding", mr: "विवाह", hi: "विवाह / शादी", en: "Wedding", icon: "💍" },
   { id: "engagement", mr: "साखरपुडा", hi: "सगाई / रोका", en: "Engagement", icon: "✨" },
   { id: "puja", mr: "पूजा व उत्सव", hi: "पूजा व धार्मिक उत्सव", en: "Pooja & Religious", icon: "🪔" },
@@ -368,7 +371,7 @@ export const MASTER_TEMPLATES: MasterTemplate[] = [
       parentsB: "[वडिलांचे व आजोबांचे नाव]",
       tagline: "यांचे शुभविवाह मुहूर्तावर करण्याचे योजिले आहे",
       qrLocation: "SCAN QR FOR LOCATION",
-      photoUrl: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=600&q=80",
+      photoUrl: "/art/card_emerald.jpg",
     },
     sample: {
       personA: "चि. अमोल (उर्फ धनंजय)",
@@ -383,7 +386,7 @@ export const MASTER_TEMPLATES: MasterTemplate[] = [
       parentsB: "सौ. कुसुमबाई व श्री. कैलासरावजी संपतरावजी साखरे यांची कन्या",
       tagline: "यांचे शुभविवाह मुहूर्तावर करण्याचे योजिले आहे, तरी आपली उपस्थिती प्रार्थनीय आहे.",
       qrLocation: "Google Maps: Ramdevbaba Mangalam",
-      photoUrl: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=600&q=80",
+      photoUrl: "/art/card_emerald.jpg",
     },
   },
   {
@@ -779,7 +782,7 @@ export const MASTER_TEMPLATES: MasterTemplate[] = [
       parentsB: "[आजोबा व वडिलांचे नाव]",
       tagline: "या दोन्ही परिवारातर्फे आग्रहाचे निमंत्रण...!",
       qrLocation: "SCAN QR FOR LOCATION",
-      photoUrl: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=600&q=80",
+      photoUrl: "/art/card_couple.jpg",
     },
     sample: {
       personA: "चि. प्रथमेश पठारे",
@@ -794,7 +797,7 @@ export const MASTER_TEMPLATES: MasterTemplate[] = [
       parentsB: "कै. छबू मारुती वराते यांची नात व श्री. दत्तात्रय छबू वराते यांची कनिष्ठ कन्या",
       tagline: "या दोन्ही परिवारातर्फे आग्रहाचे निमंत्रण...!",
       qrLocation: "Damini Lawns NDA Road Pune",
-      photoUrl: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=600&q=80",
+      photoUrl: "/art/card_couple.jpg",
     },
   },
   {
@@ -2895,4 +2898,5 @@ export const MASTER_TEMPLATES: MasterTemplate[] = [
       qrLocation: "Nisarga Resort Panshet",
     },
   },
+  ...LAGN_TEMPLATES,
 ];

@@ -8,6 +8,8 @@ import {
   MASTER_TEMPLATES,
 } from "@/lib/templates-catalog";
 import { MasterTemplateCard, type CardRenderData } from "@/components/master-template-card";
+import { ArtVariantPicker } from "@/components/art-variant-picker";
+import { artVariants } from "@/lib/print-art";
 import {
   ROYAL_BG_PALETTES,
   ROYAL_FOIL_STYLES,
@@ -20,6 +22,52 @@ import { TransliteratedInput } from "@/components/ui/transliterated-input";
 import { useLanguage } from "@/context/language-context";
 import { toDevanagariDigits } from "@/lib/format";
 
+function derivePalette(tmpl: MasterTemplate): {
+  foil: RoyalFoilType;
+  bgColor: RoyalBgColor;
+} {
+  const foil: RoyalFoilType =
+    tmpl.accentColor === "#e2e8f0" || tmpl.id.includes("silver")
+      ? "silver"
+      : "gold";
+  let bgColor: RoyalBgColor = "royal-purple";
+  if (tmpl.id.includes("navy")) bgColor = "midnight-navy";
+  else if (tmpl.id.includes("emerald")) bgColor = "imperial-emerald";
+  else if (tmpl.id.includes("maroon") || tmpl.id.includes("ruby"))
+    bgColor = "heritage-maroon";
+  else if (tmpl.id.includes("black") || tmpl.id.includes("obsidian"))
+    bgColor = "obsidian-black";
+  else if (tmpl.id.includes("bronze")) bgColor = "burgundy-bronze";
+  return { foil, bgColor };
+}
+
+function buildFormData(
+  tmpl: MasterTemplate,
+  blank: boolean
+): CardRenderData {
+  const source = blank ? tmpl.placeholders : tmpl.sample;
+  const palette = derivePalette(tmpl);
+  return {
+    personA: source.personA,
+    personB: source.personB,
+    surnames: source.surnames,
+    date: source.date,
+    time: source.time,
+    venue: source.venue,
+    city: source.city,
+    host: source.host,
+    parentsA: source.parentsA,
+    parentsB: source.parentsB,
+    tagline: source.tagline,
+    blessing: tmpl.defaultBlessing,
+    title: tmpl.defaultTitle,
+    qrLocation: source.qrLocation,
+    photoUrl: source.photoUrl,
+    foilColor: palette.foil,
+    bgColor: palette.bgColor,
+  };
+}
+
 export function MultiEventStudio({
   initialTemplateId,
   onOpenCanvaPro,
@@ -31,7 +79,7 @@ export function MultiEventStudio({
 
   const [activeCategory, setActiveCategory] = useState<EventCategory | "all">("all");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
-    initialTemplateId || "wedding-royal-purple-ganesh"
+    MASTER_TEMPLATES.find((t) => t.id === initialTemplateId)?.id || "wedding-royal-purple-ganesh"
   );
   const [isBlankPlaceholder, setIsBlankPlaceholder] = useState<boolean>(false);
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("edit");
@@ -42,91 +90,38 @@ export function MultiEventStudio({
     MASTER_TEMPLATES.find((t) => t.id === selectedTemplateId) ||
     MASTER_TEMPLATES[0]!;
 
-  // Royal Velvet & Foil customization states
   const [activeFoil, setActiveFoil] = useState<RoyalFoilType>(
-    activeTemplate.accentColor === "#e2e8f0" || activeTemplate.id.includes("silver") ? "silver" : "gold"
+    derivePalette(activeTemplate).foil
   );
   const [activeBgColor, setActiveBgColor] = useState<RoyalBgColor>(
-    activeTemplate.id.includes("navy")
-      ? "midnight-navy"
-      : activeTemplate.id.includes("emerald")
-        ? "imperial-emerald"
-        : activeTemplate.id.includes("maroon") || activeTemplate.id.includes("ruby")
-          ? "heritage-maroon"
-          : activeTemplate.id.includes("black") || activeTemplate.id.includes("obsidian")
-            ? "obsidian-black"
-            : activeTemplate.id.includes("bronze")
-              ? "burgundy-bronze"
-              : "royal-purple"
+    derivePalette(activeTemplate).bgColor
   );
+  const [artVariantId, setArtVariantId] = useState<string | undefined>(
+    () => artVariants(activeTemplate.id)[0]?.id
+  );
+  const activeArtVariants = artVariants(activeTemplate.id);
+  const activeArtVariant =
+    activeArtVariants.find((v) => v.id === artVariantId) ?? activeArtVariants[0];
 
   // Sync when initialTemplateId prop changes
   useEffect(() => {
     if (initialTemplateId) {
-      setSelectedTemplateId(initialTemplateId);
       const tmpl = MASTER_TEMPLATES.find((t) => t.id === initialTemplateId);
       if (tmpl) {
-        if (tmpl.accentColor === "#e2e8f0" || tmpl.id.includes("silver")) {
-          setActiveFoil("silver");
-        } else {
-          setActiveFoil("gold");
-        }
-        if (tmpl.id.includes("navy")) setActiveBgColor("midnight-navy");
-        else if (tmpl.id.includes("emerald")) setActiveBgColor("imperial-emerald");
-        else if (tmpl.id.includes("maroon") || tmpl.id.includes("ruby")) setActiveBgColor("heritage-maroon");
-        else if (tmpl.id.includes("black") || tmpl.id.includes("obsidian")) setActiveBgColor("obsidian-black");
-        else if (tmpl.id.includes("bronze")) setActiveBgColor("burgundy-bronze");
-        else if (tmpl.id.includes("purple")) setActiveBgColor("royal-purple");
-
-        setFormData({
-          personA: tmpl.sample.personA,
-          personB: tmpl.sample.personB,
-          surnames: tmpl.sample.surnames,
-          date: tmpl.sample.date,
-          time: tmpl.sample.time,
-          venue: tmpl.sample.venue,
-          city: tmpl.sample.city,
-          host: tmpl.sample.host,
-          parentsA: tmpl.sample.parentsA,
-          parentsB: tmpl.sample.parentsB,
-          tagline: tmpl.sample.tagline,
-          blessing: tmpl.defaultBlessing,
-          title: tmpl.defaultTitle,
-          qrLocation: tmpl.sample.qrLocation,
-          photoUrl: tmpl.sample.photoUrl,
-          foilColor: tmpl.accentColor === "#e2e8f0" || tmpl.id.includes("silver") ? "silver" : "gold",
-          bgColor: tmpl.id.includes("navy")
-            ? "midnight-navy"
-            : tmpl.id.includes("emerald")
-              ? "imperial-emerald"
-              : tmpl.id.includes("maroon") || tmpl.id.includes("ruby")
-                ? "heritage-maroon"
-                : tmpl.id.includes("black") || tmpl.id.includes("obsidian")
-                  ? "obsidian-black"
-                  : "royal-purple",
-        });
+        setSelectedTemplateId(initialTemplateId);
+        const palette = derivePalette(tmpl);
+        setActiveFoil(palette.foil);
+        setActiveBgColor(palette.bgColor);
+        setArtVariantId(artVariants(tmpl.id)[0]?.id);
+        setFormData(buildFormData(tmpl, false));
       }
     }
   }, [initialTemplateId]);
 
   // Editable Form Data state (defaulted to active template sample)
-  const [formData, setFormData] = useState<CardRenderData>(() => ({
-    personA: activeTemplate.sample.personA,
-    personB: activeTemplate.sample.personB,
-    surnames: activeTemplate.sample.surnames,
-    date: activeTemplate.sample.date,
-    time: activeTemplate.sample.time,
-    venue: activeTemplate.sample.venue,
-    city: activeTemplate.sample.city,
-    host: activeTemplate.sample.host,
-    parentsA: activeTemplate.sample.parentsA,
-    parentsB: activeTemplate.sample.parentsB,
-    tagline: activeTemplate.sample.tagline,
-    blessing: activeTemplate.defaultBlessing,
-    title: activeTemplate.defaultTitle,
-    qrLocation: activeTemplate.sample.qrLocation,
-    photoUrl: activeTemplate.sample.photoUrl,
-  }));
+  const [formData, setFormData] = useState<CardRenderData>(() =>
+    buildFormData(activeTemplate, false)
+  );
 
   const updateField = <K extends keyof CardRenderData>(key: K, val: CardRenderData[K]) => {
     setFormData((prev) => ({ ...prev, [key]: val }));
@@ -134,84 +129,16 @@ export function MultiEventStudio({
 
   const handleTemplateChange = (tmpl: MasterTemplate) => {
     setSelectedTemplateId(tmpl.id);
-    if (isBlankPlaceholder) {
-      setFormData({
-        personA: tmpl.placeholders.personA,
-        personB: tmpl.placeholders.personB,
-        surnames: tmpl.placeholders.surnames,
-        date: tmpl.placeholders.date,
-        time: tmpl.placeholders.time,
-        venue: tmpl.placeholders.venue,
-        city: tmpl.placeholders.city,
-        host: tmpl.placeholders.host,
-        parentsA: tmpl.placeholders.parentsA,
-        parentsB: tmpl.placeholders.parentsB,
-        tagline: tmpl.placeholders.tagline,
-        blessing: tmpl.defaultBlessing,
-        title: tmpl.defaultTitle,
-        qrLocation: tmpl.placeholders.qrLocation,
-        photoUrl: tmpl.placeholders.photoUrl,
-      });
-    } else {
-      setFormData({
-        personA: tmpl.sample.personA,
-        personB: tmpl.sample.personB,
-        surnames: tmpl.sample.surnames,
-        date: tmpl.sample.date,
-        time: tmpl.sample.time,
-        venue: tmpl.sample.venue,
-        city: tmpl.sample.city,
-        host: tmpl.sample.host,
-        parentsA: tmpl.sample.parentsA,
-        parentsB: tmpl.sample.parentsB,
-        tagline: tmpl.sample.tagline,
-        blessing: tmpl.defaultBlessing,
-        title: tmpl.defaultTitle,
-        qrLocation: tmpl.sample.qrLocation,
-        photoUrl: tmpl.sample.photoUrl,
-      });
-    }
+    const palette = derivePalette(tmpl);
+    setActiveFoil(palette.foil);
+    setActiveBgColor(palette.bgColor);
+    setArtVariantId(artVariants(tmpl.id)[0]?.id);
+    setFormData(buildFormData(tmpl, isBlankPlaceholder));
   };
 
   const handleModeToggle = (blank: boolean) => {
     setIsBlankPlaceholder(blank);
-    if (blank) {
-      setFormData({
-        personA: activeTemplate.placeholders.personA,
-        personB: activeTemplate.placeholders.personB,
-        surnames: activeTemplate.placeholders.surnames,
-        date: activeTemplate.placeholders.date,
-        time: activeTemplate.placeholders.time,
-        venue: activeTemplate.placeholders.venue,
-        city: activeTemplate.placeholders.city,
-        host: activeTemplate.placeholders.host,
-        parentsA: activeTemplate.placeholders.parentsA,
-        parentsB: activeTemplate.placeholders.parentsB,
-        tagline: activeTemplate.placeholders.tagline,
-        blessing: activeTemplate.defaultBlessing,
-        title: activeTemplate.defaultTitle,
-        qrLocation: activeTemplate.placeholders.qrLocation,
-        photoUrl: activeTemplate.placeholders.photoUrl,
-      });
-    } else {
-      setFormData({
-        personA: activeTemplate.sample.personA,
-        personB: activeTemplate.sample.personB,
-        surnames: activeTemplate.sample.surnames,
-        date: activeTemplate.sample.date,
-        time: activeTemplate.sample.time,
-        venue: activeTemplate.sample.venue,
-        city: activeTemplate.sample.city,
-        host: activeTemplate.sample.host,
-        parentsA: activeTemplate.sample.parentsA,
-        parentsB: activeTemplate.sample.parentsB,
-        tagline: activeTemplate.sample.tagline,
-        blessing: activeTemplate.defaultBlessing,
-        title: activeTemplate.defaultTitle,
-        qrLocation: activeTemplate.sample.qrLocation,
-        photoUrl: activeTemplate.sample.photoUrl,
-      });
-    }
+    setFormData(buildFormData(activeTemplate, blank));
   };
 
   const handlePrint = () => {
@@ -257,7 +184,11 @@ export function MultiEventStudio({
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <div>
             <h2 className="font-marathi-display text-2xl font-bold text-maroon-900">
-              {isEn ? "50+ Premium Event Templates" : isHi ? "५०+ प्रीमियम इवेंट टेम्पलेट्स" : "५०+ सर्व सोहळ्यांचे राजेशाही टेम्पलेट्स"}
+              {isEn
+                ? `${MASTER_TEMPLATES.length} premium event templates`
+                : isHi
+                  ? `${toDevanagariDigits(MASTER_TEMPLATES.length)} प्रीमियम इवेंट टेम्पलेट्स`
+                  : `${toDevanagariDigits(MASTER_TEMPLATES.length)} पत्रिका टेम्पलेट्स — लग्न, पूजा, साखरपुडा`}
             </h2>
             <p className="text-xs text-ink-600 mt-0.5">
               {isEn
@@ -369,16 +300,16 @@ export function MultiEventStudio({
               {filteredTemplates.map((tmpl) => {
                 const selected = tmpl.id === selectedTemplateId;
                 return (
-                  <button
+                  <div
                     key={tmpl.id}
-                    type="button"
                     onClick={() => handleTemplateChange(tmpl)}
-                    className={`relative rounded-xl p-3 text-left transition-all border-2 flex flex-col justify-between min-h-[92px] ${
+                    className={`relative overflow-hidden rounded-xl p-3 pt-4 text-left transition-all border-2 flex flex-col justify-between min-h-[92px] ${
                       selected
                         ? "border-gold-500 shadow-glow bg-maroon-950 text-ivory-100"
                         : "border-maroon-900/10 bg-white/90 hover:border-gold-400 text-ink-900"
                     }`}
                   >
+                    <span aria-hidden className="absolute inset-x-2 top-1.5 h-1 rounded-full" style={{ background: tmpl.bgGradient }} />
                     <div className="flex items-center justify-between">
                       <span
                         className="rounded-full px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider"
@@ -396,7 +327,7 @@ export function MultiEventStudio({
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
                           title={isEn ? "Open in New Tab (Full View)" : "नवीन टॅबमध्ये पूर्ण स्क्रीन उघडा"}
-                          className="rounded p-1 text-[10.5px] text-amber-500 hover:bg-amber-400/20 hover:text-amber-300 transition"
+                          className="rounded p-1 text-[10.5px] text-gold-600 hover:bg-gold-500/20 hover:text-gold-300 transition"
                         >
                           ⤢
                         </a>
@@ -405,19 +336,39 @@ export function MultiEventStudio({
                         )}
                       </div>
                     </div>
-                    <div className="mt-2">
-                      <p className="font-marathi-display text-xs font-bold leading-tight line-clamp-1">
+
+                    {tmpl.sample?.photoUrl ? (
+                      <div className="relative mt-2 h-20 w-full overflow-hidden rounded-lg bg-neutral-900 border border-gold-500/20">
+                        <img
+                          src={tmpl.sample.photoUrl}
+                          alt={tmpl.nameMr}
+                          className="h-full w-full object-cover object-top transition group-hover:scale-105"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+                        <span className="absolute bottom-1 left-1.5 rounded bg-maroon-deep/80 px-1.5 py-0.5 text-[8px] font-bold text-gold-soft">
+                          🖼️ नमुना
+                        </span>
+                      </div>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={() => handleTemplateChange(tmpl)}
+                      className="mt-2 block min-h-[44px] w-full rounded-lg text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500"
+                    >
+                      <span className="font-marathi-display text-xs font-bold leading-tight line-clamp-1 block">
                         {isEn ? tmpl.nameEn : isHi ? tmpl.nameHi : tmpl.nameMr}
-                      </p>
-                      <p
-                        className={`text-[10px] mt-0.5 line-clamp-1 ${
+                      </span>
+                      <span
+                        className={`text-[10px] mt-0.5 line-clamp-1 block ${
                           selected ? "text-ivory-100/70" : "text-ink-500"
                         }`}
                       >
                         {isEn ? tmpl.descEn : tmpl.descMr}
-                      </p>
-                    </div>
-                  </button>
+                      </span>
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -427,7 +378,7 @@ export function MultiEventStudio({
               ROYAL VELVET & 24K GOLD FOIL CUSTOMIZER
               Allows switching 6 Velvet Backgrounds and 3 Metallic Foils
               ══════════════════════════════════════════════════════════════ */}
-          <div className="rounded-2xl border-2 border-gold-500/40 bg-gradient-to-br from-maroon-950 via-purple-950 to-neutral-950 p-4 sm:p-5 text-white shadow-xl relative overflow-hidden">
+          <div className="rounded-2xl border-2 border-gold-500/40 bg-gradient-to-br from-maroon-950 via-maroon-900 to-ink-950 p-4 sm:p-5 text-white shadow-xl relative overflow-hidden">
             {/* Ambient luxury glow */}
             <div className="pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-gold-400/10 blur-2xl" />
 
@@ -435,24 +386,24 @@ export function MultiEventStudio({
               <div className="flex items-center gap-2">
                 <span className="text-xl">👑</span>
                 <div>
-                  <h3 className="font-marathi-display text-sm sm:text-base font-bold text-amber-200 leading-tight">
+                  <h3 className="font-marathi-display text-sm sm:text-base font-bold text-gold-200 leading-tight">
                     {isEn ? "Royal Velvet & Metallic Foil Customizer" : "शाही मखमली पार्श्वभूमी व सुवर्ण/रुपेरी फॉइल"}
                   </h3>
-                  <p className="text-[11px] text-amber-300/70">
+                  <p className="text-[11px] text-gold-300/70">
                     {isEn
                       ? "Select 24K Gold / 925 Silver embossed font & dark velvet fabric tone"
                       : "२४K सुवर्ण किंवा ९२५ रुपेरी फॉइल फॉन्ट व मखमली फॅब्रिक रंग निवडा"}
                   </p>
                 </div>
               </div>
-              <span className="rounded-full border border-gold-400/40 bg-gold-500/20 px-2 py-0.5 text-[10px] font-black text-amber-300 uppercase tracking-widest">
+              <span className="rounded-full border border-gold-400/40 bg-gold-500/20 px-2 py-0.5 text-[10px] font-black text-gold-300 uppercase tracking-widest">
                 LUXURY PRO
               </span>
             </div>
 
             {/* 1. Foil Metal Type Selector (Gold, Silver, Rose Gold) */}
             <div className="mt-4">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-amber-300/80 mb-2 block">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-gold-300/80 mb-2 block">
                 {isEn ? "1. Metallic Foil Typography (Font Sheen):" : "१. मेटॅलिक फॉइल टायपोग्राफी (Font Sheen):"}
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -482,7 +433,7 @@ export function MultiEventStudio({
                         {foil.badge}
                       </span>
                       {isSelected && (
-                        <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-amber-400 animate-pulse" />
+                        <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-gold-400 animate-pulse" />
                       )}
                     </button>
                   );
@@ -492,7 +443,7 @@ export function MultiEventStudio({
 
             {/* 2. Velvet Fabric Tone Selector (6 Dark Velvet Shades) */}
             <div className="mt-4">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-amber-300/80 mb-2 block">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-gold-300/80 mb-2 block">
                 {isEn ? "2. Dark Velvet Fabric Background Color:" : "२. मखमली (Dark Velvet) पार्श्वभूमी रंग:"}
               </label>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -506,7 +457,7 @@ export function MultiEventStudio({
                       title={isEn ? palette.nameEn : palette.nameMr}
                       className={`group relative flex flex-col items-center rounded-xl p-2 transition-all duration-200 ${
                         isSelected
-                          ? "ring-2 ring-gold-300 shadow-md scale-105 border-2 border-amber-300 bg-white/15"
+                          ? "ring-2 ring-gold-300 shadow-md scale-105 border-2 border-gold-300 bg-white/15"
                           : "border border-white/20 bg-black/30 hover:bg-white/5 opacity-85 hover:opacity-100"
                       }`}
                     >
@@ -518,7 +469,7 @@ export function MultiEventStudio({
                         {isEn ? palette.nameEn.split(" ")[0] : palette.nameMr.split(" ")[0]}
                       </span>
                       {isSelected && (
-                        <span className="absolute -top-1 -right-1 text-xs text-amber-300 font-bold">
+                        <span className="absolute -top-1 -right-1 text-xs text-gold-300 font-bold">
                           ✓
                         </span>
                       )}
@@ -712,9 +663,12 @@ export function MultiEventStudio({
               onClick={handleCopyWhatsApp}
               className="inline-flex min-h-[46px] items-center gap-2 rounded-full border border-maroon-800/30 bg-white px-5 py-3 text-sm font-bold text-maroon-800 transition hover:border-gold-500 hover:bg-gold-50"
             >
-              <Icon name="zap" className="h-4 w-4 text-emerald-600" />
+              <Icon name="zap" className="h-4 w-4 text-leaf-600" />
               {copiedWa ? (isEn ? "Copied! ✓" : "प्रत केली! ✓") : (isEn ? "Copy WhatsApp Text" : "व्हॉट्सअॅप मजकूर प्रत करा")}
             </button>
+            <span aria-live="polite" role="status" className="sr-only">
+              {copiedWa ? (isEn ? "WhatsApp text copied" : "व्हॉट्सअॅप मजकूर प्रत झाला") : ""}
+            </span>
           </div>
         </div>
 
@@ -725,7 +679,7 @@ export function MultiEventStudio({
         >
           <div className="flex items-center justify-between pb-3">
             <div className="flex items-center gap-2">
-              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="size-2 rounded-full bg-leaf-500 animate-pulse" />
               <h3 className="font-marathi-display text-sm font-bold text-ink-800 uppercase tracking-wide">
                 {isEn ? "60 FPS Live Preview" : "थेट प्रिव्ह्यू (६० FPS)"}
               </h3>
@@ -746,7 +700,7 @@ export function MultiEventStudio({
                 <span>🎨</span>
                 <span>{isEn ? "Open in New Tab (Full View Mode) ⤢" : "नवीन टॅबमध्ये पूर्ण स्क्रीन कॅनव्हास उघडा ⤢"}</span>
               </span>
-              <span className="rounded bg-black/30 px-2 py-0.5 text-[10px] uppercase tracking-wider font-extrabold text-amber-200">
+              <span className="rounded bg-black/30 px-2 py-0.5 text-[10px] uppercase tracking-wider font-extrabold text-gold-200">
                 FULL VIEW ⤢
               </span>
             </a>
@@ -770,6 +724,15 @@ export function MultiEventStudio({
 
           {/* Master Template Card Rendering */}
           <div className="animate-fade-up">
+            {activeArtVariants.length > 0 && (
+              <div className="mb-3">
+                <ArtVariantPicker
+                  variants={activeArtVariants}
+                  value={artVariantId}
+                  onChange={setArtVariantId}
+                />
+              </div>
+            )}
             <MasterTemplateCard
               template={activeTemplate}
               data={{
@@ -781,12 +744,16 @@ export function MultiEventStudio({
               className="shadow-2xl ring-1 ring-gold-400/30"
               foilColor={activeFoil}
               bgColor={activeBgColor}
+              variant={activeArtVariant}
+              onUpdateField={(field, val) => {
+                setFormData((prev) => ({ ...prev, [field]: val }));
+              }}
             />
           </div>
 
           <div className="mt-4 rounded-xl border border-gold-500/25 bg-ivory-warm/80 p-3.5 text-xs text-ink-600">
             <p className="font-bold text-maroon-900 flex items-center gap-1.5">
-              <Icon name="checkCircle" className="h-3.5 w-3.5 text-emerald-600" />
+              <Icon name="checkCircle" className="h-3.5 w-3.5 text-leaf-600" />
               {isEn ? "Print & Bleed Guaranteed" : "१००% प्रेस-रेडी व ब्लीड अचूकता"}
             </p>
             <p className="mt-1 leading-relaxed text-[11.5px]">

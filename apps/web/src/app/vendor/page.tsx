@@ -4,6 +4,7 @@ import { adPerformance, trustBadges } from '@mazi/commerce';
 import { formatMarathiDate, formatMarathiDateTime, leadStatusLabel, toDevanagariDigits } from '@mazi/marathi';
 
 import { VendorCalendar } from '@/components/vendor/vendor-calendar';
+import { PageBanner } from '@/components/page-banner';
 import { VendorDeskHeader } from '@/components/vendor-desk-header';
 import { getStore } from '@/lib/store';
 import { vendorDeskId } from '@/lib/vendor-desk';
@@ -33,8 +34,11 @@ export default async function VendorDeskPage() {
   if (!vendor) {
     return (
       <div className="shell py-16">
-        <h1 className="font-display text-3xl font-bold text-maroon">विक्रेता डेस्क</h1>
-        <p className="mt-3 text-charcoal-soft">डेटाबेसमध्ये विक्रेता सापडला नाही — `npm run db:reset` चालवा.</p>
+        <PageBanner
+          kicker="Vendor OS"
+          title="विक्रेता डेस्क"
+          description="डेटाबेसमध्ये विक्रेता सापडला नाही — npm run db:reset चालवा."
+        />
       </div>
     );
   }

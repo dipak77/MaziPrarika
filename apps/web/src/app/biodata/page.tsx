@@ -1,5 +1,6 @@
 import { StudioEditor } from "@/components/studio-editor";
-import { Reveal, Eyebrow, Icon } from "@/components/ui";
+import { PageBanner } from "@/components/page-banner";
+import { Reveal, Icon } from "@/components/ui";
 
 export const metadata = {
   title: "विवाह बायोडाटा मेकर — माझी पत्रिका | Royal Marriage Biodata Templates",
@@ -12,47 +13,24 @@ export default function BiodataPage() {
     <div className="shell py-10 sm:py-14">
       {/* Hero Header for Biodata Creator */}
       <Reveal>
-        <section
-          aria-labelledby="biodata-hero-title"
-          className="relative overflow-hidden rounded-3xl bg-paisley-dark px-6 py-10 shadow-card sm:px-10 sm:py-14"
-        >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-gold-500/20 blur-3xl"
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -bottom-28 -left-20 h-72 w-72 rounded-full bg-maroon-700/40 blur-3xl"
-          />
-
-          <div className="relative">
-            <Eyebrow dark>विवाह बायोडाटा मेकर · राजेशाही टेम्पलेट्स</Eyebrow>
-            <h1
-              id="biodata-hero-title"
-              className="max-w-3xl font-marathi-display text-4xl leading-[1.14] font-bold text-balance text-ivory-100 sm:text-[50px]"
-            >
-              रुबाबदार विवाह बायोडाटा —{" "}
-              <span className="gold-foil">५ राजेशाही टेम्पलेट्स</span>
-            </h1>
-            <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-ivory-100/75">
-              शाही जांभळा, किरमिजी दमास्क, राजमहाल कमान आणि हेरिटेज मारून अशा ५ भव्य
-              डिझाइन्समध्ये वर-वधूंचा संपूर्ण बायोडाटा तयार करा. मराठीत थेट फोनिटिक
-              टाइपिंग, फोटो अपलोड आणि १-क्लिक PDF/व्हॉट्सअॅप साठवणूक.
-            </p>
-
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+        <PageBanner
+          kicker="विवाह बायोडाटा मेकर · राजेशाही टेम्पलेट्स"
+          title="रुबाबदार विवाह बायोडाटा — ५ राजेशाही टेम्पलेट्स"
+          description="शाही जांभळा, किरमिजी दमास्क, राजमहाल कमान आणि हेरिटेज मारून अशा ५ भव्य डिझाइन्समध्ये वर-वधूंचा संपूर्ण बायोडाटा तयार करा. मराठीत थेट फोनिटिक टाइपिंग, फोटो अपलोड आणि १-क्लिक PDF/व्हॉट्सअॅप साठवणूक."
+          actions={
+            <>
               <a
                 href="/biodata/editor"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-[46px] items-center gap-2 rounded-full bg-gradient-to-r from-[#7c3aed] to-[#6366f1] px-6 py-3 text-[14.5px] font-black text-white shadow-xl hover:from-[#6d28d9] hover:to-[#4f46e5] transition transform hover:-translate-y-0.5 active:scale-95"
+                className="btn-base btn-maroon px-6 text-sm shadow-xl transition transform hover:-translate-y-0.5 active:scale-95"
               >
                 <span>⤢</span>
                 नवीन टॅबमध्ये पूर्ण स्क्रीन उघडा (Full View Mode)
               </a>
               <a
                 href="#biodata-live"
-                className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white px-6 py-3 text-[14.5px] font-bold text-[#0e0d26] shadow-md transition hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400"
+                className="btn-base rounded-full bg-ivory-surface border border-gold-200 px-6 text-sm text-maroon-deep shadow-xs transition hover:bg-ivory-warm"
               >
                 याच पानावर एडिट करा
                 <Icon name="arrowRight" className="h-4 w-4" strokeWidth={2.4} />
@@ -61,13 +39,13 @@ export default function BiodataPage() {
                 href="/studio/editor"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-[14.5px] font-bold text-white transition hover:border-violet-400 hover:bg-white/10"
+                className="btn-base btn-outline px-6 text-sm transition"
               >
                 लग्नाची पत्रिका बनवा (New Tab) ⤢
               </a>
-            </div>
-          </div>
-        </section>
+            </>
+          }
+        />
       </Reveal>
 
       <Reveal delay={120}>

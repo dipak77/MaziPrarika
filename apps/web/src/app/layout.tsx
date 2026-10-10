@@ -47,7 +47,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0e0d26',
+  themeColor: '#6b1d2a',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -82,6 +82,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   };
   return (
     <html lang="mr-IN" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@600;700;800;900&family=Rozha+One&family=Yatra+One&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="min-h-dvh antialiased" suppressHydrationWarning>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }} />
         <LanguageProvider>

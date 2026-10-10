@@ -112,9 +112,9 @@ export default async function ConsolePage() {
           <span className="ml-auto flex items-center gap-3">
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#0e0d26] px-3 py-1.5 text-[11.5px] font-bold text-white shadow-xs transition hover:bg-[#8247e5]"
+              className="btn-base btn-maroon"
             >
-              <span className="size-2 rounded-full bg-[#8247e5] animate-pulse" />
+              <span className="size-2 rounded-full bg-gold-400 animate-pulse" />
               <span>डारोमा मॉडर्न डॅशबोर्ड ↗</span>
             </Link>
             <span className="flex items-center gap-1.5 text-[12px] font-extrabold text-leaf-700">

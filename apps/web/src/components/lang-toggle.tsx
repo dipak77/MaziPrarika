@@ -76,7 +76,7 @@ function LangToggleControl({
         aria-label={`भाषा निवडा (सध्या: ${activeLang.label})`}
         className={
           compact
-            ? 'inline-flex min-h-[30px] items-center gap-1.5 rounded-full border border-amber-400/50 bg-white px-2.5 py-0.5 text-xs font-bold text-slate-900 shadow-2xs backdrop-blur-xs transition hover:border-amber-400 hover:shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400'
+            ? 'inline-flex min-h-[30px] items-center gap-1.5 rounded-full border border-haldi/40 bg-white px-2.5 py-0.5 text-xs font-bold text-ink-900 shadow-2xs backdrop-blur-xs transition hover:border-haldi hover:shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-haldi'
             : 'inline-flex min-h-[40px] items-center gap-2 rounded-full border border-gold/45 bg-white/95 px-3.5 py-1.5 text-sm font-bold text-maroon shadow-2xs backdrop-blur-xs transition hover:border-gold hover:bg-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold'
         }
       >

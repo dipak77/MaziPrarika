@@ -151,16 +151,20 @@ export function BiodataEditor() {
   const { lang, setLang, isEn, isHi } = useLanguage();
   const t = BIODATA_LABELS[lang] || BIODATA_LABELS.mr;
 
-  /* ── Initial data (language default or restored draft) ── */
-  const [data, setData] = useState<BiodataData>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) return { ...(lang === "en" ? DEFAULT_BIODATA_EN : lang === "hi" ? DEFAULT_BIODATA_HI : DEFAULT_BIODATA_MR), ...JSON.parse(raw) };
-      } catch { /* ignore */ }
-    }
-    return lang === "en" ? DEFAULT_BIODATA_EN : lang === "hi" ? DEFAULT_BIODATA_HI : DEFAULT_BIODATA_MR;
-  });
+  /* ── Initial data (language default; saved draft restored after mount) ── */
+  const [data, setData] = useState<BiodataData>(() =>
+    lang === "en" ? DEFAULT_BIODATA_EN : lang === "hi" ? DEFAULT_BIODATA_HI : DEFAULT_BIODATA_MR,
+  );
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<BiodataData>;
+        setData((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch {}
+  }, []);
 
   /* ── UI state ── */
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("edit");

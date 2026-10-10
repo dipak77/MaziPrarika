@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { CreateWizard } from '@/components/create-wizard';
-import { Kicker } from '@/components/ui';
+import { PageBanner } from '@/components/page-banner';
 import { useLanguage } from '@/context/language-context';
 import { uiCopy } from '@/lib/i18n';
 
@@ -32,13 +32,12 @@ export function CreatePageClient() {
 
   return (
     <div className="shell py-12" lang={isEn ? 'en' : 'mr'}>
-      <header className="max-w-3xl">
-        <Kicker>{copy.kicker}</Kicker>
-        <h1 className="mt-2 font-display text-4xl font-bold text-maroon">{copy.title}</h1>
-        <p className="mt-3 text-lg text-charcoal-soft">
-          {copy.desc}
-        </p>
-      </header>
+      <PageBanner
+        lang={isEn ? 'en' : 'mr'}
+        kicker={copy.kicker}
+        title={copy.title}
+        description={copy.desc}
+      />
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.35fr_0.65fr]">
         <CreateWizard examples={isEn ? EXAMPLES_EN : EXAMPLES_MR} />

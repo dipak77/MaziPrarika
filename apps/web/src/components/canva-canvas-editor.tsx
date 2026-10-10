@@ -30,6 +30,7 @@ import {
   RoyalMarathaKatyar,
 } from "@/components/event-ornaments";
 import { toDevanagariDigits } from "@/lib/format";
+import { getPrintArt, type ArtMotif } from "@/lib/print-art";
 
 /* ══════════════════════════════════════════════════════════════════════
    CANVA PRO ELEMENT TYPES & INTERFACES
@@ -595,6 +596,43 @@ function getInitialElements(): CanvasElement[] {
   ];
 }
 
+function resolveCssColor(value: string): string {
+  if (!value || !value.startsWith("var(")) return value;
+  const probe = document.createElement("span");
+  probe.style.color = value;
+  document.body.appendChild(probe);
+  const computed = getComputedStyle(probe).color;
+  document.body.removeChild(probe);
+  return computed || value;
+}
+
+function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    if (!src.startsWith("data:") && !src.startsWith("blob:")) {
+      img.crossOrigin = "anonymous";
+    }
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("image-load-failed"));
+    img.src = src;
+  });
+}
+
+function serializeStageSvg(svg: SVGSVGElement, width: number, height: number): string {
+  const clone = svg.cloneNode(true) as SVGSVGElement;
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  clone.setAttribute("width", String(width));
+  clone.setAttribute("height", String(height));
+  if (!clone.getAttribute("viewBox")) {
+    clone.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  }
+  return new XMLSerializer().serializeToString(clone);
+}
+
+function svgDataUrl(svgText: string): string {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgText)}`;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    CANVA PRO CANVAS DESIGN STUDIO
    ═══════════════════════════════════════════════════════════════ */
@@ -613,6 +651,13 @@ export function CanvaCanvasEditor({
   const [rightInspectorOpen, setRightInspectorOpen] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const statusTimerRef = useRef<number | null>(null);
+  const announce = (msg: string) => {
+    setStatusMsg(msg);
+    if (statusTimerRef.current) window.clearTimeout(statusTimerRef.current);
+    statusTimerRef.current = window.setTimeout(() => setStatusMsg(null), 4500);
+  };
 
   // Document Title
   const [docTitle, setDocTitle] = useState("माझी पत्रिका — राजेशाही कॅनव्हास डिझाइन");
@@ -929,23 +974,122 @@ export function CanvaCanvasEditor({
     setDocTitle(`${tmpl.nameMr} — कॅनव्हास`);
     // Find matching palette or default
     const matchingPalette = ROYAL_PALETTES.find(
-      (p) => tmpl.accentColor.toLowerCase() === p.accentColor.toLowerCase()
+      (p) => tmpl.accentColor?.toLowerCase() === p.accentColor.toLowerCase()
     ) || ROYAL_PALETTES[0]!;
     applyPalette(matchingPalette);
+    if (tmpl.bgGradient) setCustomBgColor(tmpl.bgGradient);
+    const spec = getPrintArt(tmpl.id);
+    const specBg = spec?.variants[0]?.bgGradient;
+    if (spec && specBg) setCustomBgColor(specBg);
+
+    const cardStyle = tmpl.cardStyle;
+    const tmplIdLower = tmpl.id?.toLowerCase() || "";
+    let headerOrnamentType: CanvasElement["ornamentType"];
+    let headerOrnamentName: string;
+    if (cardStyle === "lagn-panel") {
+      const isBaudha = tmplIdLower.includes("baudha");
+      const isKrishna = tmplIdLower.includes("krishna") || tmplIdLower.includes("janmashtami");
+      const isKatyar = tmplIdLower.includes("katyar") || tmplIdLower.includes("maratha");
+      const isKalash = tmplIdLower.includes("satyanarayan") || tmplIdLower.includes("vastushanti") || tmplIdLower.includes("puja");
+      const isSakharpuda = tmplIdLower.includes("sakharpuda");
+      headerOrnamentType = isBaudha ? "lotus" : isKrishna ? "peacock" : isKatyar ? "katyar" : isKalash ? "kalash" : isSakharpuda ? "mandala" : "ganesha";
+      headerOrnamentName = isBaudha ? "सुवर्ण धम्मचक्र / कमळ" : isKrishna ? "मोरपीस व बासरी" : isKatyar ? "छत्रपती शिवमुद्रा व कट्यार" : isKalash ? "मंगल कलश" : isSakharpuda ? "अंगठी व सुवर्ण नक्षी" : "गोल्डन गणेश";
+    } else if (cardStyle === "royal-arch") {
+      headerOrnamentType = "toran";
+      headerOrnamentName = "झेंडू तोरण";
+    } else if (cardStyle === "kalash-toran") {
+      headerOrnamentType = "kalash";
+      headerOrnamentName = "मंगल कलश";
+    } else if (cardStyle === "paithani-zari") {
+      headerOrnamentType = "mandala";
+      headerOrnamentName = "पैठणी नक्षी";
+    } else if (cardStyle === "rings-velvet") {
+      headerOrnamentType = "divider";
+      headerOrnamentName = "सुवर्ण नक्षी";
+    } else if (cardStyle === "scroll-katyar") {
+      headerOrnamentType = "katyar";
+      headerOrnamentName = "छत्रपती शिवमुद्रा व कट्यार";
+    } else if (cardStyle === "krishna-divine") {
+      headerOrnamentType = "peacock";
+      headerOrnamentName = "मोरपीस व बासरी";
+    } else if (cardStyle === "cradle-stars" || cardStyle === "dohale-zula") {
+      headerOrnamentType = "lotus";
+      headerOrnamentName = "सुवर्ण धम्मचक्र / कमळ";
+    } else {
+      headerOrnamentType = "ganesha";
+      headerOrnamentName = "गोल्डन गणेश";
+    }
+    if (spec && cardStyle !== "lagn-panel") {
+      const motifMap: Record<ArtMotif, CanvasElement["ornamentType"]> = {
+        ganesha: "ganesha",
+        toran: "toran",
+        kalash: "kalash",
+        mandala: "mandala",
+        katyar: "katyar",
+        peacock: "peacock",
+        lotus: "lotus",
+        divider: "divider",
+        arch: "toran",
+        diya: "kalash",
+        paisley: "mandala",
+        om: "mandala",
+        swastik: "divider",
+        crown: "ganesha",
+        rings: "divider",
+        cradle: "lotus",
+        star: "lotus",
+        balloon: "lotus",
+        cake: "lotus",
+      };
+      const mapped = motifMap[spec.motif];
+      if (mapped) headerOrnamentType = mapped;
+    }
+    const crestSize = spec?.layout === "center-crest" ? 96 : 80;
+
+    const photoSrc = tmpl.sample?.photoUrl || tmpl.placeholders?.photoUrl || "";
+    const isSplitPhoto = cardStyle === "split-photo";
+    let showBannerPhoto = Boolean(photoSrc) && !isSplitPhoto;
+    let showSidePhoto = Boolean(photoSrc) && isSplitPhoto;
+    if (spec && photoSrc) {
+      if (spec.photoPlacement === "top" || spec.photoPlacement === "center") {
+        showBannerPhoto = true;
+        showSidePhoto = false;
+      } else if (spec.photoPlacement === "side") {
+        showBannerPhoto = false;
+        showSidePhoto = true;
+      } else if (spec.photoPlacement === "none") {
+        showBannerPhoto = false;
+        showSidePhoto = false;
+      }
+    } else if (spec && !photoSrc) {
+      showBannerPhoto = false;
+      showSidePhoto = false;
+    }
+    const yShift = showBannerPhoto ? 190 : 0;
+    const hasPersonB = Boolean(tmpl.sample?.personB);
+    const personA = tmpl.sample?.personA || tmpl.placeholders?.personA || "";
+    const personB = tmpl.sample?.personB || "";
+    const dateParts = [tmpl.sample?.date || tmpl.placeholders?.date, tmpl.sample?.time || tmpl.placeholders?.time].filter(Boolean);
+    const dateText = dateParts.join(" • ");
+    const venueName = tmpl.sample?.venue || tmpl.placeholders?.venue || "";
+    const cityName = tmpl.sample?.city || tmpl.placeholders?.city || "";
+    const venueText = venueName && cityName ? `स्थळ: ${venueName}, ${cityName}` : venueName ? `स्थळ: ${venueName}` : cityName || "";
+    const taglineText = tmpl.sample?.tagline || tmpl.placeholders?.tagline || "";
+    const venueY = (hasPersonB ? 560 : 460) + yShift;
 
     const newTemplateElements: CanvasElement[] = [
       {
-        id: "tmpl-ganesha",
+        id: "tmpl-header-crest",
         type: "ornament",
-        name: "गोल्डन गणेश",
-        x: dimensions.width / 2 - 40,
+        name: headerOrnamentName,
+        x: dimensions.width / 2 - crestSize / 2,
         y: 40,
-        width: 80,
-        height: 80,
+        width: crestSize,
+        height: crestSize,
         rotation: 0,
         opacity: 1,
         zIndex: 10,
-        ornamentType: "ganesha",
+        ornamentType: headerOrnamentType,
         ornamentColor: matchingPalette.accentColor,
       },
       {
@@ -959,7 +1103,7 @@ export function CanvaCanvasEditor({
         rotation: 0,
         opacity: 1,
         zIndex: 11,
-        text: tmpl.defaultBlessing,
+        text: tmpl.defaultBlessing || "॥ श्री गणेशाय नमः ॥",
         fontFamily: "display",
         fontSize: 20,
         fontWeight: "bold",
@@ -978,7 +1122,7 @@ export function CanvaCanvasEditor({
         rotation: 0,
         opacity: 1,
         zIndex: 12,
-        text: tmpl.defaultTitle,
+        text: tmpl.defaultTitle || "",
         fontFamily: "display",
         fontSize: 30,
         fontWeight: "bold",
@@ -986,18 +1130,58 @@ export function CanvaCanvasEditor({
         color: matchingPalette.accentColor,
         goldFoil: true,
       },
+      ...(showBannerPhoto
+        ? [
+            {
+              id: "tmpl-photo",
+              type: "photo" as const,
+              name: "फोटो (कमान)",
+              x: dimensions.width / 2 - 150,
+              y: 250,
+              width: 300,
+              height: 180,
+              rotation: 0,
+              opacity: 1,
+              zIndex: 13,
+              photoUrl: photoSrc,
+              frameShape: "arch" as const,
+              borderWidth: 3,
+              borderColor: matchingPalette.accentColor,
+            },
+          ]
+        : []),
+      ...(showSidePhoto
+        ? [
+            {
+              id: "tmpl-photo",
+              type: "photo" as const,
+              name: "फोटो (बाजू)",
+              x: dimensions.width - 210,
+              y: 250,
+              width: 170,
+              height: 300,
+              rotation: 0,
+              opacity: 1,
+              zIndex: 9,
+              photoUrl: photoSrc,
+              frameShape: "rect" as const,
+              borderWidth: 3,
+              borderColor: matchingPalette.accentColor,
+            },
+          ]
+        : []),
       {
         id: "tmpl-personA",
         type: "text",
         name: "मुख्य नाव (वर/यजमान)",
         x: 50,
-        y: 280,
+        y: 280 + yShift,
         width: dimensions.width - 100,
         height: 60,
         rotation: 0,
         opacity: 1,
         zIndex: 13,
-        text: tmpl.sample.personA,
+        text: personA,
         fontFamily: "serif",
         fontSize: 34,
         fontWeight: "black",
@@ -1005,14 +1189,14 @@ export function CanvaCanvasEditor({
         color: "#ffffff",
         shadow: true,
       },
-      ...(tmpl.sample.personB
+      ...(hasPersonB
         ? [
             {
               id: "tmpl-with",
               type: "text" as const,
               name: "संग शब्द",
               x: dimensions.width / 2 - 50,
-              y: 345,
+              y: 345 + yShift,
               width: 100,
               height: 30,
               rotation: 0,
@@ -1030,13 +1214,13 @@ export function CanvaCanvasEditor({
               type: "text" as const,
               name: "दुसरे नाव (वधू/साथीदार)",
               x: 50,
-              y: 380,
+              y: 380 + yShift,
               width: dimensions.width - 100,
               height: 60,
               rotation: 0,
               opacity: 1,
               zIndex: 15,
-              text: tmpl.sample.personB,
+              text: personB,
               fontFamily: "serif" as const,
               fontSize: 32,
               fontWeight: "black" as const,
@@ -1051,7 +1235,7 @@ export function CanvaCanvasEditor({
         type: "divider",
         name: "सुवर्ण विभाजन रेखा",
         x: dimensions.width / 2 - 180,
-        y: tmpl.sample.personB ? 460 : 360,
+        y: (hasPersonB ? 460 : 360) + yShift,
         width: 360,
         height: 20,
         rotation: 0,
@@ -1065,13 +1249,13 @@ export function CanvaCanvasEditor({
         type: "text",
         name: "तारीख व वेळ",
         x: 60,
-        y: tmpl.sample.personB ? 500 : 400,
+        y: (hasPersonB ? 500 : 400) + yShift,
         width: dimensions.width - 120,
         height: 48,
         rotation: 0,
         opacity: 1,
         zIndex: 17,
-        text: `${tmpl.sample.date} • ${tmpl.sample.time}`,
+        text: dateText,
         fontFamily: "display",
         fontSize: 20,
         fontWeight: "bold",
@@ -1083,13 +1267,13 @@ export function CanvaCanvasEditor({
         type: "text",
         name: "सोहळा स्थळ",
         x: 60,
-        y: tmpl.sample.personB ? 560 : 460,
+        y: venueY,
         width: dimensions.width - 120,
         height: 60,
         rotation: 0,
         opacity: 0.95,
         zIndex: 18,
-        text: `स्थळ: ${tmpl.sample.venue}, ${tmpl.sample.city}`,
+        text: venueText,
         fontFamily: "sans",
         fontSize: 17,
         fontWeight: "normal",
@@ -1097,6 +1281,30 @@ export function CanvaCanvasEditor({
         color: matchingPalette.textColor,
         lineHeight: 1.5,
       },
+      ...(taglineText
+        ? [
+            {
+              id: "tmpl-tagline",
+              type: "text" as const,
+              name: "टॅगलाइन",
+              x: 60,
+              y: venueY + 70,
+              width: dimensions.width - 120,
+              height: 44,
+              rotation: 0,
+              opacity: 0.85,
+              zIndex: 20,
+              text: taglineText,
+              fontFamily: "display" as const,
+              fontSize: 14,
+              fontWeight: "normal" as const,
+              fontStyle: "italic" as const,
+              textAlign: "center" as const,
+              color: matchingPalette.textColor,
+              lineHeight: 1.5,
+            },
+          ]
+        : []),
     ];
 
     pushState(newTemplateElements);
@@ -1647,7 +1855,7 @@ export function CanvaCanvasEditor({
           fontSize: 17,
           fontWeight: "bold",
           textAlign: "center",
-          color: "#ffd700",
+          color: "var(--color-gold-bright)",
           goldFoil: true,
         },
         {
@@ -1715,128 +1923,171 @@ export function CanvaCanvasEditor({
     setSelectedId(newElements[0]?.id || null);
   };
 
-  // High-Resolution 2x PNG Export
-  const handleExportPng = () => {
-    try {
-      const canvas = document.createElement("canvas");
-      canvas.width = dimensions.width * 2;
-      canvas.height = dimensions.height * 2;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+  const buildExportCanvas = useCallback(async (): Promise<HTMLCanvasElement | null> => {
+    const canvas = document.createElement("canvas");
+    canvas.width = dimensions.width * 2;
+    canvas.height = dimensions.height * 2;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
 
-      ctx.scale(2, 2);
-      ctx.fillStyle = customBgColor;
-      ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+    ctx.scale(2, 2);
+    ctx.fillStyle = resolveCssColor(customBgColor);
+    ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 
-      const sorted = [...elements].sort((a, b) => a.zIndex - b.zIndex);
-      for (const el of sorted) {
-        if (el.visible === false) continue;
-        ctx.save();
-        ctx.globalAlpha = el.opacity;
-        const centerX = el.x + el.width / 2;
-        const centerY = el.y + el.height / 2;
-        ctx.translate(centerX, centerY);
-        ctx.rotate((el.rotation * Math.PI) / 180);
-        ctx.translate(-centerX, -centerY);
+    const stage = canvasRef.current;
+    const bgSvgs = stage
+      ? Array.from(stage.children).filter((c): c is SVGSVGElement => c instanceof SVGSVGElement)
+      : [];
 
-        if (el.type === "shape") {
-          ctx.fillStyle = el.fill || "transparent";
-          ctx.strokeStyle = el.stroke || customAccentColor;
-          ctx.lineWidth = el.strokeWidth || 2;
-          if (el.borderRadius) {
-            ctx.beginPath();
-            ctx.roundRect(el.x, el.y, el.width, el.height, el.borderRadius);
-            if (el.fill && el.fill !== "transparent") ctx.fill();
-            ctx.stroke();
-          } else {
-            if (el.fill && el.fill !== "transparent") ctx.fillRect(el.x, el.y, el.width, el.height);
-            ctx.strokeRect(el.x, el.y, el.width, el.height);
-          }
-        } else if (el.type === "text" && el.text) {
-          ctx.font = `${el.fontWeight === "black" ? "900" : el.fontWeight === "bold" ? "700" : "400"} ${el.fontSize || 24}px 'Tiro Devanagari Marathi', 'Noto Serif Devanagari', Arial, sans-serif`;
-          ctx.fillStyle = el.color || customTextColor;
-          ctx.textAlign = el.textAlign || "center";
-          ctx.textBaseline = "middle";
-          if (el.shadow || el.textShadowPreset === "deep-black") {
-            ctx.shadowColor = "rgba(0,0,0,0.85)";
-            ctx.shadowBlur = 8;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 3;
-          } else if (el.textShadowPreset === "gold-glow") {
-            ctx.shadowColor = "rgba(223,177,80,0.9)";
-            ctx.shadowBlur = 14;
-          }
-          const posX = el.textAlign === "left" ? el.x : el.textAlign === "right" ? el.x + el.width : el.x + el.width / 2;
-          const posY = el.y + el.height / 2;
-          ctx.fillText(el.text, posX, posY);
-        }
-        ctx.restore();
+    for (const svg of bgSvgs) {
+      try {
+        const rect = svg.getBoundingClientRect();
+        const w = rect.width || dimensions.width;
+        const h = rect.height || dimensions.height;
+        const text = serializeStageSvg(svg, w, h);
+        const img = await loadImageElement(svgDataUrl(text));
+        ctx.drawImage(img, 0, 0, w, h);
+      } catch {
       }
+    }
 
+    const sorted = [...elements].sort((a, b) => a.zIndex - b.zIndex);
+    for (const el of sorted) {
+      if (el.visible === false) continue;
+      ctx.save();
+      ctx.globalAlpha = el.opacity;
+      const centerX = el.x + el.width / 2;
+      const centerY = el.y + el.height / 2;
+      ctx.translate(centerX, centerY);
+      ctx.rotate((el.rotation * Math.PI) / 180);
+      ctx.translate(-centerX, -centerY);
+
+      if (el.type === "shape") {
+        ctx.fillStyle = resolveCssColor(el.fill || "transparent");
+        ctx.strokeStyle = resolveCssColor(el.stroke || customAccentColor);
+        ctx.lineWidth = el.strokeWidth || 2;
+        if (el.shapeType === "circle") {
+          ctx.beginPath();
+          ctx.ellipse(centerX, centerY, el.width / 2, el.height / 2, 0, 0, Math.PI * 2);
+          if (el.fill && el.fill !== "transparent") ctx.fill();
+          ctx.stroke();
+        } else if (el.borderRadius) {
+          ctx.beginPath();
+          ctx.roundRect(el.x, el.y, el.width, el.height, el.borderRadius);
+          if (el.fill && el.fill !== "transparent") ctx.fill();
+          ctx.stroke();
+        } else {
+          if (el.fill && el.fill !== "transparent") ctx.fillRect(el.x, el.y, el.width, el.height);
+          ctx.strokeRect(el.x, el.y, el.width, el.height);
+        }
+      } else if (el.type === "text" && el.text) {
+        ctx.font = `${el.fontWeight === "black" ? "900" : el.fontWeight === "bold" ? "700" : "400"} ${el.fontSize || 24}px 'Tiro Devanagari Marathi', 'Noto Serif Devanagari', Arial, sans-serif`;
+        ctx.fillStyle = resolveCssColor(el.color || customTextColor);
+        ctx.textAlign = el.textAlign || "center";
+        ctx.textBaseline = "middle";
+        if (el.textShadowPreset === "gold-glow") {
+          ctx.shadowColor = "rgba(223,177,80,0.9)";
+          ctx.shadowBlur = 14;
+        } else if (el.shadow || el.textShadowPreset === "deep-black") {
+          ctx.shadowColor = "rgba(0,0,0,0.85)";
+          ctx.shadowBlur = 8;
+          ctx.shadowOffsetY = 3;
+        }
+        const posX = el.textAlign === "left" ? el.x : el.textAlign === "right" ? el.x + el.width : centerX;
+        ctx.fillText(el.text, posX, centerY);
+      } else if (el.type === "sticker" && el.stickerEmoji) {
+        ctx.font = "36px serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(el.stickerEmoji, centerX, centerY);
+      } else if (el.type === "ornament" && el.ornamentType === "diya") {
+        ctx.font = "48px serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("🪔", centerX, centerY);
+      } else if (el.type === "ornament" || el.type === "divider") {
+        const domEl = stage?.querySelector(`[data-el-id="${el.id}"]`);
+        const svg = domEl?.querySelector("svg");
+        if (svg) {
+          try {
+            const rect = svg.getBoundingClientRect();
+            const w = rect.width || el.width;
+            const h = rect.height || el.height;
+            const text = serializeStageSvg(svg, w, h);
+            const img = await loadImageElement(svgDataUrl(text));
+            ctx.drawImage(img, el.x + (el.width - w) / 2, el.y + (el.height - h) / 2, w, h);
+          } catch {
+          }
+        }
+      } else if (el.type === "photo" && el.photoUrl) {
+        try {
+          const img = await loadImageElement(el.photoUrl);
+          ctx.save();
+          ctx.beginPath();
+          if (el.frameShape === "circle" || el.frameShape === "oval") {
+            ctx.ellipse(centerX, centerY, el.width / 2, el.height / 2, 0, 0, Math.PI * 2);
+          } else {
+            ctx.roundRect(el.x, el.y, el.width, el.height, 16);
+          }
+          ctx.clip();
+          const ir = img.naturalWidth / img.naturalHeight;
+          const er = el.width / el.height;
+          let dw = el.width;
+          let dh = el.height;
+          let dx = el.x;
+          let dy = el.y;
+          if (ir > er) {
+            dw = dh * ir;
+            dx = el.x + (el.width - dw) / 2;
+          } else {
+            dh = dw / ir;
+            dy = el.y + (el.height - dh) / 2;
+          }
+          ctx.drawImage(img, dx, dy, dw, dh);
+          ctx.restore();
+        } catch {
+        }
+      }
+      ctx.restore();
+    }
+
+    return canvas;
+  }, [dimensions, elements, customBgColor, customAccentColor, customTextColor]);
+
+  // High-Resolution 2x PNG Export
+  const handleExportPng = async () => {
+    try {
+      const canvas = await buildExportCanvas();
+      if (!canvas) throw new Error("canvas-unavailable");
       const pngUrl = canvas.toDataURL("image/png");
       const a = document.createElement("a");
       a.href = pngUrl;
       a.download = `${docTitle.replace(/[^a-zA-Z0-9\u0900-\u097F]/g, "_")}.png`;
       a.click();
+      announce(isEn ? "PNG downloaded!" : "PNG डाउनलोड झाला!");
     } catch {
-      window.print();
+      announce(
+        isEn
+          ? "PNG export failed. Try Print / PDF instead."
+          : "PNG निर्यात अयशस्य झाला. प्रिंट / PDF वापरा."
+      );
     }
   };
 
   // Copy High-Resolution Image to Clipboard
   const handleCopyImageToClipboard = async () => {
     try {
-      const canvas = document.createElement("canvas");
-      canvas.width = dimensions.width * 2;
-      canvas.height = dimensions.height * 2;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      ctx.scale(2, 2);
-      ctx.fillStyle = customBgColor;
-      ctx.fillRect(0, 0, dimensions.width, dimensions.height);
-
-      const sorted = [...elements].sort((a, b) => a.zIndex - b.zIndex);
-      for (const el of sorted) {
-        if (el.visible === false) continue;
-        ctx.save();
-        ctx.globalAlpha = el.opacity;
-        if (el.rotation) {
-          ctx.translate(el.x + el.width / 2, el.y + el.height / 2);
-          ctx.rotate((el.rotation * Math.PI) / 180);
-          ctx.translate(-(el.x + el.width / 2), -(el.y + el.height / 2));
-        }
-
-        if (el.type === "shape") {
-          ctx.fillStyle = el.fill || "transparent";
-          ctx.strokeStyle = el.stroke || customAccentColor;
-          ctx.lineWidth = el.strokeWidth || 2;
-          if (el.shapeType === "circle") {
-            ctx.beginPath();
-            ctx.ellipse(el.x + el.width / 2, el.y + el.height / 2, el.width / 2, el.height / 2, 0, 0, Math.PI * 2);
-            if (el.fill && el.fill !== "transparent") ctx.fill();
-            ctx.stroke();
-          } else {
-            if (el.fill && el.fill !== "transparent") ctx.fillRect(el.x, el.y, el.width, el.height);
-            ctx.strokeRect(el.x, el.y, el.width, el.height);
-          }
-        } else if (el.type === "text" && el.text) {
-          ctx.font = `${el.fontWeight === "black" ? "900" : el.fontWeight === "bold" ? "700" : "400"} ${el.fontSize || 24}px 'Tiro Devanagari Marathi', 'Noto Serif Devanagari', Arial, sans-serif`;
-          ctx.fillStyle = el.color || customTextColor;
-          ctx.textAlign = el.textAlign || "center";
-          ctx.textBaseline = "middle";
-          const posX = el.textAlign === "left" ? el.x : el.textAlign === "right" ? el.x + el.width : el.x + el.width / 2;
-          const posY = el.y + el.height / 2;
-          ctx.fillText(el.text, posX, posY);
-        }
-        ctx.restore();
-      }
-
+      const canvas = await buildExportCanvas();
+      if (!canvas) throw new Error("canvas-unavailable");
       canvas.toBlob(async (blob) => {
         if (blob && typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.write) {
           try {
             await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-            alert("इमेज थेट क्लिपबोर्डवर कॉपी झाली! आपण आता कोठेही Paste (Ctrl+V) करू शकता.");
+            announce(
+              isEn
+                ? "Image copied to clipboard! Paste (Ctrl+V) anywhere."
+                : "इमेज थेट क्लिपबोर्डवर कॉपी झाली! आपण आता कोठेही Paste (Ctrl+V) करू शकता."
+            );
           } catch {
             handleExportPng();
           }
@@ -1845,26 +2096,75 @@ export function CanvaCanvasEditor({
         }
       });
     } catch {
-      handleExportPng();
+      announce(
+        isEn
+          ? "Copy failed. Try PNG download instead."
+          : "कॉपी अयशस्य. PNG डाउनलोड वापरा."
+      );
     }
   };
 
   // Vector SVG Export
-  const handleExportSvg = () => {
+  const handleExportSvg = async () => {
+    const stage = canvasRef.current;
     let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${dimensions.width}" height="${dimensions.height}" viewBox="0 0 ${dimensions.width} ${dimensions.height}">`;
-    svgContent += `<rect width="100%" height="100%" fill="${customBgColor}" />`;
+    svgContent += `<rect width="100%" height="100%" fill="${resolveCssColor(customBgColor)}" />`;
+
+    const bgSvgs = stage
+      ? Array.from(stage.children).filter((c): c is SVGSVGElement => c instanceof SVGSVGElement)
+      : [];
+    for (const svg of bgSvgs) {
+      try {
+        const rect = svg.getBoundingClientRect();
+        const w = rect.width || dimensions.width;
+        const h = rect.height || dimensions.height;
+        svgContent += `<g>${serializeStageSvg(svg, w, h)}</g>`;
+      } catch {
+      }
+    }
 
     const sorted = [...elements].sort((a, b) => a.zIndex - b.zIndex);
     for (const el of sorted) {
       if (el.visible === false) continue;
+      const centerX = el.x + el.width / 2;
+      const centerY = el.y + el.height / 2;
+      const rotated = `rotate(${el.rotation} ${centerX} ${centerY})`;
       if (el.type === "shape") {
-        svgContent += `<rect x="${el.x}" y="${el.y}" width="${el.width}" height="${el.height}" rx="${el.borderRadius || 0}" fill="${el.fill || "transparent"}" stroke="${el.stroke || customAccentColor}" stroke-width="${el.strokeWidth || 2}" opacity="${el.opacity}" transform="rotate(${el.rotation} ${el.x + el.width/2} ${el.y + el.height/2})" />`;
+        const fillAttr = el.shapeType === "circle"
+          ? `<ellipse cx="${centerX}" cy="${centerY}" rx="${el.width / 2}" ry="${el.height / 2}" fill="${resolveCssColor(el.fill || "transparent")}" stroke="${resolveCssColor(el.stroke || customAccentColor)}" stroke-width="${el.strokeWidth || 2}" />`
+          : `<rect x="${el.x}" y="${el.y}" width="${el.width}" height="${el.height}" rx="${el.borderRadius || 0}" fill="${resolveCssColor(el.fill || "transparent")}" stroke="${resolveCssColor(el.stroke || customAccentColor)}" stroke-width="${el.strokeWidth || 2}" />`;
+        svgContent += `<g opacity="${el.opacity}" transform="${rotated}">${fillAttr}</g>`;
       } else if (el.type === "text" && el.text) {
         const escaped = el.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const anchor = el.textAlign === "left" ? "start" : el.textAlign === "right" ? "end" : "middle";
-        const textX = el.textAlign === "left" ? el.x : el.textAlign === "right" ? el.x + el.width : el.x + el.width / 2;
-        const textY = el.y + el.height / 2 + (el.fontSize || 24) * 0.35;
-        svgContent += `<text x="${textX}" y="${textY}" text-anchor="${anchor}" font-size="${el.fontSize || 24}" font-weight="${el.fontWeight || "normal"}" fill="${el.color || customTextColor}" opacity="${el.opacity}" font-family="Arial, 'Noto Sans Devanagari', sans-serif" transform="rotate(${el.rotation} ${el.x + el.width/2} ${el.y + el.height/2})">${escaped}</text>`;
+        const textX = el.textAlign === "left" ? el.x : el.textAlign === "right" ? el.x + el.width : centerX;
+        const textY = centerY + (el.fontSize || 24) * 0.35;
+        svgContent += `<text x="${textX}" y="${textY}" text-anchor="${anchor}" font-size="${el.fontSize || 24}" font-weight="${el.fontWeight || "normal"}" fill="${resolveCssColor(el.color || customTextColor)}" opacity="${el.opacity}" font-family="'Tiro Devanagari Marathi', 'Noto Serif Devanagari', Arial, sans-serif" transform="${rotated}">${escaped}</text>`;
+      } else if (el.type === "photo" && el.photoUrl) {
+        const clipId = `clip-${el.id}`;
+        const clipShape = el.frameShape === "circle" || el.frameShape === "oval"
+          ? `<ellipse cx="${centerX}" cy="${centerY}" rx="${el.width / 2}" ry="${el.height / 2}" />`
+          : `<rect x="${el.x}" y="${el.y}" width="${el.width}" height="${el.height}" rx="16" />`;
+        svgContent += `<defs><clipPath id="${clipId}">${clipShape}</clipPath></defs>`;
+        svgContent += `<g opacity="${el.opacity}" transform="${rotated}"><image href="${el.photoUrl}" x="${el.x}" y="${el.y}" width="${el.width}" height="${el.height}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})" /></g>`;
+      } else if ((el.type === "ornament" && el.ornamentType !== "diya") || el.type === "divider") {
+        const domEl = stage?.querySelector(`[data-el-id="${el.id}"]`);
+        const svg = domEl?.querySelector("svg");
+        if (svg) {
+          try {
+            const rect = svg.getBoundingClientRect();
+            const w = rect.width || el.width;
+            const h = rect.height || el.height;
+            const dx = el.x + (el.width - w) / 2;
+            const dy = el.y + (el.height - h) / 2;
+            svgContent += `<g opacity="${el.opacity}" transform="translate(${dx} ${dy}) rotate(${el.rotation} ${w / 2} ${h / 2})">${serializeStageSvg(svg, w, h)}</g>`;
+          } catch {
+          }
+        }
+      } else if (el.type === "sticker" && el.stickerEmoji) {
+        svgContent += `<g opacity="${el.opacity}" transform="${rotated}"><text x="${centerX}" y="${centerY}" text-anchor="middle" dominant-baseline="central" font-size="36">${el.stickerEmoji}</text></g>`;
+      } else if (el.type === "ornament" && el.ornamentType === "diya") {
+        svgContent += `<g opacity="${el.opacity}" transform="${rotated}"><text x="${centerX}" y="${centerY}" text-anchor="middle" dominant-baseline="central" font-size="48">🪔</text></g>`;
       }
     }
     svgContent += `</svg>`;
@@ -1876,6 +2176,7 @@ export function CanvaCanvasEditor({
     a.download = `${docTitle.replace(/[^a-zA-Z0-9\u0900-\u097F]/g, "_")}.svg`;
     a.click();
     URL.revokeObjectURL(url);
+    announce(isEn ? "SVG downloaded!" : "SVG डाउनलोड झाला!");
   };
 
   // JSON Project Save
@@ -1921,9 +2222,10 @@ export function CanvaCanvasEditor({
         if (Array.isArray(parsed.elements)) {
           pushState(parsed.elements);
           setSelectedId(null);
+          announce(isEn ? "Project restored!" : "प्रोजेक्ट पुन्हा लोड झाला!");
         }
       } catch {
-        alert("अवैध JSON फाइल (Invalid JSON file)");
+        announce(isEn ? "Invalid JSON file." : "अवैध JSON फाइल (Invalid JSON file)");
       }
     };
     reader.readAsText(file);
@@ -1962,8 +2264,8 @@ export function CanvaCanvasEditor({
       aria-label={isEn ? "Canva Pro Free Design Studio" : "कॅनव्हा प्रो फ्री डिझाइन स्टुडिओ"}
       className={`relative select-none transition-all duration-300 ${
         isFullView
-          ? "fixed inset-0 z-[9999] w-screen h-screen flex flex-col bg-[#0e0d26] overflow-hidden text-white"
-          : "my-8 overflow-hidden rounded-3xl border border-white/15 bg-[#0e0d26] text-white shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
+          ? "fixed inset-0 z-[9999] w-screen h-screen flex flex-col bg-maroon-deep overflow-hidden text-white"
+          : "my-8 overflow-hidden rounded-3xl border border-white/15 bg-maroon-deep text-white shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
       }`}
     >
       {/* Hidden file input for Project JSON restoration */}
@@ -1978,19 +2280,19 @@ export function CanvaCanvasEditor({
       {/* ═══════════════════════════════════════════════════════════════
           CANVA PRO TOP HEADER WORKSPACE BAR
       ═══════════════════════════════════════════════════════════════ */}
-      <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-white/10 bg-[#111026] px-3 py-2.5 sm:px-6">
+      <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-white/10 bg-maroon-900 px-3 py-2.5 sm:px-6">
         {/* Left Side: Document Title & Aspect Ratio Pill */}
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             type="button"
             onClick={() => setLeftDockOpen((v) => !v)}
             title={leftDockOpen ? "डावे पॅनल लपवा (Hide Left Dock)" : "डावे पॅनल दाखवा (Show Left Dock)"}
-            className="hidden lg:grid size-8 place-items-center rounded-lg border border-white/15 text-xs text-slate-300 hover:bg-white/10 transition"
+            className="hidden lg:grid size-8 place-items-center rounded-lg border border-white/15 text-xs text-ivory-300 hover:bg-white/10 transition"
           >
             {leftDockOpen ? "◀" : "▶"}
           </button>
 
-          <div className="grid size-8 sm:size-9 place-items-center rounded-xl bg-gradient-to-br from-[#7c3aed] to-[#4f46e5] text-white shadow-md font-black text-sm">
+          <div className="grid size-8 sm:size-9 place-items-center rounded-xl bg-gradient-to-br from-gold via-gold-500 to-gold-bright text-ink-950 shadow-md font-black text-sm">
             🎨
           </div>
           <div>
@@ -1999,13 +2301,13 @@ export function CanvaCanvasEditor({
                 type="text"
                 value={docTitle}
                 onChange={(e) => setDocTitle(e.target.value)}
-                className="bg-transparent font-display text-xs sm:text-base font-bold text-white outline-none border-b border-transparent hover:border-[#7c3aed]/40 focus:border-[#7c3aed] transition truncate max-w-[170px] sm:max-w-xs"
+                className="bg-transparent font-display text-xs sm:text-base font-bold text-white outline-none border-b border-transparent hover:border-gold/40 focus:border-gold transition truncate max-w-[170px] sm:max-w-xs"
               />
-              <span className="rounded-full bg-gradient-to-r from-[#7c3aed] to-[#6366f1] px-2 py-0.5 text-[8.5px] sm:text-[9px] font-black uppercase text-white shadow-xs">
+              <span className="rounded-full bg-maroon px-2 py-0.5 text-[11px] font-black uppercase text-gold-shimmer shadow-xs">
                 PRO CANVAS
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-violet-300/80">
+            <div className="flex items-center gap-1.5 text-[11px] text-gold-300/80">
               <span>{dimensions.name}</span>
               <span>•</span>
               <span>{dimensions.width} × {dimensions.height} px</span>
@@ -2022,8 +2324,8 @@ export function CanvaCanvasEditor({
               onClick={() => setAspectRatio(ratio)}
               className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
                 aspectRatio === ratio
-                  ? "bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white shadow-sm"
-                  : "text-slate-300 hover:text-white hover:bg-white/5"
+                  ? "bg-gradient-to-r from-gold via-gold-500 to-gold-bright text-ink-950 shadow-sm"
+                  : "text-ivory-300 hover:text-white hover:bg-white/5"
               }`}
             >
               {ratio}
@@ -2066,7 +2368,7 @@ export function CanvaCanvasEditor({
             >
               -
             </button>
-            <span className="w-10 text-center font-bold text-violet-300">
+            <span className="w-10 text-center font-bold text-gold-300">
               {Math.round(zoom * 100)}%
             </span>
             <button
@@ -2079,7 +2381,7 @@ export function CanvaCanvasEditor({
             <button
               type="button"
               onClick={() => setZoom(1)}
-              className="ml-1 text-[10px] text-slate-400 hover:text-white"
+              className="ml-1 text-[11px] text-ivory-400 hover:text-white"
             >
               Fit
             </button>
@@ -2092,8 +2394,8 @@ export function CanvaCanvasEditor({
             title="ग्रिड मार्गदर्शक (Toggle Grid)"
             className={`hidden md:grid size-8 place-items-center rounded-lg border transition ${
               showGrid
-                ? "bg-[#7c3aed] text-white border-[#7c3aed]"
-                : "border-white/15 text-slate-300 hover:bg-white/10"
+                ? "bg-gold text-ink-950 border-gold"
+                : "border-white/15 text-ivory-300 hover:bg-white/10"
             }`}
           >
             ▦
@@ -2105,8 +2407,8 @@ export function CanvaCanvasEditor({
             onClick={() => setIsFullView((v) => !v)}
             className={`inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-xs font-bold transition ${
               isFullView
-                ? "bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white border-violet-400 font-extrabold shadow-sm"
-                : "border-white/15 text-slate-200 hover:border-violet-400 hover:bg-white/10"
+                ? "bg-gradient-to-r from-gold via-gold-500 to-gold-bright text-ink-950 border-gold-400 font-extrabold shadow-sm"
+                : "border-white/15 text-ivory-200 hover:border-gold-400 hover:bg-white/10"
             }`}
             title={isFullView ? "सामान्य दृश्यावर परत या (Exit Full View - Esc)" : "संपूर्ण स्क्रीन स्पेस उघडा (Full View Workspace)"}
           >
@@ -2121,7 +2423,7 @@ export function CanvaCanvasEditor({
             href={`/studio/editor${initialTemplateId ? `?template=${initialTemplateId}` : ""}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-2.5 sm:px-3 text-xs font-bold text-slate-200 hover:border-violet-400 hover:text-white hover:bg-white/10 transition"
+            className="inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-2.5 sm:px-3 text-xs font-bold text-ivory-200 hover:border-gold-400 hover:text-white hover:bg-white/10 transition"
             title="नवीन टॅबमध्ये स्टुडिओ उघडा (Open in New Tab with 100% Space)"
           >
             <span>⤢</span>
@@ -2143,7 +2445,7 @@ export function CanvaCanvasEditor({
             <button
               type="button"
               onClick={() => setShowExportModal((m) => !m)}
-              className="inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1.5 rounded-full bg-gradient-to-r from-[#7c3aed] via-[#6366f1] to-[#8247e5] px-3 sm:px-4 text-xs font-black text-white shadow-lg shadow-violet-900/30 hover:brightness-110 transition"
+              className="inline-flex min-h-[34px] sm:min-h-[36px] items-center gap-1.5 rounded-full bg-gradient-to-r from-gold via-gold-500 to-gold-bright px-3 sm:px-4 text-xs font-black text-ink-950 shadow-lg shadow-maroon-950/40 hover:brightness-110 transition"
             >
               <span>📥</span>
               <span>एक्सपोर्ट / प्रिंट ▾</span>
@@ -2157,12 +2459,12 @@ export function CanvaCanvasEditor({
               />
             )}
             {showExportModal && (
-              <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-white/15 bg-[#111026] p-2 text-white shadow-[0_20px_50px_rgba(0,0,0,0.85)] z-50 backdrop-blur-xl">
+              <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-white/15 bg-maroon-900 p-2 text-white shadow-[0_20px_50px_rgba(0,0,0,0.85)] z-50 backdrop-blur-xl">
                 <div className="px-3 py-2 border-b border-white/10">
                   <div className="text-xs font-bold text-white">
                     प्रो एक्सपोर्ट पर्याय (Export Options)
                   </div>
-                  <div className="text-[10.5px] text-slate-400">
+                  <div className="text-[11px] text-ivory-400">
                     उच्च दर्जाचे आउटपुट पर्याय
                   </div>
                 </div>
@@ -2179,7 +2481,7 @@ export function CanvaCanvasEditor({
                     <span className="text-base">🖼️</span>
                     <div>
                       <div>PNG इमेज डाउनलोड करा</div>
-                      <div className="text-[10px] text-slate-400 font-normal">२x हाय-रिझोल्यूशन इमेज</div>
+                      <div className="text-[11px] text-ivory-400 font-normal">२x हाय-रिझोल्यूशन इमेज</div>
                     </div>
                   </button>
 
@@ -2194,7 +2496,7 @@ export function CanvaCanvasEditor({
                     <span className="text-base">📋</span>
                     <div>
                       <div>क्लिपबोर्डवर कॉपी करा</div>
-                      <div className="text-[10px] text-slate-400 font-normal">थेट Paste (Ctrl+V) करण्यासाठी</div>
+                      <div className="text-[11px] text-ivory-400 font-normal">थेट Paste (Ctrl+V) करण्यासाठी</div>
                     </div>
                   </button>
 
@@ -2209,7 +2511,7 @@ export function CanvaCanvasEditor({
                     <span className="text-base">🎨</span>
                     <div>
                       <div>वेक्टर SVG डाउनलोड करा</div>
-                      <div className="text-[10px] text-slate-400 font-normal">प्रिंटर्स व कोरलड्रॉसाठी अचूक</div>
+                      <div className="text-[11px] text-ivory-400 font-normal">प्रिंटर्स व कोरलड्रॉसाठी अचूक</div>
                     </div>
                   </button>
 
@@ -2224,7 +2526,7 @@ export function CanvaCanvasEditor({
                     <span className="text-base">🖨️</span>
                     <div>
                       <div>३०० DPI प्रिंट / PDF</div>
-                      <div className="text-[10px] text-slate-400 font-normal">प्रेस-रेडी छपाईसाठी</div>
+                      <div className="text-[11px] text-ivory-400 font-normal">प्रेस-रेडी छपाईसाठी</div>
                     </div>
                   </button>
 
@@ -2241,7 +2543,7 @@ export function CanvaCanvasEditor({
                     <span className="text-base">💾</span>
                     <div>
                       <div>प्रोजेक्ट फाइल सेव्ह करा (JSON)</div>
-                      <div className="text-[10px] text-slate-400 font-normal">कधीही पुन्हा काम करण्यासाठी</div>
+                      <div className="text-[11px] text-ivory-400 font-normal">कधीही पुन्हा काम करण्यासाठी</div>
                     </div>
                   </button>
 
@@ -2256,7 +2558,7 @@ export function CanvaCanvasEditor({
                     <span className="text-base">📂</span>
                     <div>
                       <div>प्रोजेक्ट फाइल उघडा (Restore JSON)</div>
-                      <div className="text-[10px] text-slate-400 font-normal">सेव्ह केलेले डिझाइन लोड करा</div>
+                      <div className="text-[11px] text-ivory-400 font-normal">सेव्ह केलेले डिझाइन लोड करा</div>
                     </div>
                   </button>
 
@@ -2271,7 +2573,7 @@ export function CanvaCanvasEditor({
                     <span className="text-base">🔗</span>
                     <div>
                       <div>{copiedLink ? "लिंक कॉपी झाली! ✓" : "डिझाइन लिंक कॉपी करा"}</div>
-                      <div className="text-[10px] text-slate-400 font-normal">मित्रांना शेअर करण्यासाठी</div>
+                      <div className="text-[11px] text-ivory-400 font-normal">मित्रांना शेअर करण्यासाठी</div>
                     </div>
                   </button>
                 </div>
@@ -2279,12 +2581,18 @@ export function CanvaCanvasEditor({
             )}
           </div>
 
+          {statusMsg && (
+            <span role="status" aria-live="polite" className="hidden md:inline-flex max-w-[220px] items-center truncate rounded-xl border border-gold-500/40 bg-gold-500/15 px-2.5 py-1.5 text-[11px] font-bold text-gold-bright">
+              {statusMsg}
+            </span>
+          )}
+
           {/* Right Inspector Toggle Button */}
           <button
             type="button"
             onClick={() => setRightInspectorOpen((v) => !v)}
             title={rightInspectorOpen ? "उजवे पॅनल लपवा (Hide Inspector)" : "उजवे पॅनल दाखवा (Show Inspector)"}
-            className="hidden lg:grid size-8 place-items-center rounded-lg border border-white/15 text-xs text-slate-300 hover:bg-white/10 transition"
+            className="hidden lg:grid size-8 place-items-center rounded-lg border border-white/15 text-xs text-ivory-300 hover:bg-white/10 transition"
           >
             {rightInspectorOpen ? "▶" : "◀"}
           </button>
@@ -2305,10 +2613,10 @@ export function CanvaCanvasEditor({
             : !leftDockOpen && rightInspectorOpen
             ? "grid-cols-1 lg:grid-cols-[72px_1fr_310px]"
             : "grid-cols-1 lg:grid-cols-[72px_1fr]"
-        } bg-[#0e0d26]`}
+        } bg-maroon-deep`}
       >
         {/* ── 1. CANVA PRIMARY TOOL DOCK (Left Narrow Icons) ── */}
-        <aside className="hidden lg:flex flex-col items-center gap-2.5 border-r border-white/10 bg-[#111026] py-3">
+        <aside className="hidden lg:flex flex-col items-center gap-2.5 border-r border-white/10 bg-maroon-900 py-3">
           {[
             { id: "templates" as const, icon: "📁", label: "नमुने" },
             { id: "blocks" as const, icon: "⚡", label: "तयार घटक" },
@@ -2330,19 +2638,19 @@ export function CanvaCanvasEditor({
                 }}
                 className={`group flex w-14 flex-col items-center gap-0.5 rounded-2xl p-2 transition ${
                   active
-                    ? "bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white font-bold shadow-md shadow-violet-900/40"
-                    : "text-slate-400 hover:bg-white/5 hover:text-white"
+                    ? "bg-gradient-to-r from-gold via-gold-500 to-gold-bright text-ink-950 font-bold shadow-md shadow-maroon-950/40"
+                    : "text-ivory-400 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <span className="text-lg group-hover:scale-110 transition-transform">{tab.icon}</span>
-                <span className="text-[9.5px] font-semibold leading-tight">{tab.label}</span>
+                <span className="text-[11px] font-semibold leading-tight">{tab.label}</span>
               </button>
             );
           })}
         </aside>
 
         {/* ── Mobile Horizontal Tool Tabs (Shown on small screens) ── */}
-        <div className="flex lg:hidden overflow-x-auto border-b border-white/10 bg-[#111026] p-2 gap-1.5 scrollbar-none">
+        <div className="flex lg:hidden overflow-x-auto border-b border-white/10 bg-maroon-900 p-2 gap-1.5 scrollbar-none">
           {[
             { id: "templates" as const, icon: "📁", label: "नमुने" },
             { id: "blocks" as const, icon: "⚡", label: "तयार घटक" },
@@ -2359,8 +2667,8 @@ export function CanvaCanvasEditor({
               onClick={() => setActiveTab(tab.id)}
               className={`flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold ${
                 activeTab === tab.id
-                  ? "bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white"
-                  : "bg-white/5 text-slate-300 hover:bg-white/10"
+                  ? "bg-gradient-to-r from-gold via-gold-500 to-gold-bright text-ink-950"
+                  : "bg-white/5 text-ivory-300 hover:bg-white/10"
               }`}
             >
               <span>{tab.icon}</span>
@@ -2371,7 +2679,7 @@ export function CanvaCanvasEditor({
 
         {/* ── 2. EXPANDED TOOL PANEL (Left Drawer Content) ── */}
         {leftDockOpen && (
-        <div className="border-r border-white/10 bg-[#0e0d26]/98 p-4 overflow-y-auto max-h-[780px]">
+        <div className="border-r border-white/10 bg-maroon-deep/98 p-4 overflow-y-auto max-h-[780px]">
           {/* TAB 1: 50+ MASTER TEMPLATES */}
           {activeTab === "templates" && (
             <div className="space-y-4">
@@ -2382,7 +2690,7 @@ export function CanvaCanvasEditor({
                 <button
                   type="button"
                   onClick={handleStartBlank}
-                  className="rounded-lg bg-white/10 px-2 py-1 text-[11px] font-bold text-[#fef3c7] hover:bg-[#dfb150] hover:text-[#240307] transition"
+                  className="rounded-lg bg-white/10 px-2 py-1 text-[11px] font-bold text-haldi-soft hover:bg-gold-500 hover:text-maroon-950 transition"
                 >
                   + कोरा कॅनव्हास
                 </button>
@@ -2394,7 +2702,7 @@ export function CanvaCanvasEditor({
                 value={templateSearch}
                 onChange={(e) => setTemplateSearch(e.target.value)}
                 placeholder="टेम्पलेट शोधा (उदा. विवाह, साखरपुडा)..."
-                className="w-full rounded-xl border border-[#dfb150]/30 bg-black/40 px-3 py-2 text-xs text-[#fef3c7] placeholder-[#fef3c7]/40 outline-none focus:border-[#dfb150]"
+                className="w-full rounded-xl border border-gold-500/30 bg-black/40 px-3 py-2 text-xs text-haldi-soft placeholder-[#fef3c7]/40 outline-none focus:border-gold-500"
               />
 
               {/* Category Pills */}
@@ -2410,10 +2718,10 @@ export function CanvaCanvasEditor({
                     key={cat.id}
                     type="button"
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold transition ${
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition ${
                       selectedCategory === cat.id
-                        ? "bg-[#dfb150] text-[#240307]"
-                        : "bg-white/5 text-[#fef3c7]/60 hover:text-white"
+                        ? "bg-gold-500 text-maroon-950"
+                        : "bg-white/5 text-haldi-soft/60 hover:text-white"
                     }`}
                   >
                     {cat.label}
@@ -2427,21 +2735,41 @@ export function CanvaCanvasEditor({
                   <div
                     key={tmpl.id}
                     onClick={() => loadMasterTemplate(tmpl)}
-                    className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#dfb150]/25 bg-black/40 p-2 transition hover:border-[#dfb150] hover:shadow-lg hover:shadow-[#dfb150]/15"
+                    className="group relative cursor-pointer overflow-hidden rounded-xl border border-gold-500/25 bg-black/40 p-2 transition hover:border-gold-500 hover:shadow-lg hover:shadow-gold-500/15"
                   >
                     <div
                       className="h-28 w-full rounded-lg relative overflow-hidden flex flex-col items-center justify-center p-2 text-center"
                       style={{ background: tmpl.bgGradient }}
                     >
-                      <div className="text-xl">👑</div>
-                      <p className="mt-1 font-marathi-display text-[11px] font-bold text-[#ffe18a] line-clamp-1">
-                        {tmpl.nameMr}
-                      </p>
-                      <span className="mt-1 rounded-full bg-[#dfb150]/20 px-1.5 py-0.5 text-[8.5px] font-bold text-[#ffd700]">
-                        {tmpl.badge}
-                      </span>
+                      {tmpl.sample?.photoUrl ? (
+                        <>
+                          <img
+                            src={tmpl.sample.photoUrl}
+                            alt={tmpl.nameMr}
+                            className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
+                          <span className="absolute top-1.5 right-1.5 rounded-full bg-gold-500 px-1.5 py-0.5 text-[11px] font-black text-maroon-950 shadow-xs">
+                            {tmpl.badge}
+                          </span>
+                          <p className="absolute bottom-1.5 inset-x-1 font-marathi-display text-[11px] font-bold text-white line-clamp-1 drop-shadow">
+                            {tmpl.nameMr}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-xl">👑</div>
+                          <p className="mt-1 font-marathi-display text-[11px] font-bold text-[#ffe18a] line-clamp-1">
+                            {tmpl.nameMr}
+                          </p>
+                          <span className="mt-1 rounded-full bg-gold-500/20 px-1.5 py-0.5 text-[11px] font-bold text-gold-bright">
+                            {tmpl.badge}
+                          </span>
+                        </>
+                      )}
                     </div>
-                    <p className="mt-1.5 text-[10px] text-[#fef3c7]/70 truncate text-center">
+                    <p className="mt-1.5 text-[11px] text-haldi-soft/70 truncate text-center">
                       {tmpl.descMr}
                     </p>
                   </div>
@@ -2454,10 +2782,10 @@ export function CanvaCanvasEditor({
           {activeTab === "blocks" && (
             <div className="space-y-4">
               <div>
-                <h3 className="font-display text-sm font-bold text-[#ffd700]">
+                <h3 className="font-display text-sm font-bold text-gold-bright">
                   तयार डिझाइन विभाग (Ready Blocks)
                 </h3>
-                <p className="text-[11px] text-[#fef3c7]/65 mt-0.5">
+                <p className="text-[11px] text-haldi-soft/65 mt-0.5">
                   १-क्लिकमध्ये सुंदर संरेखित विभाग कॅनव्हासवर जोडा
                 </p>
               </div>
@@ -2517,20 +2845,20 @@ export function CanvaCanvasEditor({
                     key={b.id}
                     type="button"
                     onClick={() => handleAddReadyBlock(b.id)}
-                    className="w-full flex items-start gap-3 rounded-2xl border border-[#dfb150]/25 bg-black/40 p-3 text-left hover:border-[#dfb150] hover:bg-[#dfb150]/15 transition group"
+                    className="w-full flex items-start gap-3 rounded-2xl border border-gold-500/25 bg-black/40 p-3 text-left hover:border-gold-500 hover:bg-gold-500/15 transition group"
                   >
                     <span className="text-2xl rounded-xl bg-white/5 p-2 group-hover:scale-110 transition-transform">
                       {b.icon}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-[#fef3c7] group-hover:text-[#ffd700]">
+                      <div className="text-xs font-bold text-haldi-soft group-hover:text-gold-bright">
                         {b.title}
                       </div>
-                      <div className="text-[10.5px] text-[#fef3c7]/60 truncate mt-0.5">
+                      <div className="text-[11px] text-haldi-soft/60 truncate mt-0.5">
                         {b.desc}
                       </div>
                     </div>
-                    <span className="text-xs text-[#dfb150] font-bold self-center">
+                    <span className="text-xs text-gold-500 font-bold self-center">
                       + जोडा
                     </span>
                   </button>
@@ -2542,7 +2870,7 @@ export function CanvaCanvasEditor({
           {/* TAB 2: TEXT & AUSPICIOUS CALLIGRAPHY */}
           {activeTab === "text" && (
             <div className="space-y-5">
-              <h3 className="font-display text-sm font-bold text-[#ffd700]">
+              <h3 className="font-display text-sm font-bold text-gold-bright">
                 मजकूर जोडा (Text Elements)
               </h3>
 
@@ -2551,38 +2879,38 @@ export function CanvaCanvasEditor({
                 <button
                   type="button"
                   onClick={() => addTextElement("नवीन मोठा मथळा", 36, "black")}
-                  className="w-full rounded-xl border border-[#dfb150]/30 bg-black/30 p-3 text-left hover:border-[#dfb150] hover:bg-[#dfb150]/10 transition"
+                  className="w-full rounded-xl border border-gold-500/30 bg-black/30 p-3 text-left hover:border-gold-500 hover:bg-gold-500/10 transition"
                 >
                   <p className="font-serif text-lg font-black text-[#ffe18a]">
                     + मोठा मथळा जोडा (Heading)
                   </p>
-                  <p className="text-[11px] text-[#fef3c7]/50">ठळक व भव्य शीर्षक</p>
+                  <p className="text-[11px] text-haldi-soft/50">ठळक व भव्य शीर्षक</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => addTextElement("उपमथळा किंवा विशेष तारीख", 24, "bold")}
-                  className="w-full rounded-xl border border-[#dfb150]/30 bg-black/30 p-2.5 text-left hover:border-[#dfb150] hover:bg-[#dfb150]/10 transition"
+                  className="w-full rounded-xl border border-gold-500/30 bg-black/30 p-2.5 text-left hover:border-gold-500 hover:bg-gold-500/10 transition"
                 >
-                  <p className="font-display text-sm font-bold text-[#fef3c7]">
+                  <p className="font-display text-sm font-bold text-haldi-soft">
                     + उपमथळा जोडा (Subheading)
                   </p>
-                  <p className="text-[11px] text-[#fef3c7]/50">दिनांक, वेळ व विशेष सूचना</p>
+                  <p className="text-[11px] text-haldi-soft/50">दिनांक, वेळ व विशेष सूचना</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => addTextElement("येथे तपशील, पत्ता व निमंत्रकांची नावे लिहा.", 16, "normal")}
-                  className="w-full rounded-xl border border-[#dfb150]/30 bg-black/30 p-2 text-left hover:border-[#dfb150] hover:bg-[#dfb150]/10 transition"
+                  className="w-full rounded-xl border border-gold-500/30 bg-black/30 p-2 text-left hover:border-gold-500 hover:bg-gold-500/10 transition"
                 >
-                  <p className="text-xs text-[#fef3c7]/90 font-medium">
+                  <p className="text-xs text-haldi-soft/90 font-medium">
                     + तपशील मजकूर जोडा (Body Text)
                   </p>
-                  <p className="text-[10px] text-[#fef3c7]/50">पत्ता, स्वागत व नातेसंबंध</p>
+                  <p className="text-[11px] text-haldi-soft/50">पत्ता, स्वागत व नातेसंबंध</p>
                 </button>
               </div>
 
               {/* 1-Click Auspicious Calligraphy Presets */}
-              <div className="border-t border-[#dfb150]/20 pt-4">
-                <h4 className="font-display text-xs font-bold text-[#ffd700] mb-2.5">
+              <div className="border-t border-gold-500/20 pt-4">
+                <h4 className="font-display text-xs font-bold text-gold-bright mb-2.5">
                   १-क्लिक शुभ वचने व मथळे (Devanagari Presets)
                 </h4>
                 <div className="grid grid-cols-1 gap-1.5">
@@ -2591,10 +2919,10 @@ export function CanvaCanvasEditor({
                       key={phrase.text}
                       type="button"
                       onClick={() => addTextElement(phrase.text, 22, "bold")}
-                      className="flex items-center justify-between rounded-xl border border-[#dfb150]/20 bg-white/5 px-3 py-2 text-left text-xs font-serif text-[#ffe18a] hover:border-[#dfb150] hover:bg-[#dfb150]/15 transition"
+                      className="flex items-center justify-between rounded-xl border border-gold-500/20 bg-white/5 px-3 py-2 text-left text-xs font-serif text-[#ffe18a] hover:border-gold-500 hover:bg-gold-500/15 transition"
                     >
                       <span className="truncate">{phrase.text}</span>
-                      <span className="text-[10px] text-[#dfb150] font-sans font-bold">+</span>
+                      <span className="text-[11px] text-gold-500 font-sans font-bold">+</span>
                     </button>
                   ))}
                 </div>
@@ -2605,13 +2933,13 @@ export function CanvaCanvasEditor({
           {/* TAB 3: ELEMENTS & SHAPES */}
           {activeTab === "elements" && (
             <div className="space-y-5">
-              <h3 className="font-display text-sm font-bold text-[#ffd700]">
+              <h3 className="font-display text-sm font-bold text-gold-bright">
                 घटक व आकार (Elements & Shapes)
               </h3>
 
               {/* Sacred Symbols & Ornaments */}
               <div>
-                <h4 className="text-xs font-bold text-[#fef3c7]/80 mb-2">
+                <h4 className="text-xs font-bold text-haldi-soft/80 mb-2">
                   पवित्र शुभ चिन्हे व नक्षी (Sacred Motifs)
                 </h4>
                 <div className="grid grid-cols-3 gap-2">
@@ -2639,10 +2967,10 @@ export function CanvaCanvasEditor({
                       key={item.id}
                       type="button"
                       onClick={() => addOrnamentElement(item.id)}
-                      className="flex flex-col items-center justify-center rounded-xl border border-[#dfb150]/20 bg-black/30 p-2.5 text-center hover:border-[#dfb150] hover:bg-[#dfb150]/10 transition"
+                      className="flex flex-col items-center justify-center rounded-xl border border-gold-500/20 bg-black/30 p-2.5 text-center hover:border-gold-500 hover:bg-gold-500/10 transition"
                     >
                       <span className="text-2xl">{item.icon}</span>
-                      <span className="text-[10.5px] mt-1 font-semibold text-[#fef3c7]">
+                      <span className="text-[11px] mt-1 font-semibold text-haldi-soft">
                         {item.label}
                       </span>
                     </button>
@@ -2651,8 +2979,8 @@ export function CanvaCanvasEditor({
               </div>
 
               {/* Geometrical Shapes */}
-              <div className="border-t border-[#dfb150]/20 pt-3">
-                <h4 className="text-xs font-bold text-[#fef3c7]/80 mb-2">
+              <div className="border-t border-gold-500/20 pt-3">
+                <h4 className="text-xs font-bold text-haldi-soft/80 mb-2">
                   आकार व फ्रेम्स (Shapes)
                 </h4>
                 <div className="grid grid-cols-4 gap-2">
@@ -2669,18 +2997,18 @@ export function CanvaCanvasEditor({
                       key={s.id}
                       type="button"
                       onClick={() => addShapeElement(s.id)}
-                      className="flex flex-col items-center justify-center rounded-xl border border-[#dfb150]/20 bg-black/30 p-2 hover:border-[#dfb150] hover:bg-[#dfb150]/10 transition"
+                      className="flex flex-col items-center justify-center rounded-xl border border-gold-500/20 bg-black/30 p-2 hover:border-gold-500 hover:bg-gold-500/10 transition"
                     >
-                      <span className="text-xl text-[#dfb150]">{s.icon}</span>
-                      <span className="text-[9.5px] mt-0.5 text-[#fef3c7]/80">{s.label}</span>
+                      <span className="text-xl text-gold-500">{s.icon}</span>
+                      <span className="text-[11px] mt-0.5 text-haldi-soft/80">{s.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Celebratory Emojis & Stickers */}
-              <div className="border-t border-[#dfb150]/20 pt-3">
-                <h4 className="text-xs font-bold text-[#fef3c7]/80 mb-2">
+              <div className="border-t border-gold-500/20 pt-3">
+                <h4 className="text-xs font-bold text-haldi-soft/80 mb-2">
                   उत्सव स्टिकर्स (Festive Accents)
                 </h4>
                 <div className="flex flex-wrap gap-2">
@@ -2689,7 +3017,7 @@ export function CanvaCanvasEditor({
                       key={emoji}
                       type="button"
                       onClick={() => addStickerElement(emoji)}
-                      className="grid size-9 place-items-center rounded-xl border border-[#dfb150]/20 bg-white/5 text-xl hover:scale-110 hover:border-[#dfb150] transition"
+                      className="grid size-9 place-items-center rounded-xl border border-gold-500/20 bg-white/5 text-xl hover:scale-110 hover:border-gold-500 transition"
                     >
                       {emoji}
                     </button>
@@ -2702,20 +3030,20 @@ export function CanvaCanvasEditor({
           {/* TAB 4: PHOTOS & FRAMES */}
           {activeTab === "photos" && (
             <div className="space-y-5">
-              <h3 className="font-display text-sm font-bold text-[#ffd700]">
+              <h3 className="font-display text-sm font-bold text-gold-bright">
                 फोटो व फ्रेम (Photos & Frames)
               </h3>
 
               {/* File Upload Box */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="cursor-pointer rounded-2xl border-2 border-dashed border-[#dfb150]/40 bg-black/40 p-6 text-center hover:border-[#dfb150] hover:bg-[#dfb150]/10 transition"
+                className="cursor-pointer rounded-2xl border-2 border-dashed border-gold-500/40 bg-black/40 p-6 text-center hover:border-gold-500 hover:bg-gold-500/10 transition"
               >
                 <div className="text-3xl">📷</div>
                 <p className="mt-2 text-xs font-bold text-[#ffe18a]">
                   फोटो अपलोड करा (Upload Photo)
                 </p>
-                <p className="text-[10px] text-[#fef3c7]/50 mt-1">
+                <p className="text-[11px] text-haldi-soft/50 mt-1">
                   वधू-वर किंवा कुटुंबाचा सुंदर फोटो निवडा
                 </p>
                 <input
@@ -2729,7 +3057,7 @@ export function CanvaCanvasEditor({
 
               {/* Frame Shapes Selection */}
               <div>
-                <h4 className="text-xs font-bold text-[#fef3c7]/80 mb-2">
+                <h4 className="text-xs font-bold text-haldi-soft/80 mb-2">
                   राजेशाही फ्रेम्स (Royal Frame Styles)
                 </h4>
                 <div className="grid grid-cols-3 gap-2">
@@ -2769,7 +3097,7 @@ export function CanvaCanvasEditor({
                           setSelectedId(newFrame.id);
                         }
                       }}
-                      className="rounded-xl border border-[#dfb150]/20 bg-black/30 p-2.5 text-center text-xs font-semibold text-[#fef3c7] hover:border-[#dfb150] hover:bg-[#dfb150]/15 transition"
+                      className="rounded-xl border border-gold-500/20 bg-black/30 p-2.5 text-center text-xs font-semibold text-haldi-soft hover:border-gold-500 hover:bg-gold-500/15 transition"
                     >
                       {f.label}
                     </button>
@@ -2782,7 +3110,7 @@ export function CanvaCanvasEditor({
           {/* TAB 5: COLORS & THEMES */}
           {activeTab === "colors" && (
             <div className="space-y-5">
-              <h3 className="font-display text-sm font-bold text-[#ffd700]">
+              <h3 className="font-display text-sm font-bold text-gold-bright">
                 रंग व थीम पॅलेट (Royal Themes)
               </h3>
 
@@ -2795,8 +3123,8 @@ export function CanvaCanvasEditor({
                     onClick={() => applyPalette(pal)}
                     className={`rounded-xl border p-2 text-left transition ${
                       activePaletteId === pal.id
-                        ? "border-[#ffd700] bg-white/10 shadow-md ring-1 ring-[#ffd700]"
-                        : "border-[#dfb150]/20 bg-black/30 hover:border-[#dfb150]/60"
+                        ? "border-gold-bright bg-white/10 shadow-md ring-1 ring-gold-bright"
+                        : "border-gold-500/20 bg-black/30 hover:border-gold-500/60"
                     }`}
                   >
                     <div className="flex items-center gap-1.5 mb-1.5">
@@ -2804,21 +3132,21 @@ export function CanvaCanvasEditor({
                       <span className="size-4 rounded-full border border-white/30" style={{ background: pal.accentColor }} />
                       <span className="size-4 rounded-full border border-white/30" style={{ background: pal.textColor }} />
                     </div>
-                    <p className="font-marathi-display text-xs font-bold text-[#fef3c7] line-clamp-1">
+                    <p className="font-marathi-display text-xs font-bold text-haldi-soft line-clamp-1">
                       {pal.nameMr}
                     </p>
-                    <p className="text-[9.5px] text-[#fef3c7]/50 truncate">{pal.nameEn}</p>
+                    <p className="text-[11px] text-haldi-soft/50 truncate">{pal.nameEn}</p>
                   </button>
                 ))}
               </div>
 
               {/* Custom Color Pickers */}
-              <div className="border-t border-[#dfb150]/20 pt-3 space-y-3">
-                <h4 className="text-xs font-bold text-[#ffd700]">
+              <div className="border-t border-gold-500/20 pt-3 space-y-3">
+                <h4 className="text-xs font-bold text-gold-bright">
                   कस्टम रंग (Custom Color Adjustments)
                 </h4>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#fef3c7]">पार्श्वभूमी (Background)</span>
+                  <span className="text-xs text-haldi-soft">पार्श्वभूमी (Background)</span>
                   <input
                     type="color"
                     value={customBgColor}
@@ -2827,7 +3155,7 @@ export function CanvaCanvasEditor({
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#fef3c7]">सुवर्ण नक्षी (Gold Accent)</span>
+                  <span className="text-xs text-haldi-soft">सुवर्ण नक्षी (Gold Accent)</span>
                   <input
                     type="color"
                     value={customAccentColor}
@@ -2836,7 +3164,7 @@ export function CanvaCanvasEditor({
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#fef3c7]">मजकूर रंग (Text Color)</span>
+                  <span className="text-xs text-haldi-soft">मजकूर रंग (Text Color)</span>
                   <input
                     type="color"
                     value={customTextColor}
@@ -2851,7 +3179,7 @@ export function CanvaCanvasEditor({
           {/* TAB 6: MAGIC SHADERS & PARTICLES */}
           {activeTab === "effects" && (
             <div className="space-y-5">
-              <h3 className="font-display text-sm font-bold text-[#ffd700]">
+              <h3 className="font-display text-sm font-bold text-gold-bright">
                 जादू व पार्टिकल इफेक्ट्स (Magic Shaders)
               </h3>
 
@@ -2868,8 +3196,8 @@ export function CanvaCanvasEditor({
                     onClick={() => setParticleShower(ef.id)}
                     className={`w-full rounded-xl border p-2.5 text-left text-xs font-bold transition ${
                       particleShower === ef.id
-                        ? "border-[#ffd700] bg-[#dfb150]/20 text-[#ffd700]"
-                        : "border-[#dfb150]/20 bg-black/30 text-[#fef3c7]/80 hover:bg-white/5"
+                        ? "border-gold-bright bg-gold-500/20 text-gold-bright"
+                        : "border-gold-500/20 bg-black/30 text-haldi-soft/80 hover:bg-white/5"
                     }`}
                   >
                     {ef.label}
@@ -2877,8 +3205,8 @@ export function CanvaCanvasEditor({
                 ))}
               </div>
 
-              <div className="border-t border-[#dfb150]/20 pt-3">
-                <label className="text-xs text-[#fef3c7] block mb-1.5">
+              <div className="border-t border-gold-500/20 pt-3">
+                <label className="text-xs text-haldi-soft block mb-1.5">
                   दमास्क नक्षी पारदर्शकता (Pattern Opacity)
                 </label>
                 <input
@@ -2888,7 +3216,7 @@ export function CanvaCanvasEditor({
                   step="0.02"
                   value={patternOpacity}
                   onChange={(e) => setPatternOpacity(parseFloat(e.target.value))}
-                  className="w-full accent-[#dfb150]"
+                  className="w-full accent-gold-500"
                 />
               </div>
             </div>
@@ -2897,7 +3225,7 @@ export function CanvaCanvasEditor({
           {/* TAB 7: LAYERS MANAGER */}
           {activeTab === "layers" && (
             <div className="space-y-4">
-              <h3 className="font-display text-sm font-bold text-[#ffd700]">
+              <h3 className="font-display text-sm font-bold text-gold-bright">
                 लेयर्स व्यवस्थापक (Layers Stack · {elements.length})
               </h3>
               <div className="space-y-1.5 max-h-[500px] overflow-y-auto">
@@ -2911,8 +3239,8 @@ export function CanvaCanvasEditor({
                         onClick={() => setSelectedId(el.id)}
                         className={`flex items-center justify-between rounded-xl border p-2 text-xs transition cursor-pointer ${
                           selected
-                            ? "border-[#ffd700] bg-[#dfb150]/20 text-[#ffd700]"
-                            : "border-[#dfb150]/20 bg-black/30 text-[#fef3c7]/80 hover:bg-white/5"
+                            ? "border-gold-bright bg-gold-500/20 text-gold-bright"
+                            : "border-gold-500/20 bg-black/30 text-haldi-soft/80 hover:bg-white/5"
                         }`}
                       >
                         <span className="truncate max-w-[140px] font-semibold">{el.name}</span>
@@ -2987,7 +3315,7 @@ export function CanvaCanvasEditor({
                   aria-hidden="true"
                   className="pointer-events-none absolute inset-0 z-50 opacity-15"
                   style={{
-                    backgroundImage: "linear-gradient(to right, #dfb150 1px, transparent 1px), linear-gradient(to bottom, #dfb150 1px, transparent 1px)",
+                    backgroundImage: "linear-gradient(to right, var(--color-gold-500) 1px, transparent 1px), linear-gradient(to bottom, var(--color-gold-500) 1px, transparent 1px)",
                     backgroundSize: "40px 40px",
                   }}
                 />
@@ -2997,7 +3325,7 @@ export function CanvaCanvasEditor({
               {showSafeMargins && (
                 <div
                   aria-hidden="true"
-                  className="pointer-events-none absolute inset-8 z-40 rounded-xl border border-dashed border-[#dfb150]/20"
+                  className="pointer-events-none absolute inset-8 z-40 rounded-xl border border-dashed border-gold-500/20"
                 />
               )}
 
@@ -3007,7 +3335,7 @@ export function CanvaCanvasEditor({
                   aria-hidden="true"
                   className="pointer-events-none absolute inset-0 z-30 opacity-40"
                   style={{
-                    backgroundImage: "radial-gradient(circle, #dfb150 1.5px, transparent 1.5px)",
+                    backgroundImage: "radial-gradient(circle, var(--color-gold-500) 1.5px, transparent 1.5px)",
                     backgroundSize: "28px 28px",
                   }}
                 />
@@ -3021,6 +3349,7 @@ export function CanvaCanvasEditor({
                 return (
                   <div
                     key={el.id}
+                    data-el-id={el.id}
                     onMouseDown={(e) => handleElementMouseDown(e, el)}
                     style={{
                       position: "absolute",
@@ -3035,20 +3364,20 @@ export function CanvaCanvasEditor({
                     }}
                     className={`group ${
                       isSelected
-                        ? "ring-2 ring-[#ffd700] ring-offset-2 ring-offset-transparent"
-                        : "hover:ring-1 hover:ring-[#dfb150]/50"
+                        ? "ring-2 ring-gold-bright ring-offset-2 ring-offset-transparent"
+                        : "hover:ring-1 hover:ring-gold-500/50"
                     }`}
                   >
                     {/* Floating Context Toolbar above selected element */}
                     {isSelected && !el.locked && (
                       <div
-                        className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-lg bg-[#240307] px-2 py-1 shadow-xl border border-[#dfb150]/40 z-50 whitespace-nowrap text-xs"
+                        className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-lg bg-maroon-950 px-2 py-1 shadow-xl border border-gold-500/40 z-50 whitespace-nowrap text-xs"
                         onMouseDown={(e) => e.stopPropagation()}
                       >
                         <button
                           type="button"
                           onClick={() => duplicateElement(el.id)}
-                          className="px-1.5 py-0.5 rounded text-[#ffd700] hover:bg-white/10"
+                          className="px-1.5 py-0.5 rounded text-gold-bright hover:bg-white/10"
                           title="प्रत बनवा (Duplicate)"
                         >
                           📋
@@ -3056,7 +3385,7 @@ export function CanvaCanvasEditor({
                         <button
                           type="button"
                           onClick={() => changeZIndex(el.id, "front")}
-                          className="px-1.5 py-0.5 rounded text-[#ffd700] hover:bg-white/10"
+                          className="px-1.5 py-0.5 rounded text-gold-bright hover:bg-white/10"
                           title="सर्वात पुढे आणा"
                         >
                           ⬆
@@ -3064,7 +3393,7 @@ export function CanvaCanvasEditor({
                         <button
                           type="button"
                           onClick={() => changeZIndex(el.id, "back")}
-                          className="px-1.5 py-0.5 rounded text-[#ffd700] hover:bg-white/10"
+                          className="px-1.5 py-0.5 rounded text-gold-bright hover:bg-white/10"
                           title="सर्वात मागे पाठवा"
                         >
                           ⬇
@@ -3072,7 +3401,7 @@ export function CanvaCanvasEditor({
                         <button
                           type="button"
                           onClick={() => updateElement(el.id, "locked", true)}
-                          className="px-1.5 py-0.5 rounded text-[#ffd700] hover:bg-white/10"
+                          className="px-1.5 py-0.5 rounded text-gold-bright hover:bg-white/10"
                           title="लॉक करा"
                         >
                           🔒
@@ -3093,19 +3422,19 @@ export function CanvaCanvasEditor({
                       <>
                         <div
                           onMouseDown={(e) => handleResizeMouseDown(e, "nw")}
-                          className="absolute -top-1.5 -left-1.5 size-3 rounded-full bg-[#ffd700] border border-[#240307] cursor-nwse-resize z-50"
+                          className="absolute -top-1.5 -left-1.5 size-3 rounded-full bg-gold-bright border border-maroon-950 cursor-nwse-resize z-50"
                         />
                         <div
                           onMouseDown={(e) => handleResizeMouseDown(e, "ne")}
-                          className="absolute -top-1.5 -right-1.5 size-3 rounded-full bg-[#ffd700] border border-[#240307] cursor-nesw-resize z-50"
+                          className="absolute -top-1.5 -right-1.5 size-3 rounded-full bg-gold-bright border border-maroon-950 cursor-nesw-resize z-50"
                         />
                         <div
                           onMouseDown={(e) => handleResizeMouseDown(e, "se")}
-                          className="absolute -bottom-1.5 -right-1.5 size-3 rounded-full bg-[#ffd700] border border-[#240307] cursor-nwse-resize z-50"
+                          className="absolute -bottom-1.5 -right-1.5 size-3 rounded-full bg-gold-bright border border-maroon-950 cursor-nwse-resize z-50"
                         />
                         <div
                           onMouseDown={(e) => handleResizeMouseDown(e, "sw")}
-                          className="absolute -bottom-1.5 -left-1.5 size-3 rounded-full bg-[#ffd700] border border-[#240307] cursor-nesw-resize z-50"
+                          className="absolute -bottom-1.5 -left-1.5 size-3 rounded-full bg-gold-bright border border-maroon-950 cursor-nesw-resize z-50"
                         />
                       </>
                     )}
@@ -3236,6 +3565,9 @@ export function CanvaCanvasEditor({
                           <img
                             src={el.photoUrl}
                             alt="Uploaded"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
                             className={`w-full h-full object-cover ${
                               el.frameShape === "oval"
                                 ? "rounded-[50%]"
@@ -3259,7 +3591,7 @@ export function CanvaCanvasEditor({
                             }`}
                           >
                             <span className="text-3xl">📷</span>
-                            <span className="text-[10px] text-[#ffd700] mt-1 font-bold">
+                            <span className="text-[11px] text-gold-bright mt-1 font-bold">
                               येथे फोटो टाका
                             </span>
                           </div>
@@ -3289,7 +3621,7 @@ export function CanvaCanvasEditor({
 
         {/* ── 4. RIGHT PROPERTIES & INSPECTOR DOCK ── */}
         {rightInspectorOpen && (
-          <aside className="border-l border-white/10 bg-[#111026] p-4 overflow-y-auto max-h-[780px]">
+          <aside className="border-l border-white/10 bg-maroon-900 p-4 overflow-y-auto max-h-[780px]">
           {selectedElement ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-white/10 pb-2">
@@ -3299,7 +3631,7 @@ export function CanvaCanvasEditor({
                 <button
                   type="button"
                   onClick={() => setSelectedId(null)}
-                  className="text-xs text-slate-400 hover:text-white"
+                  className="text-xs text-ivory-400 hover:text-white"
                 >
                   ✕
                 </button>
@@ -3309,7 +3641,7 @@ export function CanvaCanvasEditor({
               {selectedElement.type === "text" && (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[11px] font-bold text-[#fef3c7] block mb-1">
+                    <label className="text-[11px] font-bold text-haldi-soft block mb-1">
                       मजकूर संपादन (Devanagari Phonetic)
                     </label>
                     <TransliteratedInput
@@ -3321,7 +3653,7 @@ export function CanvaCanvasEditor({
 
                   {/* Font Family Selector */}
                   <div>
-                    <label className="text-[11px] font-bold text-[#fef3c7] block mb-1">
+                    <label className="text-[11px] font-bold text-haldi-soft block mb-1">
                       फॉन्ट शैली (Typography)
                     </label>
                     <select
@@ -3333,7 +3665,7 @@ export function CanvaCanvasEditor({
                           e.target.value as CanvasElement["fontFamily"]
                         )
                       }
-                      className="w-full rounded-xl border border-[#dfb150]/30 bg-black/40 px-2.5 py-1.5 text-xs text-[#fef3c7] outline-none"
+                      className="w-full rounded-xl border border-gold-500/30 bg-black/40 px-2.5 py-1.5 text-xs text-haldi-soft outline-none"
                     >
                       <option value="display">राजेशाही डिस्प्ले (Tiro Serif)</option>
                       <option value="serif">पारंपरिक सेरिफ (Noto Serif)</option>
@@ -3344,7 +3676,7 @@ export function CanvaCanvasEditor({
                   {/* Font Size & Weight */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[11px] text-[#fef3c7] block mb-1">
+                      <label className="text-[11px] text-haldi-soft block mb-1">
                         फॉन्ट आकार: {selectedElement.fontSize}px
                       </label>
                       <input
@@ -3355,11 +3687,11 @@ export function CanvaCanvasEditor({
                         onChange={(e) =>
                           updateElement(selectedElement.id, "fontSize", parseInt(e.target.value))
                         }
-                        className="w-full accent-[#dfb150]"
+                        className="w-full accent-gold-500"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] text-[#fef3c7] block mb-1">वजन</label>
+                      <label className="text-[11px] text-haldi-soft block mb-1">वजन</label>
                       <select
                         value={selectedElement.fontWeight || "bold"}
                         onChange={(e) =>
@@ -3369,7 +3701,7 @@ export function CanvaCanvasEditor({
                             e.target.value as CanvasElement["fontWeight"]
                           )
                         }
-                        className="w-full rounded-xl border border-[#dfb150]/30 bg-black/40 px-2 py-1 text-xs text-[#fef3c7] outline-none"
+                        className="w-full rounded-xl border border-gold-500/30 bg-black/40 px-2 py-1 text-xs text-haldi-soft outline-none"
                       >
                         <option value="normal">Normal</option>
                         <option value="bold">Bold</option>
@@ -3379,8 +3711,8 @@ export function CanvaCanvasEditor({
                   </div>
 
                   {/* Text Color & Gold Foil */}
-                  <div className="flex items-center justify-between border-t border-[#dfb150]/15 pt-2">
-                    <span className="text-xs text-[#fef3c7]">मजकूर रंग</span>
+                  <div className="flex items-center justify-between border-t border-gold-500/15 pt-2">
+                    <span className="text-xs text-haldi-soft">मजकूर रंग</span>
                     <input
                       type="color"
                       value={selectedElement.color || customTextColor}
@@ -3389,20 +3721,20 @@ export function CanvaCanvasEditor({
                     />
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-[#dfb150]/15 pt-2">
-                    <span className="text-xs text-[#fef3c7]">✨ २४K सुवर्ण फॉइल इफेक्ट</span>
+                  <div className="flex items-center justify-between border-t border-gold-500/15 pt-2">
+                    <span className="text-xs text-haldi-soft">✨ २४K सुवर्ण फॉइल इफेक्ट</span>
                     <input
                       type="checkbox"
                       checked={Boolean(selectedElement.goldFoil)}
                       onChange={(e) => updateElement(selectedElement.id, "goldFoil", e.target.checked)}
-                      className="accent-[#dfb150] size-4"
+                      className="accent-gold-500 size-4"
                     />
                   </div>
 
                   {/* Text Align */}
                   <div>
-                    <label className="text-[11px] text-[#fef3c7] block mb-1">संरेखन (Align)</label>
-                    <div className="flex rounded-xl bg-black/40 p-1 border border-[#dfb150]/20">
+                    <label className="text-[11px] text-haldi-soft block mb-1">संरेखन (Align)</label>
+                    <div className="flex rounded-xl bg-black/40 p-1 border border-gold-500/20">
                       {(["left", "center", "right"] as const).map((align) => (
                         <button
                           key={align}
@@ -3410,8 +3742,8 @@ export function CanvaCanvasEditor({
                           onClick={() => updateElement(selectedElement.id, "textAlign", align)}
                           className={`flex-1 py-1 text-xs font-bold rounded-lg ${
                             selectedElement.textAlign === align
-                              ? "bg-[#dfb150] text-[#240307]"
-                              : "text-[#fef3c7]/60 hover:text-white"
+                              ? "bg-gold-500 text-maroon-950"
+                              : "text-haldi-soft/60 hover:text-white"
                           }`}
                         >
                           {align === "left" ? "डावे" : align === "center" ? "मध्य" : "उजवे"}
@@ -3421,9 +3753,9 @@ export function CanvaCanvasEditor({
                   </div>
 
                   {/* Letter Spacing & Line Height */}
-                  <div className="grid grid-cols-2 gap-2 border-t border-[#dfb150]/15 pt-2">
+                  <div className="grid grid-cols-2 gap-2 border-t border-gold-500/15 pt-2">
                     <div>
-                      <label className="text-[10.5px] text-[#fef3c7] block mb-0.5">
+                      <label className="text-[11px] text-haldi-soft block mb-0.5">
                         अंतर: {selectedElement.letterSpacing || 0}px
                       </label>
                       <input
@@ -3434,11 +3766,11 @@ export function CanvaCanvasEditor({
                         onChange={(e) =>
                           updateElement(selectedElement.id, "letterSpacing", parseInt(e.target.value))
                         }
-                        className="w-full accent-[#dfb150]"
+                        className="w-full accent-gold-500"
                       />
                     </div>
                     <div>
-                      <label className="text-[10.5px] text-[#fef3c7] block mb-0.5">
+                      <label className="text-[11px] text-haldi-soft block mb-0.5">
                         ओळ अंतर: {selectedElement.lineHeight || 1.2}
                       </label>
                       <input
@@ -3450,14 +3782,14 @@ export function CanvaCanvasEditor({
                         onChange={(e) =>
                           updateElement(selectedElement.id, "lineHeight", parseFloat(e.target.value))
                         }
-                        className="w-full accent-[#dfb150]"
+                        className="w-full accent-gold-500"
                       />
                     </div>
                   </div>
 
                   {/* Text Shadow & Glow Presets */}
-                  <div className="border-t border-[#dfb150]/15 pt-2">
-                    <label className="text-[11px] font-bold text-[#fef3c7] block mb-1.5">
+                  <div className="border-t border-gold-500/15 pt-2">
+                    <label className="text-[11px] font-bold text-haldi-soft block mb-1.5">
                       शॅडो व ग्लो इफेक्ट्स (Shadow & Glow)
                     </label>
                     <div className="grid grid-cols-2 gap-1.5">
@@ -3472,10 +3804,10 @@ export function CanvaCanvasEditor({
                           key={s.id}
                           type="button"
                           onClick={() => updateElement(selectedElement.id, "textShadowPreset", s.id)}
-                          className={`rounded-lg py-1 px-2 text-[10.5px] font-bold transition border ${
+                          className={`rounded-lg py-1 px-2 text-[11px] font-bold transition border ${
                             selectedElement.textShadowPreset === s.id
-                              ? "bg-[#dfb150] text-[#240307] border-[#dfb150]"
-                              : "bg-black/30 border-[#dfb150]/20 text-[#fef3c7]/75 hover:bg-white/5"
+                              ? "bg-gold-500 text-maroon-950 border-gold-500"
+                              : "bg-black/30 border-gold-500/20 text-haldi-soft/75 hover:bg-white/5"
                           }`}
                         >
                           {s.label}
@@ -3485,9 +3817,9 @@ export function CanvaCanvasEditor({
                   </div>
 
                   {/* Text Transform */}
-                  <div className="border-t border-[#dfb150]/15 pt-2">
-                    <label className="text-[11px] text-[#fef3c7] block mb-1">कॅपिटलायझेशन</label>
-                    <div className="flex rounded-xl bg-black/40 p-1 border border-[#dfb150]/20 gap-1">
+                  <div className="border-t border-gold-500/15 pt-2">
+                    <label className="text-[11px] text-haldi-soft block mb-1">कॅपिटलायझेशन</label>
+                    <div className="flex rounded-xl bg-black/40 p-1 border border-gold-500/20 gap-1">
                       {[
                         { id: "none" as const, label: "Aa मूळ" },
                         { id: "uppercase" as const, label: "AA मोठे" },
@@ -3497,10 +3829,10 @@ export function CanvaCanvasEditor({
                           key={c.id}
                           type="button"
                           onClick={() => updateElement(selectedElement.id, "textTransform", c.id)}
-                          className={`flex-1 py-1 text-[10.5px] font-bold rounded-lg ${
+                          className={`flex-1 py-1 text-[11px] font-bold rounded-lg ${
                             (selectedElement.textTransform || "none") === c.id
-                              ? "bg-[#dfb150] text-[#240307]"
-                              : "text-[#fef3c7]/60 hover:text-white"
+                              ? "bg-gold-500 text-maroon-950"
+                              : "text-haldi-soft/60 hover:text-white"
                           }`}
                         >
                           {c.label}
@@ -3517,12 +3849,12 @@ export function CanvaCanvasEditor({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full rounded-xl bg-gradient-to-r from-[#dfb150] to-[#ffd700] py-2 text-xs font-black text-[#240307] shadow-md hover:brightness-110"
+                    className="w-full rounded-xl bg-gradient-to-r from-gold-500 to-gold-bright py-2 text-xs font-black text-maroon-950 shadow-md hover:brightness-110"
                   >
                     फोटो बदला (Replace Photo)
                   </button>
                   <div>
-                    <label className="text-[11px] text-[#fef3c7] block mb-1">फ्रेम आकार</label>
+                    <label className="text-[11px] text-haldi-soft block mb-1">फ्रेम आकार</label>
                     <select
                       value={selectedElement.frameShape || "gilded"}
                       onChange={(e) =>
@@ -3532,7 +3864,7 @@ export function CanvaCanvasEditor({
                           e.target.value as CanvasElement["frameShape"]
                         )
                       }
-                      className="w-full rounded-xl border border-[#dfb150]/30 bg-black/40 px-2 py-1.5 text-xs text-[#fef3c7] outline-none"
+                      className="w-full rounded-xl border border-gold-500/30 bg-black/40 px-2 py-1.5 text-xs text-haldi-soft outline-none"
                     >
                       <option value="gilded">बारोक सुवर्ण फ्रेम</option>
                       <option value="oval">अंडाकृती (Oval)</option>
@@ -3545,13 +3877,13 @@ export function CanvaCanvasEditor({
               )}
 
               {/* COMMON POSITION & ROTATION CONTROLS */}
-              <div className="border-t border-[#dfb150]/20 pt-3 space-y-2">
+              <div className="border-t border-gold-500/20 pt-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-[#fef3c7]">फिरवणे (Rotation: {selectedElement.rotation}°)</span>
+                  <span className="text-[11px] text-haldi-soft">फिरवणे (Rotation: {selectedElement.rotation}°)</span>
                   <button
                     type="button"
                     onClick={() => updateElement(selectedElement.id, "rotation", 0)}
-                    className="text-[10px] text-[#dfb150] hover:underline"
+                    className="text-[11px] text-gold-500 hover:underline"
                   >
                     रीसेट
                   </button>
@@ -3564,11 +3896,11 @@ export function CanvaCanvasEditor({
                   onChange={(e) =>
                     updateElement(selectedElement.id, "rotation", parseInt(e.target.value))
                   }
-                  className="w-full accent-[#dfb150]"
+                  className="w-full accent-gold-500"
                 />
 
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-[11px] text-[#fef3c7]">पारदर्शकता (Opacity: {Math.round(selectedElement.opacity * 100)}%)</span>
+                  <span className="text-[11px] text-haldi-soft">पारदर्शकता (Opacity: {Math.round(selectedElement.opacity * 100)}%)</span>
                 </div>
                 <input
                   type="range"
@@ -3579,16 +3911,16 @@ export function CanvaCanvasEditor({
                   onChange={(e) =>
                     updateElement(selectedElement.id, "opacity", parseFloat(e.target.value))
                   }
-                  className="w-full accent-[#dfb150]"
+                  className="w-full accent-gold-500"
                 />
               </div>
 
               {/* LOCK / DUPLICATE / DELETE ACTIONS */}
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#dfb150]/20">
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gold-500/20">
                 <button
                   type="button"
                   onClick={() => duplicateElement(selectedElement.id)}
-                  className="rounded-xl border border-[#dfb150]/40 bg-white/5 py-2 text-xs font-bold text-[#ffd700] hover:bg-white/10"
+                  className="rounded-xl border border-gold-500/40 bg-white/5 py-2 text-xs font-bold text-gold-bright hover:bg-white/10"
                 >
                   📋 प्रत बनवा
                 </button>
@@ -3608,20 +3940,20 @@ export function CanvaCanvasEditor({
                 कॅनव्हास सेटिंग्ज (Canvas Workspace)
               </h3>
               <div>
-                <p className="text-xs text-slate-300">
+                <p className="text-xs text-ivory-300">
                   कॅनव्हासवरील कोणत्याही घटकावर (मजकूर, फोटो, नक्षी) क्लिक करा आणि थेट संपादन करा.
                 </p>
               </div>
 
               <div className="rounded-xl bg-white/5 p-3 border border-white/10 space-y-2">
                 <p className="text-xs font-bold text-white">📐 निवडलेले प्रमाण</p>
-                <p className="text-xs text-slate-200">{dimensions.name}</p>
-                <p className="text-[11px] text-slate-400">रिझोल्यूशन: {dimensions.width} × {dimensions.height} px</p>
+                <p className="text-xs text-ivory-200">{dimensions.name}</p>
+                <p className="text-[11px] text-ivory-400">रिझोल्यूशन: {dimensions.width} × {dimensions.height} px</p>
               </div>
 
               <div className="rounded-xl bg-white/5 p-3 border border-white/10 space-y-2">
                 <p className="text-xs font-bold text-white">🎨 सक्रिय थीम</p>
-                <p className="text-xs text-slate-200">{activePalette.nameMr}</p>
+                <p className="text-xs text-ivory-200">{activePalette.nameMr}</p>
                 <div className="flex items-center gap-2 pt-1">
                   <span className="size-5 rounded-full border" style={{ background: customBgColor }} />
                   <span className="size-5 rounded-full border" style={{ background: customAccentColor }} />
@@ -3629,7 +3961,7 @@ export function CanvaCanvasEditor({
                 </div>
               </div>
 
-              <div className="border-t border-[#dfb150]/20 pt-3">
+              <div className="border-t border-gold-500/20 pt-3">
                 <button
                   type="button"
                   onClick={handleWhatsAppShare}

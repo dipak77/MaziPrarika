@@ -2,9 +2,10 @@ import { createHash } from 'node:crypto';
 
 import { NextResponse } from 'next/server';
 
-import { renderSvg, toSocialSvg } from '@mazi/renderer';
+import { renderSvg, toSocialSvg, type FoilStops, type SpecTheme } from '@mazi/renderer';
 
 import { resolveDesign } from '@/lib/design-source';
+import { FOIL_HEX, getPrintArt } from '@/lib/print-art';
 
 /**
  * GET /api/designs/:id/svg
@@ -30,21 +31,40 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     return NextResponse.json({ error: 'पत्रिका सापडली नाही.' }, { status: 404 });
   }
 
+  const doc = resolved.design as typeof resolved.design & { template?: string };
+  const templateId = doc.template ?? doc.templateId ?? url.searchParams.get('template');
+  const spec = templateId ? getPrintArt(templateId) : undefined;
+  const variant = spec ? (spec.variants.find((v) => v.id === url.searchParams.get('variant')) ?? spec.variants[0]) : undefined;
+  const theme: SpecTheme | undefined = spec && variant
+    ? {
+      bgGradient: variant.bgGradient,
+      accentColor: variant.accentColor,
+      textColor: variant.textColor,
+      foil: variant.foil,
+      motif: spec.motif,
+      border: spec.border,
+    }
+    : undefined;
+  const foilStops: FoilStops | undefined = variant ? FOIL_HEX[variant.foil] : undefined;
+
   const social = url.searchParams.get('social');
+  const themed = { ...(theme ? { theme } : {}), ...(foilStops ? { foilStops } : {}) };
   const svg = social
-    ? toSocialSvg(resolved.design, social === 'square' || social === 'landscape' ? social : 'story')
-    : renderSvg(resolved.design, { print: url.searchParams.get('print') === '1' });
+    ? toSocialSvg(resolved.design, social === 'square' || social === 'landscape' ? social : 'story', themed)
+    : renderSvg(resolved.design, { print: url.searchParams.get('print') === '1', ...themed });
 
   const download = url.searchParams.get('download') === '1';
-  const variant = [
+  const variantKey = url.searchParams.get('variant') ?? variant?.id ?? '';
+  const variantPart = [
     resolved.source,
     String(resolved.version),
     url.searchParams.get('print') ?? '',
     social ?? '',
-    url.searchParams.get('template') ?? '',
+    url.searchParams.get('template') ?? templateId ?? '',
     url.searchParams.get('scheme') ?? '',
+    variantKey,
   ].join('|');
-  const etag = `"${createHash('sha1').update(`${id}|${variant}`).digest('hex').slice(0, 16)}"`;
+  const etag = `"${createHash('sha1').update(`${id}|${variantPart}`).digest('hex').slice(0, 16)}"`;
   const headers = {
     'content-type': 'image/svg+xml; charset=utf-8',
     etag,

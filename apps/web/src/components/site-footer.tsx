@@ -192,7 +192,7 @@ export function SiteFooter() {
   ];
 
   return (
-    <footer className="relative mt-28 overflow-hidden border-t border-gray-200/80 bg-[#f4f5fa] text-[#0e0d26]">
+    <footer className="relative mt-28 overflow-hidden border-t border-ivory-300 bg-ivory text-maroon-deep">
       <style jsx global>{`
         @keyframes ftr-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
         @keyframes ftr-spin    { to { transform: rotate(360deg); } }
@@ -225,7 +225,7 @@ export function SiteFooter() {
       {/* ═══════ 1 · ROYAL CTA BANNER ═══════ */}
       <div className="shell relative pt-10 sm:pt-14">
         <div ref={cta.ref}
-          className={`relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0e0d26] via-[#1a173b] to-[#0e0d26] shadow-[0_30px_80px_-24px_rgba(14,13,38,0.55)] border border-violet-500/30 text-white transition-all duration-700 ${cta.shown ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+          className={`relative overflow-hidden rounded-3xl bg-gradient-to-br from-maroon-deep via-maroon-900 to-maroon-deep shadow-[0_30px_80px_-24px_rgba(46,7,13,0.55)] border border-gold/30 text-white transition-all duration-700 ${cta.shown ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
           {/* dot texture */}
           <div aria-hidden className="absolute inset-0 opacity-[0.08]"
             style={{ backgroundImage: 'radial-gradient(circle,#f0c048 1px,transparent 1px)', backgroundSize: '20px 20px' }} />
@@ -268,14 +268,14 @@ export function SiteFooter() {
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-3">
               <Link href="/create"
-                className="group relative inline-flex min-h-12 items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 px-6 text-sm font-bold text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:scale-[1.04] hover:shadow-violet-500/40">
+                className="btn-base btn-gold group relative overflow-hidden px-6 text-sm font-bold transition-all duration-300 hover:scale-[1.04]">
                 <span aria-hidden className="absolute inset-y-0 w-1/3 bg-white/30 blur-sm" style={{ animation: 'ftr-shine 3s ease-in-out infinite' }} />
-                <I name="sparkle" className="h-4 w-4 text-white" />
+                <I name="sparkle" className="h-4 w-4 text-ink-900" />
                 <span className="relative">{isEn ? 'Create Card' : isHi ? 'पत्रिका बनाएँ' : 'पत्रिका तयार करा'}</span>
                 <I name="arrow" className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link href="/studio"
-                className="inline-flex min-h-12 items-center gap-2 rounded-full border border-white/30 px-6 text-sm font-bold text-white transition-all duration-300 hover:border-violet-400 hover:bg-white/10 hover:text-violet-200">
+                className="inline-flex min-h-12 items-center gap-2 rounded-full border border-white/30 px-6 text-sm font-bold text-white transition-all duration-300 hover:border-gold hover:bg-white/10 hover:text-gold-shimmer">
                 <I name="video" className="h-4 w-4" />
                 {isEn ? 'Open Studio' : isHi ? 'स्टूडियो खोलें' : 'स्टुडिओ उघडा'}
               </Link>
@@ -291,46 +291,46 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 gap-3.5 xs:grid-cols-2 sm:gap-5 lg:grid-cols-4">
           {trustSeals.map((seal, i) => (
             <div key={seal.title}
-              className={`group relative overflow-hidden rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:border-violet-300 hover:shadow-md ${trust.shown ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
+              className={`group relative overflow-hidden rounded-2xl border border-ivory-300 bg-white p-4 shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:border-gold/50 hover:shadow-md ${trust.shown ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
               style={{ transitionDelay: trust.shown ? `${i * 90}ms` : '0ms' }}>
               {/* corner glint */}
-              <span aria-hidden className="absolute -right-6 -top-6 size-14 rounded-full bg-violet-500/10 blur-xl transition-all duration-500 group-hover:bg-violet-500/20" />
+              <span aria-hidden className="absolute -right-6 -top-6 size-14 rounded-full bg-gold/10 blur-xl transition-all duration-500 group-hover:bg-gold/20" />
               <div className="flex items-start gap-3">
                 <span aria-hidden="true"
-                  className="grid size-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[#0e0d26] via-[#1d1b38] to-[#0e0d26] text-lg text-white shadow-md ring-1 ring-violet-500/30 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                  className="grid size-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-maroon-deep via-maroon-900 to-maroon-deep text-lg text-white shadow-md ring-1 ring-gold/30 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                   {seal.icon}
                 </span>
                 <div>
-                  <h4 className="text-[13px] font-bold leading-snug text-[#0e0d26]">{seal.title}</h4>
-                  <p className="mt-1 text-xs leading-relaxed text-gray-500">{seal.desc}</p>
+                  <h4 className="text-[13px] font-bold leading-snug text-maroon-deep">{seal.title}</h4>
+                  <p className="mt-1 text-xs leading-relaxed text-charcoal-muted">{seal.desc}</p>
                 </div>
               </div>
-              <span aria-hidden className="absolute inset-x-4 bottom-0 h-0.5 scale-x-0 bg-gradient-to-r from-[#7c3aed] to-[#6366f1] transition-transform duration-500 group-hover:scale-x-100" />
+              <span aria-hidden className="absolute inset-x-4 bottom-0 h-0.5 scale-x-0 bg-gradient-to-r from-gold to-maroon transition-transform duration-500 group-hover:scale-x-100" />
             </div>
           ))}
         </div>
       </div>
 
       {/* ═══════ 3 · MAIN FOOTER GRID ═══════ */}
-      <div ref={main.ref} className="shell relative grid grid-cols-1 gap-10 border-t border-gray-200/80 py-12 sm:py-16 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+      <div ref={main.ref} className="shell relative grid grid-cols-1 gap-10 border-t border-ivory-300 py-12 sm:py-16 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
         {/* Brand column */}
         <div className={`transition-all duration-700 ${main.shown ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}>
-          <Link href="/" className="group inline-flex items-center gap-3 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+          <Link href="/" className="group inline-flex items-center gap-3 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
             <div className="relative">
-              <svg aria-hidden viewBox="0 0 100 100" className="ftr-anim absolute -inset-2 text-violet-500/30 transition-colors group-hover:text-violet-500"
+              <svg aria-hidden viewBox="0 0 100 100" className="ftr-anim absolute -inset-2 text-gold/30 transition-colors group-hover:text-gold"
                 style={{ animation: 'ftr-spin 30s linear infinite' }}>
                 <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="1.4" strokeDasharray="3 7" />
               </svg>
-              <span className="relative grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-[#0e0d26] via-[#1d1b38] to-[#0e0d26] text-white shadow-lg ring-1 ring-violet-500/40 transition group-hover:scale-105">
+              <span className="relative grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-maroon-deep via-maroon-900 to-maroon-deep text-white shadow-lg ring-1 ring-gold/40 transition group-hover:scale-105">
                 <span className="font-script text-2xl font-bold leading-none">मा</span>
               </span>
             </div>
             <div className="leading-tight">
               <span className="flex items-center gap-2">
-                <span className="font-display text-2xl font-bold tracking-tight text-[#0e0d26]">माझी पत्रिका</span>
-                <span className="rounded-md bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white px-2 py-0.5 text-[10px] font-black tracking-widest">PRO</span>
+                <span className="font-display text-2xl font-bold tracking-tight text-maroon-deep">माझी पत्रिका</span>
+                <span className="rounded-md bg-maroon px-2 py-0.5 text-[10px] font-black tracking-widest text-gold-shimmer">PRO</span>
               </span>
-              <span className="font-ui block text-[10.5px] uppercase tracking-[0.24em] text-gray-500">Mazi Patrika • Maha OS</span>
+              <span className="font-ui block text-[11px] uppercase tracking-[0.24em] text-charcoal-muted">Mazi Patrika • Maha OS</span>
             </div>
           </Link>
 
@@ -378,16 +378,16 @@ export function SiteFooter() {
           <nav key={column.title} aria-label={column.title}
             className={`transition-all duration-700 ${main.shown ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
             style={{ transitionDelay: main.shown ? `${120 + ci * 100}ms` : '0ms' }}>
-            <p className="font-display relative inline-block text-xs font-bold uppercase tracking-[0.18em] text-slate-900">
+            <p className="font-display relative inline-block text-xs font-bold uppercase tracking-[0.18em] text-ink-900">
               {column.title}
-              <span aria-hidden className="absolute -bottom-1.5 left-0 h-0.5 w-8 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600" />
+              <span aria-hidden className="absolute -bottom-1.5 left-0 h-0.5 w-8 rounded-full bg-gradient-to-r from-gold to-maroon" />
             </p>
             <ul className="mt-5 space-y-1">
               {column.links.map((link) => (
                 <li key={link.href + link.label}>
                   <Link href={link.href}
-                    className="group inline-flex min-h-9 items-center gap-1.5 rounded-lg text-[13px] text-slate-600 transition-all duration-200 hover:text-violet-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
-                    <span aria-hidden className="h-1 w-1 rounded-full bg-violet-400/60 transition-all duration-300 group-hover:w-3 group-hover:bg-violet-600" />
+                    className="group inline-flex min-h-9 items-center gap-1.5 rounded-lg text-[13px] text-charcoal-soft transition-all duration-200 hover:text-maroon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
+                    <span aria-hidden className="h-1 w-1 rounded-full bg-gold/60 transition-all duration-300 group-hover:w-3 group-hover:bg-maroon" />
                     <span className="transition-transform duration-200 group-hover:translate-x-0.5">{link.label}</span>
                   </Link>
                 </li>
@@ -398,12 +398,12 @@ export function SiteFooter() {
       </div>
 
       {/* ═══════ 4 · PARTNER STRIP ═══════ */}
-      <div className="relative border-y border-white/10 bg-[#0e0d26]">
+      <div className="relative border-y border-white/10 bg-maroon-deep">
         <div aria-hidden className="absolute inset-0 opacity-[0.06]"
-          style={{ backgroundImage: 'radial-gradient(circle,#8247e5 1px,transparent 1px)', backgroundSize: '22px 22px' }} />
+          style={{ backgroundImage: 'radial-gradient(circle,var(--color-gold-bright) 1px,transparent 1px)', backgroundSize: '22px 22px' }} />
         <div className="shell relative flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5 py-4 text-center">
           <p className="inline-flex items-center gap-2 text-xs font-bold tracking-wide text-white">
-            <I name="shield" className="h-4 w-4 text-amber-400" />
+            <I name="shield" className="h-4 w-4 text-gold-bright" />
             {isEn ? 'For Partners & Vendors' : isHi ? 'साझेदारों व विक्रेताओं के लिए' : 'भागीदार व व्हेंडरांसाठी'}
           </p>
           <span aria-hidden className="hidden h-4 w-px bg-white/20 sm:block" />
@@ -416,7 +416,7 @@ export function SiteFooter() {
           </p>
           <span aria-hidden className="hidden h-4 w-px bg-white/20 sm:block" />
           <Link href="/api/health"
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-violet-400/40 bg-violet-500/15 px-4 text-xs font-bold text-white transition hover:border-violet-400 hover:bg-violet-500/30">
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-gold/40 bg-gold/15 px-4 text-xs font-bold text-white transition hover:border-gold hover:bg-gold/30">
             {isEn ? 'System Status' : isHi ? 'सिस्टम स्थिति' : 'सिस्टम स्थिती'}
             <I name="arrow" className="h-3.5 w-3.5" />
           </Link>
@@ -437,29 +437,29 @@ export function SiteFooter() {
       </div>
 
       {/* ═══════ 6 · BOTTOM BAR ═══════ */}
-      <div className="border-t border-gray-200/80 bg-white py-6">
+      <div className="border-t border-ivory-300 bg-white py-6">
         <div className="shell flex flex-col items-center justify-between gap-5 lg:flex-row">
           {/* Copyright */}
-          <p className="order-2 text-center text-xs leading-relaxed text-slate-500 lg:order-1 lg:text-left">
+          <p className="order-2 text-center text-xs leading-relaxed text-charcoal-muted lg:order-1 lg:text-left">
             {isEn
               ? '© 2026 Mazi Patrika. All rights reserved. Precision astronomical calculations per Surya Siddhanta.'
               : '© २०२६ माझी पत्रिका. सर्व हक्क राखीव. सूर्यसिद्धांत पंचांग गणितावर आधारित.'}
           </p>
 
           {/* Center mantra */}
-          <p className="font-semibold text-xs text-slate-800 order-1 lg:order-2 tracking-wide">
+          <p className="font-semibold text-xs text-charcoal order-1 lg:order-2 tracking-wide">
             {isEn ? '॥ Shubham Bhavatu ॥' : '॥ शुभं भवतु ॥'}
           </p>
 
           {/* Legal + back to top */}
-          <div className="order-3 flex items-center gap-1.5 text-xs text-slate-500">
-            <Link href="/robots.txt" className="rounded-lg px-2.5 py-1.5 transition hover:bg-violet-50 hover:text-violet-700">Robots</Link>
-            <Link href="/sitemap.xml" className="rounded-lg px-2.5 py-1.5 transition hover:bg-violet-50 hover:text-violet-700">Sitemap</Link>
-            <Link href="/api/health" className="rounded-lg px-2.5 py-1.5 transition hover:bg-violet-50 hover:text-violet-700">Health</Link>
+          <div className="order-3 flex items-center gap-1.5 text-xs text-charcoal-muted">
+            <Link href="/robots.txt" className="rounded-lg px-2.5 py-1.5 transition hover:bg-gold-soft hover:text-gold-ink">Robots</Link>
+            <Link href="/sitemap.xml" className="rounded-lg px-2.5 py-1.5 transition hover:bg-gold-soft hover:text-gold-ink">Sitemap</Link>
+            <Link href="/api/health" className="rounded-lg px-2.5 py-1.5 transition hover:bg-gold-soft hover:text-gold-ink">Health</Link>
             <button type="button"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               aria-label={isEn ? 'Back to top' : isHi ? 'ऊपर जाएँ' : 'वर जा'}
-              className="ml-2 grid size-10 place-items-center rounded-full bg-[#0e0d26] text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-violet-600 hover:shadow-lg">
+              className="ml-2 grid size-10 place-items-center rounded-full bg-maroon-deep text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-maroon hover:shadow-lg">
               <I name="up" className="h-4 w-4" />
             </button>
           </div>

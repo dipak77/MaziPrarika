@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { GoldenHeroTitleSvg } from './golden-hero-title-svg';
 
 interface GoldenHeroLandingProps {
   onStartEditing?: () => void;
@@ -41,7 +42,7 @@ function CornerFlourish({ className }: { className?: string }) {
 }
 
 const STATS = [
-  { icon: '👑', value: '५००+', label: 'रॉयल नमुने', sub: 'प्रीमियम डिझाईन्स', href: '/studio?style=royal' },
+  { icon: '👑', value: '५००+', label: 'रॉयल नमुने', sub: 'प्रीमियम डिझाईन्स', href: '/templates?category=wedding' },
   { icon: '🛡️', value: '३ मिनिटे', label: 'पत्रिका तयार', sub: 'WYSIWYG १००% प्रिंट रेडी', href: '/studio?mode=invitation' },
   { icon: '⚡', value: '१००%', label: 'प्रिंट-रेडी', sub: 'उच्च प्रतीचे रिझोल्यूशन', href: '/studio' },
 ];
@@ -76,34 +77,40 @@ interface HeroSlide {
 
 const HERO_SLIDES: HeroSlide[] = [
   {
-    src: '/art/hero_slide_purple.jpg',
+    src: '/art/card_purple_ganesh.jpg',
     alt: 'रॉयल वेलवेट जांभळी गणेश लग्नपत्रिका, समई, मोतिया फुले व पारंपरिक सजावट',
     title: 'रॉयल पर्पल गणेश',
     badge: '👑 ट्रेंडिंग',
   },
   {
-    src: '/art/hero_slide_couple.jpg',
+    src: '/art/card_couple.jpg',
     alt: 'शाही नवदांपत्य शुभविवाह पत्रिका, पैठणी, शेला, फेटा व फुलांचा मंडप',
     title: 'शुभविवाह दांपत्य',
     badge: '💖 लोकप्रिय',
   },
   {
-    src: '/art/hero_slide_emerald.jpg',
+    src: '/art/card_emerald.jpg',
     alt: 'इम्पेरियल एमराल्ड ग्रीन वेलवेट लग्नपत्रिका व २४ कॅरेट गोल्ड एम्बॉसिंग',
     title: 'इम्पेरियल एमराल्ड',
     badge: '✨ राजेशाही',
   },
   {
-    src: '/art/hero_slide_peacock.jpg',
+    src: '/art/card_peacock.jpg',
     alt: 'रॉयल मयूर आयव्हरी लग्नपत्रिका, मोरपीस व पारंपरिक पितळी दिवा',
     title: 'रॉयल मयूर आयव्हरी',
     badge: '🪶 क्लासिक',
   },
   {
-    src: '/art/hero_slide_maroon.jpg',
+    src: '/art/card_heritage-maroon_gold.jpg',
     alt: 'हेरिटेज मरून वेलवेट गणेश लग्नपत्रिका, नक्षीदार बॉर्डर व पितळी समई',
     title: 'हेरिटेज मरून गोल्ड',
     badge: '🌟 पारंपरिक',
+  },
+  {
+    src: '/art/card_cream_floral.jpg',
+    alt: 'हस्तीदंत फुलांची सुलेखन लग्नपत्रिका, झेंडू व मोगरा पुष्पहार',
+    title: 'हस्तीदंत पुष्प सुलेखन',
+    badge: '🌸 क्लासिक',
   },
 ];
 
@@ -167,13 +174,13 @@ export function GoldenHeroLanding({
         }
       `}</style>
 
-      <div className="mx-auto max-w-[1440px] px-3 sm:px-6 lg:px-8">
+      <div className="w-full px-3 sm:px-6 lg:px-8 xl:px-10">
         {/* ════════════ Master Jewel Banner Container ════════════ */}
         <div className="relative w-full overflow-hidden rounded-[22px] sm:rounded-[30px] border border-[#d4af37]/45 bg-[#0d0312] shadow-[0_24px_70px_-15px_rgba(35,5,40,0.65),0_0_35px_rgba(212,175,55,0.18)] transition-all duration-300">
 
           {/* ── Ambient Radial Atmosphere Lighting ── */}
           <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-20 h-96 w-96 rounded-full bg-amber-500/15 blur-3xl" />
-          <div aria-hidden="true" className="pointer-events-none absolute left-1/3 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-purple-700/15 blur-3xl" />
+          <div aria-hidden="true" className="pointer-events-none absolute left-1/3 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-gold/15 blur-3xl" />
           <div aria-hidden="true" className="pointer-events-none absolute -right-20 -bottom-20 h-[420px] w-[420px] rounded-full bg-amber-600/20 blur-3xl" />
 
           {/* Inner hairline gold frame */}
@@ -183,127 +190,96 @@ export function GoldenHeroLanding({
           />
 
           {/* Corner gold flourishes */}
-          <CornerFlourish className="pointer-events-none absolute left-2.5 top-2.5 z-30 w-7 sm:w-10 opacity-75" />
-          <CornerFlourish className="pointer-events-none absolute right-2.5 top-2.5 z-30 w-7 sm:w-10 rotate-90 opacity-75" />
-          <CornerFlourish className="pointer-events-none absolute bottom-2.5 right-2.5 z-30 w-7 sm:w-10 rotate-180 opacity-75" />
-          <CornerFlourish className="pointer-events-none absolute bottom-2.5 left-2.5 z-30 w-7 sm:w-10 -rotate-90 opacity-75" />
+          <CornerFlourish className="pointer-events-none absolute left-2 top-2 sm:left-3 sm:top-3 z-30 w-8 sm:w-11 opacity-90" />
+          <CornerFlourish className="pointer-events-none absolute right-2 top-2 sm:right-3 sm:top-3 z-30 w-8 sm:w-11 rotate-90 opacity-90" />
+          <CornerFlourish className="pointer-events-none absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-30 w-8 sm:w-11 rotate-180 opacity-90" />
+          <CornerFlourish className="pointer-events-none absolute bottom-2 left-2 sm:bottom-3 sm:left-3 z-30 w-8 sm:w-11 -rotate-90 opacity-90" />
 
-          {/* ── HYBRID GRID: Left SVG/Graphic Text + Right Photorealistic Base ── */}
-          <div className="relative grid grid-cols-1 md:grid-cols-12 items-stretch min-h-[390px] sm:min-h-[430px] md:min-h-[460px] lg:min-h-[480px]">
+          {/* ── HYBRID: Left Text Part (50%) + Right Image Part (50%) ── */}
+          <div className="relative flex flex-col md:flex-row items-stretch min-h-[420px] sm:min-h-[460px] md:min-h-[490px] lg:min-h-[520px]">
 
-            {/* ════════════ LEFT COLUMN: Graphic Text Effects & CTAs (7 cols) ════════════ */}
-            <div className="md:col-span-7 z-10 flex flex-col justify-center p-5 sm:p-7 md:p-6 lg:p-9 xl:p-12">
+            {/* ════════════ LEFT COLUMN: Graphic Text Effects & CTAs (50%) ════════════ */}
+            <div className="w-full md:w-1/2 z-10 flex flex-col justify-center p-6 sm:p-8 md:p-7 lg:p-9 xl:p-12 shrink-0">
 
-              {/* Auspicious Eyebrow (Normal tracking for unbroken Devanagari) */}
-              <div className="flex items-center gap-2 text-xs sm:text-[13px] font-semibold text-amber-300/90 mb-2 sm:mb-2.5">
-                <span aria-hidden="true" className="h-px w-6 sm:w-10 bg-gradient-to-r from-transparent via-amber-400 to-amber-300" />
-                <span className="text-amber-400 text-[10px]">❖</span>
-                <span className="text-amber-200">॥ शुभं भवतु ॥</span>
+              {/* Auspicious Eyebrow Badge */}
+              <div className="inline-flex items-center gap-2 sm:gap-2.5 rounded-full border border-amber-400/35 bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-amber-500/15 px-3.5 sm:px-4.5 py-1 text-xs sm:text-[13px] font-semibold text-amber-200 backdrop-blur-md mb-2.5 sm:mb-3 w-fit shadow-[0_2px_14px_-3px_rgba(245,158,11,0.3)]">
+                <span className="text-amber-400 text-[11px] animate-pulse">❖</span>
+                <span className="text-amber-100 tracking-wide font-medium">॥ शुभं भवतु ॥</span>
                 <span className="text-amber-400/60">•</span>
-                <span className="text-amber-200">विवाह</span>
+                <span className="text-amber-200/90">विवाह</span>
                 <span className="text-amber-400/60">•</span>
-                <span className="text-amber-200">मुहूर्त</span>
+                <span className="text-amber-200/90">मुहूर्त</span>
                 <span className="text-amber-400/60">•</span>
-                <span className="text-amber-200">संस्कार</span>
-                <span aria-hidden="true" className="h-px w-8 sm:w-12 bg-gradient-to-l from-transparent via-amber-400 to-amber-300" />
+                <span className="text-amber-200/90">संस्कार</span>
+                <span className="text-amber-400 text-[11px] animate-pulse">❖</span>
               </div>
 
-              {/* 3D 24K Embossed Gold Foil Title with Specular Starlight Flare */}
-              <div className="relative mb-2 sm:mb-3 max-w-[660px]">
-                {/* 4-Point Golden Starlight Lens Flare */}
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute -left-3 -top-3 sm:-left-4 sm:-top-4 size-10 sm:size-12 ghl-twinkle"
-                >
-                  <svg viewBox="0 0 40 40" fill="none" className="w-full h-full drop-shadow-[0_0_16px_rgba(251,191,36,0.95)]">
-                    <path d="M20 0 L22.5 17.5 L40 20 L22.5 22.5 L20 40 L17.5 22.5 L0 20 L17.5 17.5 Z" fill="url(#heroStarGlow)" />
-                    <circle cx="20" cy="20" r="3.2" fill="#ffffff" />
-                    <defs>
-                      <radialGradient id="heroStarGlow" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stopColor="#ffffff" />
-                        <stop offset="35%" stopColor="#fef08a" />
-                        <stop offset="70%" stopColor="#f59e0b" />
-                        <stop offset="100%" stopColor="transparent" />
-                      </radialGradient>
-                    </defs>
-                  </svg>
-                </div>
-
-                {/* Master 3D Gold Embossed Typography Graphic (Retina 2x Crisp) */}
-                <div className="relative h-11 xs:h-12 sm:h-15 md:h-17 lg:h-20 xl:h-[84px] w-full select-none">
-                  <Image
-                    src="/art/golden_hero_title_2x.png"
-                    alt="पत्रिका बनवा — हस्तकलेचा ठसा"
-                    fill
-                    priority
-                    unoptimized
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 60vw, 660px"
-                    className="object-contain object-left pointer-events-none drop-shadow-[0_4px_18px_rgba(0,0,0,0.95)]"
-                  />
-                </div>
+              {/* 3D 24K Embossed Gold Foil Title with Specular Starlight Flare (Pure Vector SVG & Font) */}
+              <div className="relative mb-2 sm:mb-3 max-w-[680px] w-full">
+                <GoldenHeroTitleSvg />
                 <h1 className="sr-only">पत्रिका बनवा — हस्तकलेचा ठसा</h1>
               </div>
 
               {/* Sub-proclamation */}
-              <p className="italic text-xs sm:text-sm text-[#f0d98a] mb-2 sm:mb-3">
+              <p className="italic text-xs sm:text-sm lg:text-[14.5px] font-medium text-transparent bg-clip-text bg-gradient-to-r from-[#ffe7a0] via-[#f7d070] to-[#e4b33c] mb-2 sm:mb-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                 — तुमच्या शुभप्रसंगासाठी अस्सल मराठी डिझाईन
               </p>
 
               {/* Real Crisp Devanagari Description (Selectable & Legible on all Screen Sizes) */}
-              <p className="text-xs sm:text-sm lg:text-[14px] xl:text-[15px] leading-relaxed text-[#ede4d3]/95 max-w-xl mb-3 sm:mb-4 font-normal">
-                रॉयल नमुना निवडा, नावे व मुहूर्त भरा — काहीच मिनिटांत तयार करा तुमची विवाह पत्रिका, नावाची पत्रिका, बायोडाटा किंवा मुहूर्त-पत्रिका. अस्सल मराठी बाणा, उच्च दर्जाची प्रिंट-रेडी फाईल.
+              <p className="text-xs sm:text-sm lg:text-[14px] xl:text-[15px] leading-relaxed text-[#ede4d3]/95 max-w-2xl mb-3.5 sm:mb-4.5 font-normal drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                रॉयल नमुना निवडा, नावे व मुहूर्त भरा — काहीच मिनिटांत तयार करा तुमची <span className="text-amber-200/90 font-medium">विवाह पत्रिका</span>, <span className="text-amber-200/90 font-medium">नावाची पत्रिका</span>, <span className="text-amber-200/90 font-medium">बायोडेटा</span> किंवा <span className="text-amber-200/90 font-medium">मुहूर्त-पत्रिका</span>. अस्सल मराठी बाणा, उच्च दर्जाची प्रिंट-रेडी फाईल.
               </p>
 
               {/* Golden Ornamental Hairline Divider */}
-              <div className="flex items-center gap-3 my-2 sm:my-2.5 max-w-lg">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" />
-                <span className="text-amber-400 text-xs">❖</span>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" />
+              <div className="flex items-center gap-3 my-2.5 sm:my-3 max-w-xl lg:max-w-2xl">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
+                <span className="text-amber-400 text-xs drop-shadow-[0_0_6px_rgba(245,158,11,0.8)]">❖</span>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
               </div>
 
-              {/* Real Feature Metrics Row (3 Columns) */}
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-lg mb-4 sm:mb-5">
+              {/* Real Feature Metrics Row (Jewel Frosted Cards) */}
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-xl lg:max-w-2xl mb-4 sm:mb-5">
                 {STATS.map((s) => (
                   <Link
                     key={s.label}
                     href={s.href}
-                    className="group/stat flex items-center gap-1.5 sm:gap-2.5 transition-transform hover:scale-105"
+                    className="group/stat relative flex flex-col justify-center rounded-2xl border border-amber-400/25 bg-gradient-to-b from-white/[0.07] to-white/[0.02] p-2.5 sm:p-3 backdrop-blur-md shadow-[0_8px_20px_-6px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.12)] transition-all duration-300 hover:scale-105 hover:border-amber-300/60 hover:bg-white/[0.1] hover:shadow-[0_12px_28px_-6px_rgba(212,175,55,0.25)]"
                   >
-                    <span className="text-base sm:text-xl drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]">{s.icon}</span>
-                    <div>
-                      <p className="text-[12px] sm:text-[13px] md:text-[14px] font-bold text-amber-300 leading-tight group-hover/stat:text-amber-200">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                      <span className="text-base sm:text-xl drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]">{s.icon}</span>
+                      <p className="text-[13px] sm:text-[15px] md:text-[16px] font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 leading-tight">
                         {s.value}
                       </p>
-                      <p className="text-[10px] sm:text-[11px] text-stone-200/90 leading-tight font-medium">
-                        {s.label}
-                      </p>
                     </div>
+                    <p className="text-[10.5px] sm:text-[11.5px] text-stone-200/90 leading-tight font-medium">
+                      {s.label}
+                    </p>
                   </Link>
                 ))}
               </div>
 
               {/* Real Interactive Action Buttons */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3.5">
                 {/* Button 1: Glowing 24K Gold Pill */}
                 <Link
                   href="/studio/editor"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => onFullscreenPreview?.()}
-                  className="group relative inline-flex items-center gap-2 overflow-hidden whitespace-nowrap rounded-full border border-[#f8e7ae]/80 px-4.5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-[13.5px] font-bold text-[#3a0a12] shadow-[0_10px_30px_-8px_rgba(212,175,55,0.55),inset_0_1px_0_rgba(255,255,255,0.55)] transition-all duration-300 hover:scale-105 hover:shadow-[0_16px_40px_-8px_rgba(212,175,55,0.7)]"
-                  style={{ background: 'linear-gradient(155deg,#fbf0c4 0%,#f0d489 28%,#d9ae47 55%,#b98a24 82%,#a8771b 100%)' }}
+                  className="group relative inline-flex items-center gap-2 overflow-hidden whitespace-nowrap rounded-full border border-[#fef08a] px-5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-[13.5px] font-bold text-[#2a1002] shadow-[0_12px_32px_-6px_rgba(212,175,55,0.65),inset_0_1px_1px_rgba(255,255,255,0.85)] transition-all duration-300 hover:scale-105 hover:shadow-[0_16px_42px_-6px_rgba(212,175,55,0.85)]"
+                  style={{ background: 'linear-gradient(135deg, #fff1b8 0%, #f7d070 28%, #d99f28 60%, #b87c14 100%)' }}
                 >
-                  <span aria-hidden="true" className="absolute inset-0 -translate-x-full skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-                  <span aria-hidden="true" className="text-[#7a4a08]">✦</span>
+                  <span aria-hidden="true" className="absolute inset-0 -translate-x-full skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/70 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                  <span aria-hidden="true" className="text-[#683c05] text-[13px]">✦</span>
                   <span>नवीन डिझाईन पूर्ण स्क्रीन उघडा</span>
                   <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                 </Link>
 
-                {/* Button 2: Cream Pill with Gold Border */}
+                {/* Button 2: Cream Pearl Pill with Gold Border */}
                 <Link
                   href="/studio"
                   onClick={() => onStartEditing?.()}
-                  className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-amber-400 bg-gradient-to-b from-[#fffefc] to-[#fef3c7] px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-[13px] font-bold text-[#1c1917] shadow-sm transition-all duration-200 hover:bg-[#fef08a] hover:scale-105 whitespace-nowrap"
+                  className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-amber-300/80 bg-gradient-to-b from-[#ffffff] via-[#fffdf5] to-[#fef7da] px-4.5 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-[13px] font-bold text-[#1c1917] shadow-[0_4px_16px_-4px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.9)] transition-all duration-200 hover:bg-[#fef08a] hover:border-amber-400 hover:scale-105 whitespace-nowrap"
                 >
                   <span>✍️</span>
                   <span>संपादन सुरू करा</span>
@@ -312,9 +288,9 @@ export function GoldenHeroLanding({
 
                 {/* Button 3: Dark Translucent Glass Pill */}
                 <Link
-                  href="/studio?category=wedding"
+                  href="/templates?category=wedding"
                   onClick={() => onPreviewDesigns?.()}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-[#16061d]/85 px-3.5 sm:px-4.5 py-2.5 sm:py-3 text-xs sm:text-[13px] font-semibold text-amber-200 transition-all duration-200 hover:border-amber-400 hover:bg-[#20082a] hover:text-white whitespace-nowrap"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-[#16061d]/85 px-4 sm:px-4.5 py-2.5 sm:py-3 text-xs sm:text-[13px] font-semibold text-amber-200/95 backdrop-blur-md shadow-sm transition-all duration-200 hover:border-amber-300 hover:bg-[#23092e] hover:text-white whitespace-nowrap hover:scale-105"
                 >
                   <span>👁</span>
                   <span>नमुना डिझाईन पहा</span>
@@ -322,13 +298,15 @@ export function GoldenHeroLanding({
               </div>
 
               {/* Free notice */}
-              <p className="mt-3 flex items-center gap-1.5 text-[11px] text-[#efe3c8]/60">
-                <span aria-hidden="true" className="text-[9px] text-[#d4af37]/80">✦</span>
-                नोंदणी मोफत — क्रेडिट कार्ड आवश्यक नाही
-              </p>
+              <div className="mt-3.5 flex items-center gap-2 text-[11.5px] text-[#efe3c8]/70">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] border border-emerald-500/40 font-bold">✓</span>
+                <span>नोंदणी मोफत — क्रेडिट कार्ड आवश्यक नाही</span>
+                <span className="text-amber-400/40">•</span>
+                <span className="text-[#efe3c8]/60">१००% प्रिंट-रेडी फाइल</span>
+              </div>
             </div>
 
-            {/* ════════════ RIGHT COLUMN: Photorealistic Image Base Staging (5 cols) ════════════ */}
+            {/* ════════════ RIGHT COLUMN: Photorealistic Image Base Staging (50%) ════════════ */}
             <div
               ref={stageRef}
               onMouseMove={handleMove}
@@ -337,7 +315,7 @@ export function GoldenHeroLanding({
                 setIsPaused(false);
               }}
               onMouseEnter={() => setIsPaused(true)}
-              className="md:col-span-5 relative w-full min-h-[290px] sm:min-h-[350px] md:min-h-full overflow-hidden flex items-center justify-end select-none"
+              className="w-full md:w-1/2 relative min-h-[320px] sm:min-h-[380px] md:min-h-full overflow-hidden flex items-center justify-end select-none shrink-0"
             >
               {/* Sacred rotating mandala background */}
               <div aria-hidden="true" className="ghl-mandala pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 opacity-20">
@@ -376,7 +354,7 @@ export function GoldenHeroLanding({
                       fill
                       priority={idx === 0}
                       unoptimized
-                      sizes="(max-width: 768px) 100vw, 45vw"
+                      sizes="(max-width: 768px) 100vw, 50vw"
                       className="object-cover object-center pointer-events-none select-none"
                     />
                   </div>
@@ -418,7 +396,7 @@ export function GoldenHeroLanding({
               </div>
 
               {/* Interactive Theme Rotation Pill Controls */}
-              <div className="absolute bottom-3 sm:bottom-4 right-3 sm:right-5 z-30 flex items-center gap-1.5 sm:gap-2 rounded-full border border-amber-400/35 bg-[#0d0312]/85 px-2.5 sm:px-3.5 py-1 sm:py-1.5 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.65)]">
+              <div className="absolute bottom-3 sm:bottom-4 right-3 sm:right-5 z-30 flex items-center gap-1 sm:gap-1.5 rounded-full border border-amber-400/35 bg-[#0d0312]/85 px-1 sm:px-1.5 py-1 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.65)]">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -426,12 +404,12 @@ export function GoldenHeroLanding({
                     prevSlide();
                   }}
                   aria-label="मागील डिझाईन"
-                  className="flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full text-amber-200/80 hover:bg-amber-500/20 hover:text-amber-100 transition-colors"
+                  className="grid h-11 w-11 place-items-center rounded-full text-amber-200/80 hover:bg-amber-500/20 hover:text-amber-100 transition-colors"
                 >
                   <span className="text-xs sm:text-sm font-bold">‹</span>
                 </button>
 
-                <div className="flex items-center gap-1 sm:gap-1.5 px-0.5 sm:px-1">
+                <div className="flex items-center">
                   {HERO_SLIDES.map((slide, idx) => (
                     <button
                       key={slide.src}
@@ -442,12 +420,16 @@ export function GoldenHeroLanding({
                       }}
                       aria-label={slide.title}
                       title={slide.title}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        idx === currentSlide
-                          ? 'w-5 sm:w-6 bg-gradient-to-r from-amber-400 to-amber-200 shadow-[0_0_8px_rgba(245,158,11,0.85)]'
-                          : 'w-1.5 bg-white/35 hover:bg-white/70'
-                      }`}
-                    />
+                      className="group/dot -mx-1 grid h-11 w-11 place-items-center rounded-full transition"
+                    >
+                      <span
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                          idx === currentSlide
+                            ? 'w-5 sm:w-6 bg-gradient-to-r from-amber-400 to-amber-200 shadow-[0_0_8px_rgba(245,158,11,0.85)]'
+                            : 'w-1.5 bg-white/35 group-hover/dot:bg-white/70'
+                        }`}
+                      />
+                    </button>
                   ))}
                 </div>
 
@@ -458,7 +440,7 @@ export function GoldenHeroLanding({
                     nextSlide();
                   }}
                   aria-label="पुढील डिझाईन"
-                  className="flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full text-amber-200/80 hover:bg-amber-500/20 hover:text-amber-100 transition-colors"
+                  className="grid h-11 w-11 place-items-center rounded-full text-amber-200/80 hover:bg-amber-500/20 hover:text-amber-100 transition-colors"
                 >
                   <span className="text-xs sm:text-sm font-bold">›</span>
                 </button>

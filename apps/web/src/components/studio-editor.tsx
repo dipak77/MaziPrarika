@@ -282,7 +282,10 @@ export function StudioEditor({
         setTimeout(() => {
           const el = document.getElementById("design-form");
           if (el) {
-            el.scrollIntoView({ behavior: "smooth" });
+            const reduceMotion =
+              typeof window !== "undefined" &&
+              window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
           }
         }, 120);
       }
@@ -355,6 +358,7 @@ export function StudioEditor({
 
   // ── Sync Mode from URL / Props ──
   useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash === "#design-form") return;
     if (initialMode) {
       setStudioMode(initialMode);
     }
@@ -375,6 +379,7 @@ export function StudioEditor({
   }, [lang, design.lang]);
 
   // ── History Management (Undo/Redo) ──
+  const skipHistoryRef = useRef(false);
   const pushHistory = useCallback(
     (newDesign: DesignData) => {
       setHistoryStack((prev) => {
@@ -388,8 +393,17 @@ export function StudioEditor({
     [historyIndex]
   );
 
+  useEffect(() => {
+    if (skipHistoryRef.current) {
+      skipHistoryRef.current = false;
+      return;
+    }
+    pushHistory(design);
+  }, [design]);
+
   const undo = useCallback(() => {
     if (historyIndex > 0) {
+      skipHistoryRef.current = true;
       setHistoryIndex((prev) => prev - 1);
       const prevDesign = historyStack[historyIndex - 1];
       if (prevDesign) setDesign(prevDesign);
@@ -398,6 +412,7 @@ export function StudioEditor({
 
   const redo = useCallback(() => {
     if (historyIndex < historyStack.length - 1) {
+      skipHistoryRef.current = true;
       setHistoryIndex((prev) => prev + 1);
       const nextDesign = historyStack[historyIndex + 1];
       if (nextDesign) setDesign(nextDesign);
@@ -407,6 +422,7 @@ export function StudioEditor({
   // ── Keyboard Shortcuts ──
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (studioMode === "pro-editor") return;
       if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         undo();
@@ -430,15 +446,11 @@ export function StudioEditor({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo]);
+  }, [undo, redo, studioMode]);
 
   // ── Design Setters ──
   const set = <K extends keyof DesignData>(k: K, v: DesignData[K]) => {
-    setDesign((d) => {
-      const newDesign = { ...d, [k]: v };
-      pushHistory(newDesign);
-      return newDesign;
-    });
+    setDesign((d) => ({ ...d, [k]: v }));
   };
 
   const mark = (k: string) =>
@@ -618,25 +630,8 @@ export function StudioEditor({
   };
 
   const handleExport = () => {
-    // Export logic based on format
-    switch (exportFormat) {
-      case "pdf":
-        window.print();
-        break;
-      case "png":
-      case "webp":
-        // Canvas capture logic
-        if (previewRef.current) {
-          const canvas = document.createElement("canvas");
-          // Implementation would use html2canvas or similar
-          console.log("Exporting as", exportFormat);
-        }
-        break;
-      case "mp4":
-      case "gif":
-        // Video/GIF export with animations
-        console.log("Video export:", exportFormat);
-        break;
+    if (exportFormat === "pdf") {
+      window.print();
     }
   };
 
@@ -773,7 +768,7 @@ export function StudioEditor({
         mr: "व्हिडिओ स्टुडिओ",
       },
       badge: "NEW",
-      badgeColor: "bg-emerald-600 text-white",
+      badgeColor: "bg-leaf-600 text-white",
     },
     {
       id: "effects-lab" as StudioMode,
@@ -837,13 +832,13 @@ export function StudioEditor({
             </span>
           </div>
 
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-ivory-100 tracking-tight">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-ivory-100 tracking-tight">
             {isEn
               ? "Super Premium Design Studio"
               : isHi
                 ? "सुपर प्रीमियम डिज़ाइन स्टूडियो"
                 : "सुपर प्रीमियम डिझाइन स्टुडिओ"}
-          </h1>
+          </h2>
           <p className="mt-2 max-w-xl text-sm text-ivory-100/60">
             {isEn
               ? "50+ templates · Advanced animations · Video export · AI-powered transliteration · Multi-language"
@@ -943,17 +938,17 @@ export function StudioEditor({
 
           {/* Direct Full View in New Tab Button */}
           <a
-            href={`/studio/editor?template=${canvaTemplateId || "shubh-vivah"}#design-form`}
+            href={`/studio/editor?template=${canvaTemplateId || "wedding-royal-purple-ganesh"}#design-form`}
             target="_blank"
             rel="noopener noreferrer"
             title={isEn ? "Open in New Tab (Full Space & Full View Mode)" : "नवीन टॅबमध्ये पूर्ण स्क्रीन उघडा"}
-            className="group relative min-h-[48px] rounded-xl px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm font-black transition-all duration-300 flex items-center gap-1.5 bg-gradient-to-r from-amber-500 via-rose-600 to-amber-600 text-white shadow-lg hover:brightness-110 active:scale-95"
+            className="btn-base btn-maroon group relative"
           >
             <span className="text-base">⤢</span>
             <span className="hidden md:inline">
               {isEn ? "Full View (New Tab)" : "पूर्ण स्क्रीन (New Tab)"}
             </span>
-            <span className="rounded-full bg-black/30 px-1.5 py-0.5 text-[8.5px] font-black text-amber-200">
+            <span className="rounded-full bg-gold-500/25 px-1.5 py-0.5 text-[8.5px] font-black text-gold-bright">
               PRO
             </span>
           </a>
@@ -1741,7 +1736,7 @@ export function StudioEditor({
 
                 {/* Font Selection */}
                 <fieldset className="rounded-2xl border border-maroon-900/10 bg-white/70 p-5 shadow-lg">
-                  <legend className="rounded-full bg-gradient-to-r from-emerald-600 to-teal-700 px-4 py-1.5 text-[11px] font-black tracking-[0.14em] text-ivory-100 uppercase">
+                  <legend className="rounded-full bg-gradient-to-r from-leaf-600 to-paithani px-4 py-1.5 text-[11px] font-black tracking-[0.14em] text-ivory-100 uppercase">
                     🔤{" "}
                     {isEn ? "Typography" : isHi ? "टाइपोग्राफी" : "टायपोग्राफी"}
                   </legend>
@@ -1752,7 +1747,7 @@ export function StudioEditor({
                         type="button"
                         onClick={() => setSelectedFont(font.id)}
                         className={`flex items-center justify-between min-h-[44px] rounded-lg px-4 py-2 transition-all ${selectedFont === font.id
-                            ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md"
+                            ? "bg-gradient-to-r from-leaf-600 to-paithani text-white shadow-md"
                             : "bg-ink-900/5 text-ink-700 hover:bg-ink-900/10"
                           }`}
                         style={{ fontFamily: font.family }}
@@ -1778,7 +1773,7 @@ export function StudioEditor({
             {activePanel === "export" && (
               <div className="space-y-5 animate-fade-in">
                 <fieldset className="rounded-2xl border border-maroon-900/10 bg-white/70 p-5 shadow-lg">
-                  <legend className="rounded-full bg-gradient-to-r from-emerald-600 to-green-700 px-4 py-1.5 text-[11px] font-black tracking-[0.14em] text-ivory-100 uppercase">
+                  <legend className="rounded-full bg-gradient-to-r from-leaf-600 to-leaf-700 px-4 py-1.5 text-[11px] font-black tracking-[0.14em] text-ivory-100 uppercase">
                     📤{" "}
                     {isEn
                       ? "Export Format"
@@ -1834,14 +1829,17 @@ export function StudioEditor({
                       <button
                         key={format.id}
                         type="button"
+                        disabled={format.id !== "pdf"}
                         onClick={() =>
                           setExportFormat(
                             format.id as "pdf" | "png" | "mp4" | "gif" | "webp"
                           )
                         }
-                        className={`flex flex-col items-center gap-1 min-h-[72px] rounded-xl p-3 transition-all ${exportFormat === format.id
-                            ? "bg-gradient-to-br from-emerald-600 to-green-700 text-white shadow-lg scale-[1.02]"
-                            : "bg-ink-900/5 text-ink-700 hover:bg-ink-900/10"
+                        className={`flex min-h-[72px] flex-col items-center gap-1 rounded-xl p-3 transition-all ${exportFormat === format.id
+                            ? "bg-maroon-deep text-gold-bright shadow-lg scale-[1.02]"
+                            : format.id !== "pdf"
+                              ? "cursor-not-allowed bg-ink-900/5 text-ink-400 opacity-60"
+                              : "bg-ink-900/5 text-ink-700 hover:bg-ink-900/10"
                           }`}
                       >
                         <span className="text-xl">{format.icon}</span>
@@ -1854,6 +1852,16 @@ export function StudioEditor({
                       </button>
                     ))}
                   </div>
+                  <p
+                    role="status"
+                    className="mt-3 rounded-xl border border-gold-500/30 bg-gold-500/10 px-3 py-2 text-xs font-bold text-gold-700"
+                  >
+                    {isEn
+                      ? "Only PDF export is available in this version. PNG / MP4 / GIF / WebP are coming soon."
+                      : isHi
+                        ? "इस संस्करण में केवल PDF एक्सपोर्ट उपलब्ध है। PNG / MP4 / GIF / WebP जल्द आ रहे हैं।"
+                        : "या आवृत्तीत केवळ PDF निर्यात उपलब्ध आहे. PNG / MP4 / GIF / WebP लवकर येत आहेत."}
+                  </p>
                 </fieldset>
 
                 {/* Export Actions */}
@@ -1861,7 +1869,7 @@ export function StudioEditor({
                   <button
                     type="button"
                     onClick={handleExport}
-                    className="min-h-[52px] rounded-xl bg-gradient-to-r from-emerald-600 to-green-700 text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] flex items-center justify-center gap-2"
+                    className="btn-base btn-maroon flex items-center justify-center gap-2"
                   >
                     <Icon name="download" className="h-5 w-5" />
                     {isEn
@@ -1873,7 +1881,7 @@ export function StudioEditor({
                   <button
                     type="button"
                     onClick={handlePrint}
-                    className="min-h-[52px] rounded-xl border-2 border-emerald-600 text-emerald-700 font-bold text-sm hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
+                    className="btn-base btn-outline flex items-center justify-center gap-2"
                   >
                     <Icon name="printer" className="h-5 w-5" />
                     {isEn ? "Quick Print" : isHi ? "त्वरित प्रिंट" : "जलद प्रिंट"}
@@ -1894,25 +1902,25 @@ export function StudioEditor({
                   </div>
                   <ul className="space-y-2 text-[12px] text-ink-600">
                     <li className="flex items-center gap-2">
-                      <span className="text-emerald-600">✓</span>
+                      <span className="text-leaf-600">✓</span>
                       {isEn
                         ? "4K resolution video export with animations"
                         : "अ‍ॅनिमेशनसह 4K रिझोल्यूशन व्हिडिओ"}
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="text-emerald-600">✓</span>
+                      <span className="text-leaf-600">✓</span>
                       {isEn
                         ? "Print-ready 300 DPI PDF"
                         : "प्रिंट-रेडी 300 DPI PDF"}
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="text-emerald-600">✓</span>
+                      <span className="text-leaf-600">✓</span>
                       {isEn
                         ? "Animated GIF with custom timing"
                         : "कस्टम टायमिंगसह अ‍ॅनिमेटेड GIF"}
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="text-emerald-600">✓</span>
+                      <span className="text-leaf-600">✓</span>
                       {isEn
                         ? "WhatsApp-optimized sharing"
                         : "WhatsApp-ऑप्टिमाइज्ड शेअरिंग"}
@@ -1925,7 +1933,7 @@ export function StudioEditor({
             {/* ─── ACTIVE PANEL: TEXT EDITING ──────────────────────────── */}
             {(activePanel === "text" || activePanel === "template") && (
               <form
-                ref={activePanel === "text" ? undefined : formRef}
+                ref={formRef}
                 action={handleAction}
                 noValidate
                 id="legacy-design-form"
@@ -2414,7 +2422,7 @@ export function StudioEditor({
                   >
                     <div
                       style={{ width: `${progressPct}%` }}
-                      className={`h-full rounded-full transition-[width] duration-700 ease-out ${allOk ? "bg-gradient-to-r from-leaf-500 to-emerald-500" : "bg-gradient-to-r from-gold-400 to-amber-500"}`}
+                      className={`h-full rounded-full transition-[width] duration-700 ease-out ${allOk ? "bg-gradient-to-r from-leaf-500 to-paithani-light" : "bg-gradient-to-r from-gold-400 to-amber-500"}`}
                     />
                   </div>
                   <ul className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -3568,7 +3576,7 @@ function VideoStudioSection({
         </div>
 
         {/* Video Export Settings */}
-        <div className="rounded-2xl border border-emerald-500/20 bg-white/70 p-5 shadow-lg">
+        <div className="rounded-2xl border border-leaf-500/20 bg-white/70 p-5 shadow-lg">
           <h3 className="text-sm font-bold text-ink-800 mb-3 flex items-center gap-2">
             <span>📤</span>
             {isEn
@@ -3600,33 +3608,21 @@ function VideoStudioSection({
                 <option>24 FPS (Cinematic)</option>
               </select>
             </div>
-            <div>
-              <label className="label text-xs">
-                {isEn ? "Format" : "फॉर्मेट"}
-              </label>
-              <select className="field min-h-[40px] text-sm">
-                <option>MP4 (H.264)</option>
-                <option>WebM (VP9)</option>
-                <option>GIF (Animated)</option>
-                <option>MOV (ProRes)</option>
-              </select>
-            </div>
-            <div>
-              <label className="label text-xs">
-                {isEn ? "Quality" : "क्वालिटी"}
-              </label>
-              <select className="field min-h-[40px] text-sm">
-                <option>High (Recommended)</option>
-                <option>Maximum</option>
-                <option>Medium</option>
-                <option>Low (Small file)</option>
-              </select>
-            </div>
           </div>
+          <p
+            role="status"
+            className="mt-4 rounded-xl border border-gold-500/30 bg-gold-500/10 px-3 py-2 text-xs font-bold text-gold-700"
+          >
+            {isEn
+              ? "Video rendering is coming soon. For now use PDF export (Print) from the Export panel."
+              : isHi
+                ? "वीडियो रेंडरिंग जल्द आ रही है। अभी निर्यात पैनल से PDF (प्रिंट) का उपयोग करें।"
+                : "व्हिडिओ रेंडरिंग लवकर येत आहे. सध्या निर्यात पॅनेलमधून PDF (प्रिंट) वापरा."}
+          </p>
           <button
             type="button"
-            onClick={handleExport}
-            className="mt-4 w-full min-h-[48px] rounded-xl bg-gradient-to-r from-emerald-600 to-green-700 text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] flex items-center justify-center gap-2"
+            disabled
+            className="mt-4 flex w-full min-h-[48px] cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-ink-900/10 text-sm font-bold text-ink-400"
           >
             <span>🎬</span>
             {isEn

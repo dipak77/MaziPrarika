@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation';
 import { LangToggle } from '@/components/lang-toggle';
 import { useLanguage } from '@/context/language-context';
 import { uiCopy } from '@/lib/i18n';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 /* ═══════════════════════════════════════════════════════════════
    Inline Icon System (Crisp, High-Performance, Zero-Dependency)
@@ -30,8 +31,6 @@ function I({ name, className = 'h-4 w-4' }: { name: string; className?: string }
     wand: <path d="M15 4V2M15 10V8M11 6H9M21 6h-2M17.5 3.5l-1 1M17.5 8.5l-1-1M12.5 8.5L3 18l3 3 9.5-9.5-3-3z" />,
     crown: <path d="M3 17l-1-9 5.5 4L12 5l4.5 7L22 8l-1 9H3zM3 20h18" />,
     globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.6-3.8-9S9.5 5.5 12 3z" /></>,
-    camera: <><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" /></>,
-    utensils: <path d="M18 2v6a3 3 0 01-3 3h-1v11h-2V11H7a3 3 0 01-3-3V2h2v6a1 1 0 001 1h1V2h2v7h1a1 1 0 001-1V2h2z" />,
     heart: <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />,
     shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
     briefcase: <><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" /></>,
@@ -42,8 +41,6 @@ function I({ name, className = 'h-4 w-4' }: { name: string; className?: string }
     phone: <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />,
     help: <><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></>,
     idCard: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="2" /><line x1="14" y1="9" x2="18" y2="9" /><line x1="14" y1="13" x2="18" y2="13" /><line x1="6" y1="16" x2="18" y2="16" /></>,
-    palette: <><circle cx="13.5" cy="6.5" r=".7" fill="currentColor" /><circle cx="17.5" cy="10.5" r=".7" fill="currentColor" /><circle cx="8.5" cy="7.5" r=".7" fill="currentColor" /><circle cx="6.5" cy="12.5" r=".7" fill="currentColor" /><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16c3.3 0 6-2.7 6-6 0-5.5-4.5-8.6-10-8.6z" /></>,
-    cricket: <><circle cx="16" cy="8" r="4" /><path d="M4 20l8-8M3 21l2-2" /></>,
   };
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"
@@ -61,6 +58,8 @@ export type IconColor = 'violet' | 'indigo' | 'amber' | 'emerald' | 'rose' | 'bl
 export interface SubItem {
   icon: string;
   badge?: string;
+  badgeMr?: string;
+  badgeHi?: string;
   color?: IconColor;
   href: string;
   target?: string;
@@ -88,7 +87,9 @@ export interface NavSection {
   labelMr: string;
   labelHi: string;
   badge?: string;
-  badgeVariant?: 'gold' | 'maroon' | 'leaf';
+  badgeMr?: string;
+  badgeHi?: string;
+  badgeVariant?: 'gold' | 'maroon';
   columns?: NavColumn[];
   items?: SubItem[];
   footer?: {
@@ -114,12 +115,30 @@ export interface NavSection {
 export const ICON_COLOR_STYLES: Record<IconColor, string> = {
   violet: 'bg-violet-50 text-violet-600 border border-violet-200/70 group-hover:bg-violet-600 group-hover:text-white group-hover:border-violet-600',
   indigo: 'bg-indigo-50 text-indigo-600 border border-indigo-200/70 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600',
-  amber: 'bg-amber-50 text-amber-700 border border-amber-200/70 group-hover:bg-amber-500 group-hover:text-white group-hover:border-amber-500',
-  emerald: 'bg-emerald-50 text-emerald-600 border border-emerald-200/70 group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600',
+  amber: 'bg-gold-shimmer text-gold-700 border border-gold-200/70 group-hover:bg-gold-600 group-hover:text-white group-hover:border-gold-600',
+  emerald: 'bg-paithani-soft text-leaf-600 border border-paithani-light/40 group-hover:bg-leaf-700 group-hover:text-white group-hover:border-leaf-700',
   rose: 'bg-rose-50 text-rose-600 border border-rose-200/70 group-hover:bg-rose-600 group-hover:text-white group-hover:border-rose-600',
   blue: 'bg-sky-50 text-sky-600 border border-sky-200/70 group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-600',
   slate: 'bg-slate-100 text-slate-800 border border-slate-200/70 group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900',
 };
+
+const SECTION_BADGE_STYLES: Record<'gold' | 'maroon', string> = {
+  gold: 'bg-gold-200 text-gold-900 border border-gold-400 font-bold',
+  maroon: 'bg-violet-100 text-violet-700 border border-violet-200',
+};
+
+function sectionBadgeClass(variant?: 'gold' | 'maroon') {
+  return SECTION_BADGE_STYLES[variant || 'maroon'];
+}
+
+function badgeText(
+  item: { badge?: string; badgeMr?: string; badgeHi?: string },
+  isEn: boolean,
+  isHi: boolean
+) {
+  if (isEn) return item.badge;
+  return (isHi ? item.badgeHi : item.badgeMr) ?? item.badge;
+}
 
 const NAV_SECTIONS: NavSection[] = [
   {
@@ -209,6 +228,8 @@ const NAV_SECTIONS: NavSection[] = [
             icon: 'sparkle',
             color: 'indigo',
             badge: 'AI MAGIC',
+            badgeMr: 'AI जादू',
+            badgeHi: 'AI जादू',
             href: '/create',
             en: 'AI Smart Setup',
             mr: 'AI स्मार्ट सेटअप',
@@ -223,12 +244,24 @@ const NAV_SECTIONS: NavSection[] = [
         titleEn: 'Templates & Catalog',
         titleMr: 'टेम्पलेट्स व कॅटलॉग',
         titleHi: 'टेम्पलेट्स व कैटलॉग',
-        href: '/studio',
+        href: '/templates',
         items: [
           {
             icon: 'crown',
             color: 'amber',
             badge: '५०+',
+            href: '/templates',
+            en: 'All Patrika Designs',
+            mr: 'सर्व पत्रिका डिझाईन्स',
+            hi: 'सभी पत्रिका डिज़ाइन्स',
+            enD: 'Browse all 50+ authentic Maharashtrian card designs',
+            mrD: 'सर्व ५०+ अस्सल महाराष्ट्रीय लग्न व सोहळा पत्रिका पहा',
+            hiD: 'सभी ५०+ प्रामाणिक महाराष्ट्रीयन पत्रिका डिज़ाइन्स देखें',
+          },
+          {
+            icon: 'wand',
+            color: 'violet',
+            badge: 'PRO',
             href: '/studio',
             en: 'All Event Studio',
             mr: 'सर्व सोहळा स्टुडिओ',
@@ -284,11 +317,13 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: 'wedding',
-    href: '/studio?category=wedding',
+    href: '/templates?category=wedding',
     icon: 'ring',
     labelEn: 'Wedding Cards',
     labelMr: 'विवाह पत्रिका',
     labelHi: 'विवाह पत्रिका',
+    badge: '५०+',
+    badgeVariant: 'gold',
   },
   {
     id: 'biodata',
@@ -352,26 +387,14 @@ const NAV_SECTIONS: NavSection[] = [
           {
             icon: 'users',
             color: 'blue',
-            badge: 'वर',
-            href: '/biodata?profile=groom',
-            en: 'Groom Biodata Maker',
-            mr: 'वर बायोडाटा मेकर',
-            hi: 'वर बायोडाटा मेकर',
-            enD: 'Education, profession, kul, gotra & family details',
-            mrD: 'शिक्षण, नोकरी/व्यवसाय, कुल, गोत्र व कौटुंबिक माहिती',
-            hiD: 'शिक्षा, व्यवसाय, कुल, गोत्र व पारिवारिक विवरण',
-          },
-          {
-            icon: 'heart',
-            color: 'rose',
-            badge: 'वधू',
-            href: '/biodata?profile=bride',
-            en: 'Bride Biodata Maker',
-            mr: 'वधू बायोडाटा मेकर',
-            hi: 'वधू बायोडाटा मेकर',
-            enD: 'Graceful typography, horoscope placement & photo framing',
-            mrD: 'सुबक अक्षर, पत्रिका/कुंडली व सुंदर फोटो रचना',
-            hiD: 'सुरुचिपूर्ण अक्षर, कुंडली व फोटो संयोजन',
+            badge: 'POPULAR',
+            href: '/biodata',
+            en: 'Marriage Biodata Maker',
+            mr: 'विवाह बायोडाटा मेकर',
+            hi: 'विवाह बायोडाटा मेकर',
+            enD: 'Education, profession, kul, gotra & family details for both partners',
+            mrD: 'दोघांसाठी शिक्षण, नोकरी/व्यवसाय, कुल, गोत्र व कौटुंबिक माहिती',
+            hiD: 'दोनों के लिए शिक्षा, व्यवसाय, कुल, गोत्र व पारिवारिक विवरण',
           },
           {
             icon: 'sun',
@@ -444,8 +467,7 @@ const NAV_SECTIONS: NavSection[] = [
       ctaHi: 'बायोडाटा बनाएं',
       ctaHref: '/biodata',
       secondaryLinks: [
-        { en: 'Groom Biodata', mr: 'वर बायोडाटा', hi: 'वर बायोडाटा', href: '/biodata?profile=groom' },
-        { en: 'Bride Biodata', mr: 'वधू बायोडाटा', hi: 'वधू बायोडाटा', href: '/biodata?profile=bride' },
+        { en: 'Biodata Maker', mr: 'बायोडाटा मेकर', hi: 'बायोडाटा मेकर', href: '/biodata' },
         { en: '8 Royal Styles', mr: '८ राजेशाही शैली', hi: '८ शाही शैलियाँ', href: '/biodata#biodata-live' },
       ],
     },
@@ -453,10 +475,14 @@ const NAV_SECTIONS: NavSection[] = [
   {
     id: 'create',
     href: '/create',
-    icon: 'cricket',
-    labelEn: 'Cricket',
-    labelMr: 'क्रिकेटे',
-    labelHi: 'क्रिकेट',
+    icon: 'sparkle',
+    labelEn: 'AI Planner',
+    labelMr: 'AI प्लॅनर',
+    labelHi: 'AI प्लानर',
+    badge: 'AI MAGIC',
+    badgeMr: 'AI जादू',
+    badgeHi: 'AI जादू',
+    badgeVariant: 'gold',
   },
   {
     id: 'panchang',
@@ -587,14 +613,14 @@ const NAV_SECTIONS: NavSection[] = [
           {
             icon: 'grid',
             color: 'emerald',
-            badge: 'LIVE API',
-            href: '/api/health',
-            en: 'Ephemeris Engine Health',
-            mr: 'पंचांग इंजिन स्थिती v2.4',
-            hi: 'पंचांग इंजन स्थिति v2.4',
-            enD: '99.99% uptime with planetary coordinates verification',
-            mrD: '९९.९९% अपटाइम व अचूक ग्रहस्थिती पडताळणी',
-            hiD: '99.99% अपटाइम व सटीक ग्रह स्थिति सत्यापन',
+            badge: 'ENGINE',
+            href: '/about',
+            en: 'About the Panchang Engine',
+            mr: 'पंचांग इंजिनबद्दल',
+            hi: 'पंचांग इंजन के बारे में',
+            enD: 'How Surya Siddhanta maths powers your daily panchang',
+            mrD: 'सूर्यसिद्धांत गणितामुळे दैनिक पंचांग कसा तयार होतो',
+            hiD: 'सूर्यसिद्धांत गणित से दैनिक पंचांग कैसे बनता है',
           },
         ],
       },
@@ -725,6 +751,8 @@ const NAV_SECTIONS: NavSection[] = [
             icon: 'sparkle',
             color: 'violet',
             badge: 'AI MAGIC',
+            badgeMr: 'AI जादू',
+            badgeHi: 'AI जादू',
             href: '/create',
             en: 'AI Celebration Planner',
             mr: 'AI सोहळा नियोजक',
@@ -749,13 +777,13 @@ const NAV_SECTIONS: NavSection[] = [
             icon: 'shield',
             color: 'emerald',
             badge: 'STATUS',
-            href: '/api/health',
-            en: 'System Status & Telemetry',
-            mr: 'सिस्टम आरोग्य व व्हर्जन',
-            hi: 'सिस्टम स्थिति व वर्शन',
-            enD: 'Real-time uptime, API health & astronomical telemetry',
-            mrD: 'थेट अपटाइम, API आरोग्य व खगोलीय टेलिमेट्री',
-            hiD: 'लाइव अपटाइम, API स्थिति व खगोलीय टेलीमेट्री',
+            href: '/about',
+            en: 'About & Platform Status',
+            mr: 'आमच्याबद्दल व स्थिती',
+            hi: 'हमारे बारे में व स्थिति',
+            enD: 'Company, roadmap & how the platform is built',
+            mrD: 'कंपनी, रोडमॅप व प्लॅटफॉर्म निर्मितीबद्दल',
+            hiD: 'कंपनी, रोडमैप व प्लेटफ़ॉर्म निर्माण के बारे में',
           },
         ],
       },
@@ -782,9 +810,9 @@ const NAV_SECTIONS: NavSection[] = [
     id: 'crm',
     href: '/console',
     icon: 'idCard',
-    labelEn: 'CRM',
-    labelMr: 'CRM',
-    labelHi: 'CRM',
+    labelEn: 'CRM Console',
+    labelMr: 'CRM कन्सोल',
+    labelHi: 'CRM कंसोल',
   },
 ];
 
@@ -795,6 +823,82 @@ const ALL_SEARCH_ITEMS: SubItem[] = NAV_SECTIONS.flatMap((sec) => {
   }
   return sec.items ?? [];
 });
+
+type SubItemVariant = 'dropdown' | 'drawer' | 'search';
+
+const SUB_ITEM_STYLES: Record<
+  SubItemVariant,
+  { link: string; iconBox: string; icon: string; title: string; badge: string; desc: string; arrow: string }
+> = {
+  dropdown: {
+    link: 'group flex min-h-11 items-start gap-3.5 rounded-2xl p-2.5 transition-all duration-200 hover:bg-slate-50/90 hover:shadow-xs',
+    iconBox: 'size-10 rounded-xl transition-all duration-200 group-hover:scale-105',
+    icon: 'h-5 w-5',
+    title: 'text-[13.5px] font-bold text-slate-900 transition-colors group-hover:text-violet-600',
+    badge: 'rounded-full bg-violet-50 px-1.5 py-0.5 text-[8.5px] font-black tracking-wider text-violet-700 border border-violet-200/60',
+    desc: 'mt-1 block text-[11.5px] leading-snug text-slate-500 line-clamp-2',
+    arrow: 'hidden',
+  },
+  drawer: {
+    link: 'group flex min-h-11 items-center gap-3 rounded-xl p-2.5 transition hover:bg-ivory-surface hover:shadow-2xs active:scale-[0.99]',
+    iconBox: 'size-8 rounded-lg shadow-2xs',
+    icon: 'h-3.5 w-3.5',
+    title: 'text-xs font-bold text-stone-900 truncate',
+    badge: 'rounded-full bg-violet-100 px-1.5 py-0.2 text-[8px] font-bold text-violet-700',
+    desc: 'mt-0.5 block text-[11px] text-stone-500 truncate',
+    arrow: 'h-3.5 w-3.5 text-stone-300 shrink-0',
+  },
+  search: {
+    link: 'group flex min-h-11 items-center gap-3 rounded-2xl border border-stone-200/80 bg-ivory-surface p-3 shadow-2xs hover:bg-purple-50/50 hover:border-purple-300 transition active:scale-[0.99]',
+    iconBox: 'size-9 rounded-xl shadow-2xs',
+    icon: 'h-4 w-4',
+    title: 'text-sm font-bold text-stone-900 truncate',
+    badge: 'rounded-full bg-gold/20 px-2 py-0.5 text-[9px] font-black text-gold-deep shrink-0',
+    desc: 'mt-0.5 block text-xs text-stone-500 line-clamp-2',
+    arrow: 'h-4 w-4 text-stone-400 shrink-0 self-center',
+  },
+};
+
+function SubItemCard({
+  item,
+  variant,
+  onNavigate,
+  style,
+}: {
+  item: SubItem;
+  variant: SubItemVariant;
+  onNavigate: () => void;
+  style?: React.CSSProperties;
+}) {
+  const { isEn, isHi } = useLanguage();
+  const s = SUB_ITEM_STYLES[variant];
+  const label = isEn ? item.en : isHi ? item.hi : item.mr;
+  const desc = isEn ? item.enD : isHi ? item.hiD : item.mrD;
+  const badge = badgeText(item, isEn, isHi);
+
+  return (
+    <Link
+      href={item.href}
+      target={item.target}
+      rel={item.target === '_blank' ? 'noopener noreferrer' : undefined}
+      onClick={onNavigate}
+      style={style}
+      className={s.link}
+    >
+      <span className={`grid shrink-0 place-items-center ${s.iconBox} ${ICON_COLOR_STYLES[item.color || 'violet']}`}>
+        <I name={item.icon} className={s.icon} />
+      </span>
+      <span className="block min-w-0 flex-1">
+        <span className="flex items-center gap-1.5">
+          <span className={s.title}>{label}</span>
+          {badge && <span className={s.badge}>{badge}</span>}
+        </span>
+        <span className={s.desc}>{desc}</span>
+      </span>
+      <I name="arrow" className={s.arrow} />
+    </Link>
+  );
+}
 
 /* ═══════════════════════════════════════════════════════════════
    SITE HEADER COMPONENT
@@ -814,11 +918,14 @@ export function SiteHeader() {
 
   const searchRef = useRef<HTMLDivElement>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
+  const drawerCloseRef = useRef<HTMLButtonElement>(null);
   const dropdownLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ── Helper for active route matching ── */
   const isSectionActive = (href: string) => {
-    const base = (href.split('?')[0] ?? '').split('#')[0] ?? '';
+    if (href.includes('?')) return false;
+    const base = href.split('#')[0] ?? '';
     if (base === '/') return pathname === '/';
     return pathname === base || pathname.startsWith(base + '/');
   };
@@ -875,6 +982,35 @@ export function SiteHeader() {
     };
   }, [drawerOpen]);
 
+  /* ── Release drawer (and its scroll lock) when viewport reaches lg ── */
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const release = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        setDrawerOpen(false);
+        document.body.style.overflow = '';
+      }
+    };
+    mq.addEventListener('change', release);
+    return () => mq.removeEventListener('change', release);
+  }, []);
+
+  /* ── Drawer focus management: focus close on open, restore on Escape ── */
+  useEffect(() => {
+    if (!drawerOpen) return;
+    drawerCloseRef.current?.focus();
+    const onEscape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setDrawerOpen(false);
+      setActiveDropdown(null);
+      setPinnedDropdown(null);
+      setSearchOpen(false);
+      hamburgerRef.current?.focus();
+    };
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, [drawerOpen]);
+
   /* ── Global Keyboard Shortcuts: ⌘K, Escape ── */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -925,16 +1061,13 @@ export function SiteHeader() {
   const getLabel = (sec: { labelEn: string; labelMr: string; labelHi: string }) =>
     isEn ? sec.labelEn : isHi ? sec.labelHi : sec.labelMr;
 
-  const getItemLabel = (m: { en: string; mr: string; hi: string }) =>
-    isEn ? m.en : isHi ? m.hi : m.mr;
-
-  const getItemDesc = (m: { enD: string; mrD: string; hiD: string }) =>
-    isEn ? m.enD : isHi ? m.hiD : m.mrD;
-
   const getColumnTitle = (col: { titleEn: string; titleMr: string; titleHi: string }) =>
     isEn ? col.titleEn : isHi ? col.titleHi : col.titleMr;
 
   const activeSection = NAV_SECTIONS.find((s) => s.id === (pinnedDropdown || activeDropdown));
+  const activeMega =
+    activeSection && activeSection.columns && activeSection.columns.length > 0 ? activeSection : null;
+  const megaColumns: NavColumn[] = activeMega?.columns ?? [];
 
   return (
     <>
@@ -942,13 +1075,6 @@ export function SiteHeader() {
         @keyframes hdr-shimmer {
           0% { background-position: -200% 0; }
           100% { background-position: 200% 0; }
-        }
-        @keyframes hdr-spin {
-          to { transform: rotate(360deg); }
-        }
-        @keyframes hdr-ping {
-          0% { transform: scale(1); opacity: 0.85; }
-          100% { transform: scale(2.4); opacity: 0; }
         }
         @keyframes hdr-fade-up {
           from { opacity: 0; transform: translateY(10px); }
@@ -962,21 +1088,9 @@ export function SiteHeader() {
           from { opacity: 0; transform: translateY(-6px) scale(0.985); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        @keyframes hdr-glow {
-          0%, 100% { box-shadow: 0 0 16px rgba(212, 175, 55, 0.32); }
-          50% { box-shadow: 0 0 32px rgba(212, 175, 55, 0.65); }
-        }
-        @keyframes hdr-shine {
-          0% { transform: translateX(-120%) skewX(-18deg); }
-          100% { transform: translateX(240%) skewX(-18deg); }
-        }
-        @keyframes hdr-pulse-dot {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.45; transform: scale(0.85); }
-        }
 
         .hdr-shimmer-text {
-          background: linear-gradient(100deg, #dfb150 20%, #fff7da 45%, #e8c15c 55%, #dfb150 80%);
+          background: linear-gradient(100deg, var(--color-gold) 20%, var(--color-gold-200) 45%, var(--color-gold-300) 55%, var(--color-gold) 80%);
           background-size: 200% 100%;
           -webkit-background-clip: text;
           background-clip: text;
@@ -1002,12 +1116,12 @@ export function SiteHeader() {
         ref={navContainerRef}
         className={`sticky top-0 z-50 transition-all duration-300 ${
           scrolled
-            ? 'bg-white/98 shadow-[0_16px_45px_-12px_rgba(14,13,38,0.08)] backdrop-blur-2xl'
-            : 'bg-white/95 shadow-[0_8px_30px_-10px_rgba(14,13,38,0.04)] backdrop-blur-xl'
+            ? 'bg-ivory-surface/98 shadow-[0_16px_45px_-12px_rgba(14,13,38,0.08)] backdrop-blur-2xl'
+            : 'bg-ivory-surface/95 shadow-[0_8px_30px_-10px_rgba(14,13,38,0.04)] backdrop-blur-xl'
         } border-b border-gray-100`}
       >
         {/* ═══════════ 1 · AUSPICIOUS ROYAL MICRO-BAR ═══════════ */}
-        <div className="relative z-30 bg-[#22061f] text-white/90 px-3 py-1.5 sm:px-6 border-b border-white/10 text-xs">
+        <div className="relative z-30 bg-maroon-deep text-white/90 px-3 py-1.5 sm:px-6 border-b border-white/10 text-xs">
           {/* Subtle Golden Starlight Micro-Pattern - Isolated in its own overflow-hidden layer */}
           <div
             aria-hidden="true"
@@ -1016,26 +1130,26 @@ export function SiteHeader() {
             <div
               className="absolute inset-0"
               style={{
-                backgroundImage: 'radial-gradient(circle, #dfb150 1px, transparent 1px)',
+                backgroundImage: 'radial-gradient(circle, var(--color-gold) 1px, transparent 1px)',
                 backgroundSize: '20px 20px',
                 animation: 'hdr-shimmer 20s linear infinite',
               }}
             />
           </div>
 
-          <div className="relative mx-auto flex max-w-[1440px] w-full items-center justify-between gap-4">
+          <div className="relative mx-auto flex w-full items-center justify-between gap-4 px-3 sm:px-6 lg:px-8 xl:px-10">
             {/* Left: Shree Ganeshaya Namah with gold crown emblem */}
-            <div className="flex items-center gap-2 text-amber-200/95 font-serif tracking-wider font-semibold text-[11px] sm:text-xs">
-              <span className="text-amber-400 text-sm">👑</span>
+            <div className="flex items-center gap-2 text-gold-200/95 font-serif tracking-wider font-semibold text-[11px] sm:text-xs">
+              <span className="text-gold-400 text-sm">👑</span>
               <span>॥ श्री गणेशाय नमः ॥</span>
             </div>
 
             {/* Center: Auspicious Tagline matching reference 100% */}
-            <div className="hidden lg:block text-center font-medium tracking-wide text-[11.5px] text-[#f5e6d3]">
+            <div className="hidden lg:block text-center font-medium tracking-wide text-[11.5px] text-gold-soft">
               <span>महाराष्ट्राची संस्कृती</span>
-              <span className="mx-2 text-amber-400/80">•</span>
+              <span className="mx-2 text-gold-400/80">•</span>
               <span>सुरेख डिझाईन परंपरा</span>
-              <span className="mx-2 text-amber-400/80">•</span>
+              <span className="mx-2 text-gold-400/80">•</span>
               <span>आपल्या सर्व शुभकार्यांसाठी खास आमंत्रण</span>
             </div>
 
@@ -1046,7 +1160,7 @@ export function SiteHeader() {
                 <span>आमच्याबद्दल</span>
               </Link>
               <Link href="/contact" className="hidden sm:flex items-center gap-1.5 text-white/90 hover:text-white transition">
-                <I name="phone" className="h-3.5 w-3.5 text-amber-300" />
+                <I name="phone" className="h-3.5 w-3.5 text-gold-300" />
                 <span>संपर्क</span>
               </Link>
               <Link href="/faq" className="flex items-center gap-1.5 text-white/90 hover:text-white transition">
@@ -1054,7 +1168,7 @@ export function SiteHeader() {
                 <span>मदत केंद्र</span>
               </Link>
 
-              <div className="h-3 w-px bg-white/20 hidden sm:block" />
+              <div className="h-3 w-px bg-ivory-surface/20 hidden sm:block" />
 
               <LangToggle compact />
             </div>
@@ -1063,7 +1177,7 @@ export function SiteHeader() {
 
         {/* ═══════════ 2 · MAIN NAVIGATION BAR ═══════════ */}
         <div
-          className={`relative z-10 mx-auto flex max-w-[1440px] w-full items-center justify-between gap-2 px-3 sm:px-6 xl:px-8 transition-all duration-300 ${
+          className={`relative z-10 mx-auto flex w-full items-center justify-between gap-2 px-3 sm:px-6 lg:px-8 xl:px-10 transition-all duration-300 ${
             scrolled ? 'h-14 sm:h-16' : 'h-16 sm:h-[4.25rem]'
           }`}
         >
@@ -1071,12 +1185,12 @@ export function SiteHeader() {
           <Link
             href="/"
             onClick={handleCloseAll}
-            aria-label={isEn ? 'Mazi Patrika home' : 'माझी पत्रिका — मुख्यपृष्ठ'}
+            aria-label={isEn ? 'Mazi Patrika home' : isHi ? 'माझी पत्रिका — होम' : 'माझी पत्रिका — मुख्यपृष्ठ'}
             className="group relative flex shrink-0 items-center gap-2.5 sm:gap-3 rounded-2xl p-1 focus-visible:outline-none"
           >
             {/* Medallion with "मा" Script */}
             <div className="relative">
-              <div className="grid size-10 sm:size-11 place-items-center rounded-full bg-gradient-to-br from-[#26042b] via-[#35083a] to-[#1c0320] text-white shadow-md ring-2 ring-purple-900/15 group-hover:scale-105 transition-transform duration-300">
+              <div className="grid size-10 sm:size-11 place-items-center rounded-full bg-linear-to-br from-maroon-deep via-maroon-900 to-maroon-950 text-white shadow-md ring-2 ring-purple-900/15 group-hover:scale-105 transition-transform duration-300">
                 <span className="font-script text-xl sm:text-2xl font-bold text-white drop-shadow-sm">
                   मा
                 </span>
@@ -1085,25 +1199,25 @@ export function SiteHeader() {
 
             <div className="hidden leading-tight xs:block">
               <div className="flex items-center gap-1.5">
-                <span className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-[#1c081e] group-hover:text-purple-800 transition">
+                <span className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-maroon-950 group-hover:text-purple-800 transition">
                   माझी पत्रिका
                 </span>
-                <span className="rounded-full bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white px-2 py-0.5 text-[9.5px] font-black tracking-wider uppercase shadow-xs">
+                <span className="rounded-full bg-linear-to-r from-violet-600 to-indigo-500 text-white px-2 py-0.5 text-[9.5px] font-black tracking-wider uppercase shadow-xs">
                   PRO
                 </span>
               </div>
-              <span className="block text-[9.5px] uppercase tracking-[0.2em] font-semibold text-[#877a73]">
+              <span className="block text-[9.5px] uppercase tracking-[0.2em] font-semibold text-stone-500">
                 MAZI PATRIKA • MAHA OS
               </span>
             </div>
           </Link>
 
           {/* ── Desktop Navigation Bar ── */}
-          <nav aria-label={isEn ? 'Main navigation' : 'मुख्य नेव्हिगेशन'} className="hidden items-center gap-0.5 xl:gap-1 lg:flex shrink-0">
+          <nav aria-label={isEn ? 'Main navigation' : isHi ? 'मुख्य नेविगेशन' : 'मुख्य नेव्हिगेशन'} className="hidden items-center gap-0.5 xl:gap-1 lg:flex shrink-0">
             {NAV_SECTIONS.map((sec) => {
               const active = isSectionActive(sec.href);
               const isOpen = (activeDropdown === sec.id) || (pinnedDropdown === sec.id);
-              const hasDropdown = (sec.columns && sec.columns.length > 0) || (sec.items && sec.items.length > 0);
+              const hasDropdown = !!sec.columns?.length;
 
               return (
                 <div
@@ -1117,38 +1231,59 @@ export function SiteHeader() {
                     <Link
                       href={sec.href}
                       onClick={() => {
-                        setActiveDropdown(null);
-                        setPinnedDropdown(null);
+                        if (!hasDropdown) {
+                          setActiveDropdown(null);
+                          setPinnedDropdown(null);
+                        }
                       }}
-                      className={`relative flex items-center gap-1 rounded-xl px-1.5 xl:px-2 py-1.5 text-[12.5px] xl:text-[13px] font-semibold whitespace-nowrap transition focus-visible:outline-none ${
-                        active
-                          ? 'text-[#7c3aed] bg-purple-50/80 font-bold'
-                          : 'text-[#1c081e] hover:bg-gray-100/70 hover:text-[#7c3aed]'
+                      aria-current={active ? 'page' : undefined}
+                      className={`relative flex min-h-11 items-center gap-1.5 rounded-xl px-1.5 xl:px-2.5 py-1.5 text-[12px] xl:text-[13px] font-semibold whitespace-nowrap transition focus-visible:outline-none ${
+                        isOpen
+                          ? 'text-violet-600 bg-purple-50 ring-1 ring-purple-200/70 font-bold'
+                          : active
+                          ? 'text-violet-600 bg-purple-50/80 font-bold'
+                          : 'text-maroon-950 hover:bg-gray-100/70 hover:text-violet-600'
                       }`}
                     >
                       {sec.icon && (
-                        <span className="text-amber-600 transition-colors group-hover:text-amber-500">
-                          <I name={sec.icon} className="h-4 w-4" />
+                        <span className="text-gold-600 transition-colors group-hover:text-gold-500">
+                          <I name={sec.icon} className="h-3.5 w-3.5 xl:h-4 xl:w-4" />
                         </span>
                       )}
                       <span>{getLabel(sec)}</span>
                       {sec.badge && (
                         <span
-                          className={`rounded-full px-1.5 py-0.5 text-[8.5px] font-black tracking-wider ${
-                            sec.badgeVariant === 'leaf'
-                              ? 'bg-[#10b981]/15 text-[#047857] border border-[#10b981]/30'
-                              : sec.badgeVariant === 'gold'
-                              ? 'bg-amber-100 text-amber-800 border border-amber-300 font-bold'
-                              : 'bg-violet-100 text-violet-700 border border-violet-200'
-                          }`}
+                          className={`rounded-full px-1.5 py-0.2 text-[8px] xl:text-[8.5px] font-black tracking-wider ${sectionBadgeClass(sec.badgeVariant)}`}
                         >
-                          {sec.badge}
+                          {badgeText(sec, isEn, isHi)}
                         </span>
                       )}
-                      {hasDropdown && (
-                        <I name="chevron" className={`h-3 w-3 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-violet-600' : ''}`} />
-                      )}
                     </Link>
+                    {hasDropdown && (
+                      <button
+                        type="button"
+                        aria-expanded={isOpen}
+                        aria-controls={isOpen ? `${sec.id}-mega-menu` : undefined}
+                        aria-label={
+                          isEn
+                            ? `Toggle ${getLabel(sec)} menu`
+                            : isHi
+                            ? `${getLabel(sec)} मेनू खोलें/बंद करें`
+                            : `${getLabel(sec)} मेनू उघडा/बंद करा`
+                        }
+                        onClick={() => handleTogglePin(sec.id)}
+                        className={`flex min-h-11 items-center justify-center rounded-md px-1.5 transition-colors cursor-pointer ${
+                          isOpen ? 'bg-purple-100/70' : 'hover:bg-purple-100/70'
+                        }`}
+                      >
+                        <I
+                          name="chevron"
+                          className={`h-3 w-3 text-gray-400 transition-transform duration-200 ${
+                            isOpen ? 'rotate-180 text-violet-600' : ''
+                          }`}
+                        />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -1166,8 +1301,10 @@ export function SiteHeader() {
                   setActiveDropdown(null);
                   setPinnedDropdown(null);
                 }}
-                aria-label={isEn ? 'Quick search' : 'शोधा'}
-                className="grid size-9 sm:size-10 place-items-center rounded-full border border-gray-200 bg-white text-gray-700 hover:border-purple-300 hover:bg-purple-50/50 hover:text-purple-900 transition shadow-2xs"
+                aria-label={isEn ? 'Quick search' : isHi ? 'त्वरित शोध' : 'झटपट शोध'}
+                aria-expanded={searchOpen}
+                aria-controls={searchOpen ? 'header-search-panel' : undefined}
+                className="grid size-11 place-items-center rounded-full border border-gray-200 bg-ivory-surface text-gray-700 hover:border-purple-300 hover:bg-purple-50/50 hover:text-purple-900 transition shadow-2xs cursor-pointer"
               >
                 <I name="search" className="h-4 w-4" />
               </button>
@@ -1175,13 +1312,16 @@ export function SiteHeader() {
               {/* ⌘K Search Dropdown Panel */}
               {searchOpen && (
                 <div
-                  className="absolute right-0 top-[calc(100%+12px)] z-50 w-[min(420px,94vw)] overflow-hidden rounded-3xl border border-[#dfb150]/45 bg-[#fffdfa] shadow-[0_24px_70px_-16px_rgba(74,9,20,0.40)] backdrop-blur-2xl"
+                  id="header-search-panel"
+                  className="absolute right-0 top-[calc(100%+12px)] z-50 w-[min(420px,94vw)] overflow-hidden rounded-3xl border border-gold/45 bg-ivory shadow-[0_24px_70px_-16px_rgba(74,9,20,0.40)] backdrop-blur-2xl"
                   style={{ animation: 'hdr-fade-up 0.25s cubic-bezier(0.2,0.9,0.3,1.2) both' }}
                 >
-                  <div className="flex items-center gap-2.5 border-b border-[#dfb150]/30 bg-linear-to-r from-[#dfb150]/15 via-white to-transparent px-4 py-3.5">
-                    <I name="search" className="h-4 w-4 text-[#8a6a2b]" />
+                  <div className="flex items-center gap-2.5 border-b border-gold/30 bg-linear-to-r from-gold/15 via-ivory-surface to-transparent px-4 py-3.5">
+                    <I name="search" className="h-4 w-4 text-gold-deep" />
                     <input
+                      type="search"
                       autoFocus
+                      aria-label={isEn ? 'Search the platform' : isHi ? 'प्लेटफ़ॉर्म खोजें' : 'प्लॅटफॉर्म शोधा'}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder={
@@ -1191,46 +1331,28 @@ export function SiteHeader() {
                           ? 'टेम्पलेट, बायोडाटा, विक्रेता, पंचांग खोजें…'
                           : 'टेम्पलेट्स, बायोडाटा, व्हेंडर्स, पंचांग शोधा…'
                       }
-                      className="w-full bg-transparent text-sm font-medium text-[#1e1917] outline-none placeholder:text-[#7a6e68]/70"
+                      className="w-full bg-transparent text-sm font-medium text-stone-900 outline-none placeholder:text-stone-500/70"
                     />
-                    <kbd className="hidden rounded-md border border-[#dfb150]/50 bg-[#f8f2e6] px-1.5 py-0.5 text-[10px] font-bold text-[#7a6e68] sm:block">
+                    <kbd className="hidden rounded-md border border-gold/50 bg-ivory-deep px-1.5 py-0.5 text-[10px] font-bold text-stone-500 sm:block">
                       ESC
                     </kbd>
                   </div>
 
                   <div className="max-h-[360px] overflow-y-auto p-2">
                     {searchResults.length === 0 ? (
-                      <p className="px-3 py-8 text-center text-sm font-medium text-[#7a6e68]">
+                      <p className="px-3 py-8 text-center text-sm font-medium text-stone-500">
                         {isEn ? 'No matches found' : isHi ? 'कोई परिणाम नहीं मिला' : 'काही सापडले नाही'}
                       </p>
                     ) : (
                       searchResults.map((m, i) => (
-                        <Link
-                          key={m.href + m.en + i}
-                          href={m.href}
-                          target={m.target}
-                          rel={m.target === '_blank' ? 'noopener noreferrer' : undefined}
-                          onClick={handleCloseAll}
-                          className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-[#dfb150]/15"
-                          style={{ animation: `hdr-fade-up 0.3s ${i * 35}ms both` }}
-                        >
-                          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-linear-to-br from-[#4a0914] to-[#2d050a] text-[#fffdfa] shadow-xs ring-1 ring-[#dfb150]/40">
-                            <I name={m.icon} className="h-4 w-4" />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-bold text-[#1e1917] group-hover:text-[#6b1d2a]">
-                              {getItemLabel(m)}
-                            </span>
-                            <span className="block truncate text-[11px] text-[#7a6e68]">
-                              {getItemDesc(m)}
-                            </span>
-                          </span>
-                          {m.badge && (
-                            <span className="rounded-full bg-[#dfb150]/20 px-2 py-0.5 text-[9px] font-black text-[#8a6a2b]">
-                              {m.badge}
-                            </span>
-                          )}
-                        </Link>
+                        <div key={m.href + m.en + i} className="mb-1 last:mb-0">
+                          <SubItemCard
+                            item={m}
+                            variant="search"
+                            onNavigate={handleCloseAll}
+                            style={{ animation: `hdr-fade-up 0.3s ${i * 35}ms both` }}
+                          />
+                        </div>
                       ))
                     )}
                   </div>
@@ -1238,12 +1360,12 @@ export function SiteHeader() {
               )}
             </div>
 
-            {/* Notification Bell Button */}
+            {/* Notification Bell Button (Hidden below XL for clean spacious layout on laptops) */}
             <Link
               href="/console"
               onClick={handleCloseAll}
-              aria-label={isEn ? 'Notifications' : 'सूचना'}
-              className="relative hidden sm:grid size-9 sm:size-10 place-items-center rounded-full border border-gray-200 bg-white text-gray-700 hover:border-purple-300 hover:bg-purple-50/50 hover:text-purple-900 transition shadow-2xs"
+              aria-label={isEn ? 'Notifications' : isHi ? 'सूचनाएं' : 'सूचना'}
+              className="relative hidden xl:grid size-11 place-items-center rounded-full border border-gray-200 bg-ivory-surface text-gray-700 hover:border-purple-300 hover:bg-purple-50/50 hover:text-purple-900 transition shadow-2xs"
             >
               <I name="bell" className="h-4 w-4" />
               <span className="absolute top-1.5 right-1.5 flex size-2">
@@ -1252,33 +1374,42 @@ export function SiteHeader() {
               </span>
             </Link>
 
-            {/* AI Assistant Button (Electric Violet Gradient - ईम्रेस) */}
-            <Link
-              href="/studio/editor"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleCloseAll}
-              className="group relative inline-flex min-h-9 sm:min-h-10 items-center gap-1.5 overflow-hidden rounded-full bg-gradient-to-r from-[#6b21a8] via-[#7c3aed] to-[#8b5cf6] px-3.5 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-md shadow-purple-500/25 ring-1 ring-purple-300/40 hover:shadow-purple-500/40 hover:scale-105 transition-all shrink-0"
-            >
-              <I name="sparkle" className="h-3.5 w-3.5 text-yellow-300" />
-              <span>ईम्रेस</span>
-            </Link>
+            {/* Pro Canvas Studio Button (Replaces "ईम्रेस" with "कॅनव्हा प्रो" / "Canva Pro") */}
+            <span className="hidden sm:inline-flex shrink-0">
+              <Link
+                href="/studio/editor"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleCloseAll}
+                className="btn-base btn-maroon px-5 text-sm shadow-md hover:scale-105"
+                title={isEn ? 'Canva Pro Studio (Full View)' : isHi ? 'कैनवा प्रो स्टूडियो (फुल स्क्रीन)' : 'कॅनव्हा प्रो स्टुडिओ (फुल स्क्रीन)'}
+              >
+                <I name="sparkle" className="h-3.5 w-3.5 text-gold-300" />
+                <span>{isEn ? 'Canva Pro' : isHi ? 'कैनवा प्रो' : 'कॅनव्हा प्रो'}</span>
+                <span className="text-[10px] opacity-75">⤢</span>
+              </Link>
+            </span>
 
-            {/* Vendor Login Button (Warm Golden Pill Matching Image 100%) */}
-            <Link
-              href="/vendor"
-              onClick={handleCloseAll}
-              className="inline-flex min-h-8 sm:min-h-9 items-center rounded-full border border-amber-400/80 bg-gradient-to-r from-[#f7ca75] via-[#f5bf55] to-[#ebb042] px-4 sm:px-4.5 text-xs sm:text-[13px] font-bold text-[#3b1c00] hover:brightness-105 transition shadow-sm shrink-0 whitespace-nowrap"
-            >
-              विक्रेता प्रवेश
-            </Link>
+            {/* Vendor Login Button (Hidden on mobile <768px to prevent overcrowding) */}
+            <span className="hidden md:inline-flex shrink-0">
+              <Link
+                href="/vendor"
+                onClick={handleCloseAll}
+                className="btn-base btn-gold px-5 text-sm whitespace-nowrap"
+              >
+                {t.vendorLogin}
+              </Link>
+            </span>
 
             {/* Mobile Hamburger Toggle */}
             <button
+              ref={hamburgerRef}
               type="button"
               onClick={() => setDrawerOpen(true)}
-              aria-label={isEn ? 'Open menu' : 'मेनू उघडा'}
-              className="grid size-9 sm:size-10 place-items-center rounded-xl border border-gray-200 bg-white text-[#4a0914] transition hover:bg-gray-100 shrink-0 lg:hidden"
+              aria-label={isEn ? 'Open menu' : isHi ? 'मेनू खोलें' : 'मेनू उघडा'}
+              aria-expanded={drawerOpen}
+              aria-controls={drawerOpen ? 'mobile-nav-drawer' : undefined}
+              className="grid size-11 place-items-center rounded-xl border border-gray-200 bg-ivory-surface text-maroon transition hover:bg-gray-100 shrink-0 lg:hidden cursor-pointer"
             >
               <I name="menu" className="h-5 w-5" />
             </button>
@@ -1286,34 +1417,45 @@ export function SiteHeader() {
         </div>
 
         {/* ═══════════ 3 · DESKTOP MEGA-MENU / SUB-LEVEL DROPDOWN ═══════════ */}
-        {activeSection && ((activeSection.columns && activeSection.columns.length > 0) || (activeSection.items && activeSection.items.length > 0)) && (
-          <div
-            className="absolute inset-x-0 top-full pt-1.5 before:absolute before:-top-5 before:inset-x-0 before:h-6 before:content-[''] hidden lg:block"
-            onMouseEnter={() => handleTriggerEnter(activeSection.id)}
-            onMouseLeave={handleTriggerLeave}
-          >
-            <div
-              className="relative mx-auto w-full max-w-6xl px-4 sm:px-6"
-              style={{ animation: 'hdr-pop 0.24s cubic-bezier(0.2,0.9,0.3,1.15) both' }}
-            >
-              <div className="overflow-hidden rounded-3xl border border-gray-200/90 bg-white shadow-[0_30px_90px_-20px_rgba(14,13,38,0.20)] backdrop-blur-3xl ring-1 ring-black/[0.04]">
-                {/* Modern Violet Top Ribbon */}
-                <div
-                  aria-hidden="true"
-                  className="h-1 bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600"
-                />
+        {activeMega && (
+          <>
+            {/* Subtle luxury backdrop scrim on page */}
+            {createPortal(
+              <div
+                aria-hidden="true"
+                onClick={handleCloseAll}
+                className="fixed inset-0 top-[96px] bg-maroon-deep/40 backdrop-blur-[1.5px] pointer-events-auto transition-opacity duration-300 z-40 hidden lg:block"
+              />,
+              document.body
+            )}
 
-                {/* Qualtrics-Style Multi-Column Grid */}
-                {activeSection.columns && activeSection.columns.length > 0 ? (
-                  <div className="grid grid-cols-3 divide-x divide-gray-100 p-6 lg:p-7 gap-6 lg:gap-8 bg-white">
-                    {activeSection.columns.map((col, colIdx) => (
+            <div
+              id={`${activeMega.id}-mega-menu`}
+              className="absolute inset-x-0 top-full pt-2 before:absolute before:-top-7 before:inset-x-0 before:h-9 before:content-[''] hidden lg:block z-50"
+              onMouseEnter={() => handleTriggerEnter(activeMega.id)}
+              onMouseLeave={handleTriggerLeave}
+            >
+              <div
+                className="relative mx-auto w-full max-w-6xl px-4 sm:px-6"
+                style={{ animation: 'hdr-pop 0.24s cubic-bezier(0.2,0.9,0.3,1.15) both' }}
+              >
+                <div className="overflow-hidden rounded-3xl border border-stone-200/90 bg-ivory-surface shadow-[0_30px_90px_-20px_rgba(14,13,38,0.22)] backdrop-blur-3xl ring-1 ring-black/[0.04]">
+                  {/* Royal Gold + Purple Gradient Top Accent Line */}
+                  <div
+                    aria-hidden="true"
+                    className="h-1 bg-linear-to-r from-gold-400 via-violet-600 to-gold-400"
+                  />
+
+                  {/* Multi-Column Grid */}
+                  <div className="grid grid-cols-3 divide-x divide-stone-100 p-6 lg:p-7 gap-6 lg:gap-8 bg-ivory-surface">
+                    {megaColumns.map((col, colIdx) => (
                       <div key={col.titleEn + colIdx} className="space-y-3.5">
                         {/* Column Header with ↗ */}
-                        <div className="flex items-center justify-between pb-2.5 border-b border-gray-100">
+                        <div className="flex items-center justify-between pb-2.5 border-b border-stone-100">
                           <Link
-                            href={col.href || activeSection.href}
+                            href={col.href || activeMega.href}
                             onClick={handleCloseAll}
-                            className="group/head flex items-center gap-1.5 text-[13px] font-bold text-slate-900 transition hover:text-violet-600"
+                            className="group/head flex min-h-11 items-center gap-1.5 text-[13px] font-bold text-slate-900 transition hover:text-violet-600"
                           >
                             <span>{getColumnTitle(col)}</span>
                             <I name="arrowUpRight" className="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 group-hover/head:text-violet-600 group-hover/head:translate-x-0.5 group-hover/head:-translate-y-0.5" />
@@ -1323,135 +1465,82 @@ export function SiteHeader() {
                         {/* Column Items */}
                         <div className="space-y-2">
                           {col.items.map((m, i) => (
-                            <Link
+                            <SubItemCard
                               key={m.href + m.en + i}
-                              href={m.href}
-                              target={m.target}
-                              rel={m.target === '_blank' ? 'noopener noreferrer' : undefined}
-                              onClick={handleCloseAll}
-                              className="group flex items-start gap-3.5 rounded-2xl p-2.5 transition-all duration-200 hover:bg-slate-50/90 hover:shadow-xs"
-                            >
-                              <span className={`grid size-10 shrink-0 place-items-center rounded-xl transition-all duration-200 group-hover:scale-105 shadow-xs ${ICON_COLOR_STYLES[m.color || 'violet']}`}>
-                                <I name={m.icon} className="h-5 w-5" />
-                              </span>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[13.5px] font-bold text-slate-900 transition-colors group-hover:text-violet-600">
-                                    {getItemLabel(m)}
-                                  </span>
-                                  {m.badge && (
-                                    <span className="rounded-full bg-violet-50 px-1.5 py-0.5 text-[8.5px] font-black tracking-wider text-violet-700 border border-violet-200/60">
-                                      {m.badge}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="mt-1 text-[11.5px] leading-snug text-slate-500 line-clamp-2">
-                                  {getItemDesc(m)}
-                                </p>
-                              </div>
-                            </Link>
+                              item={m}
+                              variant="dropdown"
+                              onNavigate={handleCloseAll}
+                            />
                           ))}
                         </div>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  /* Fallback for sections with flat items */
-                  <div className="grid gap-2 p-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {activeSection.items?.map((m, i) => (
+
+                  {/* Bottom Highlight Bar */}
+                  {activeMega.footer && (
+                    <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 bg-maroon-deep px-7 py-3.5 text-white">
                       <Link
-                        key={m.href + m.en + i}
-                        href={m.href}
-                        target={m.target}
-                        rel={m.target === '_blank' ? 'noopener noreferrer' : undefined}
+                        href={activeMega.footer.ctaHref}
                         onClick={handleCloseAll}
-                        className="group flex items-start gap-3.5 rounded-2xl border border-gray-100 bg-white/70 p-3.5 transition-all duration-300 hover:border-violet-300 hover:bg-violet-50/30 hover:shadow-md"
-                        style={{ animation: `hdr-fade-up 0.3s ${i * 35}ms both` }}
+                        className="group/banner flex min-h-11 items-center gap-2.5 text-xs font-semibold text-white/90 transition hover:text-white"
                       >
-                        <span className={`grid size-11 shrink-0 place-items-center rounded-xl shadow-xs transition-all duration-300 group-hover:scale-105 ${ICON_COLOR_STYLES[m.color || 'violet']}`}>
-                          <I name={m.icon} className="h-5 w-5" />
+                        {activeMega.footer.bannerHighlightEn && (
+                          <span className="font-bold text-white flex items-center gap-1 group-hover/banner:underline">
+                            {isEn
+                              ? activeMega.footer.bannerHighlightEn
+                              : isHi
+                              ? activeMega.footer.bannerHighlightHi
+                              : activeMega.footer.bannerHighlightMr}
+                            <I name="arrowUpRight" className="h-3 w-3 inline text-gold-400" />
+                          </span>
+                        )}
+                        <span className="hidden sm:inline text-white/70">
+                          {isEn
+                            ? activeMega.footer.bannerEn
+                            : isHi
+                            ? activeMega.footer.bannerHi
+                            : activeMega.footer.bannerMr}
                         </span>
-                        <span className="min-w-0">
-                          <span className="flex items-center gap-1.5 text-sm font-bold text-[#1e1917] group-hover:text-violet-600">
-                            <span>{getItemLabel(m)}</span>
-                            {m.badge && (
-                              <span className="rounded-full bg-violet-50 px-1.5 py-0.5 text-[8.5px] font-black tracking-wider text-violet-700 border border-violet-200/60">
-                                {m.badge}
-                              </span>
+                      </Link>
+
+                      <div className="flex items-center gap-3">
+                        {activeMega.footer.secondaryLinks?.map((secLink, idx) => (
+                          <span key={idx} className="flex items-center gap-3">
+                            <Link
+                              href={secLink.href}
+                              onClick={handleCloseAll}
+                              className="inline-flex min-h-11 items-center text-[11.5px] text-white/75 hover:text-white transition font-medium"
+                            >
+                              {isEn ? secLink.en : isHi ? secLink.hi : secLink.mr}
+                            </Link>
+                            {idx < (activeMega.footer?.secondaryLinks?.length ?? 0) - 1 && (
+                              <span className="text-white/25">|</span>
                             )}
                           </span>
-                          <span className="mt-1 block text-[12px] leading-snug text-[#7a6e68]">
-                            {getItemDesc(m)}
+                        ))}
+
+                        <Link
+                          href={activeMega.footer.ctaHref}
+                          onClick={handleCloseAll}
+                          className="btn-base btn-gold ml-2 px-5 text-sm"
+                        >
+                          <span>
+                            {isEn
+                              ? activeMega.footer.ctaEn
+                              : isHi
+                              ? activeMega.footer.ctaHi
+                              : activeMega.footer.ctaMr}
                           </span>
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-
-                {/* Qualtrics-Style Bottom Dark Highlight Bar */}
-                {activeSection.footer && (
-                  <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 bg-[#0e0d26] px-7 py-3.5 text-white">
-                    <Link
-                      href={activeSection.footer.ctaHref}
-                      onClick={handleCloseAll}
-                      className="group/banner flex items-center gap-2.5 text-xs font-semibold text-white/90 transition hover:text-white"
-                    >
-                      {activeSection.footer.bannerHighlightEn && (
-                        <span className="font-bold text-white flex items-center gap-1 group-hover/banner:underline">
-                          {isEn
-                            ? activeSection.footer.bannerHighlightEn
-                            : isHi
-                            ? activeSection.footer.bannerHighlightHi
-                            : activeSection.footer.bannerHighlightMr}
-                          <I name="arrowUpRight" className="h-3 w-3 inline text-amber-400" />
-                        </span>
-                      )}
-                      <span className="hidden sm:inline text-white/70">
-                        {isEn
-                          ? activeSection.footer.bannerEn
-                          : isHi
-                          ? activeSection.footer.bannerHi
-                          : activeSection.footer.bannerMr}
-                      </span>
-                    </Link>
-
-                    <div className="flex items-center gap-3">
-                      {activeSection.footer.secondaryLinks?.map((secLink, idx) => (
-                        <span key={idx} className="flex items-center gap-3">
-                          <Link
-                            href={secLink.href}
-                            onClick={handleCloseAll}
-                            className="text-[11.5px] text-white/75 hover:text-white transition font-medium"
-                          >
-                            {isEn ? secLink.en : isHi ? secLink.hi : secLink.mr}
-                          </Link>
-                          {idx < (activeSection.footer?.secondaryLinks?.length ?? 0) - 1 && (
-                            <span className="text-white/25">|</span>
-                          )}
-                        </span>
-                      ))}
-
-                      <Link
-                        href={activeSection.footer.ctaHref}
-                        onClick={handleCloseAll}
-                        className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-1.5 text-xs font-bold text-white transition hover:scale-105 shadow-sm"
-                      >
-                        <span>
-                          {isEn
-                            ? activeSection.footer.ctaEn
-                            : isHi
-                            ? activeSection.footer.ctaHi
-                            : activeSection.footer.ctaMr}
-                        </span>
-                        <I name="arrow" className="h-3.5 w-3.5" />
-                      </Link>
+                          <I name="arrow" className="h-3.5 w-3.5" />
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )}
 
         {/* ═══════════ 4 · SUBTLE CLEAN BOTTOM BORDER ═══════════ */}
@@ -1462,234 +1551,408 @@ export function SiteHeader() {
       </header>
 
       {/* ═══════════════════════════════════════════════════════
-          MOBILE NAVIGATION DRAWER WITH ACCORDION SUB-LEVELS
+          MOBILE NAVIGATION DRAWER — PRO LEVEL, RESPONSIVE FOR ALL DEVICES
       ═══════════════════════════════════════════════════════ */}
       {drawerOpen && (
         <div
+          id="mobile-nav-drawer"
           className="fixed inset-0 z-[70] lg:hidden"
           role="dialog"
           aria-modal="true"
-          aria-label={isEn ? 'Navigation menu' : 'नेव्हिगेशन मेनू'}
+          aria-label={isEn ? 'Navigation menu' : isHi ? 'नेविगेशन मेनू' : 'नेव्हिगेशन मेनू'}
         >
-          {/* Backdrop */}
+          {/* Backdrop with silky blur */}
           <div
-            className="absolute inset-0 bg-[#240307]/65 backdrop-blur-sm"
+            className="fixed inset-0 bg-maroon-deep/70 backdrop-blur-md transition-opacity duration-300"
             onClick={handleCloseAll}
             style={{ animation: 'hdr-fade-up 0.25s both reverse' }}
           />
 
           {/* Slide-out Drawer Panel */}
           <div
-            className="absolute right-0 top-0 flex h-full w-[min(420px,100vw)] flex-col overflow-hidden bg-linear-to-b from-[#fffdfa] via-[#fffdfa] to-[#f8f2e6] shadow-2xl"
+            className="fixed right-0 top-0 bottom-0 z-[71] flex h-full w-[min(420px,100vw)] flex-col overflow-hidden bg-linear-to-b from-ivory via-ivory to-ivory-deep shadow-2xl"
             style={{ animation: 'hdr-slide-in 0.35s cubic-bezier(0.22,0.9,0.3,1) both' }}
           >
             {/* Top Gold Shimmer Trim */}
-            <div aria-hidden="true" className="h-1.5 shrink-0 bg-linear-to-r from-transparent via-[#ffd700] to-transparent" />
+            <div aria-hidden="true" className="h-1.5 shrink-0 bg-linear-to-r from-gold-400 via-gold-200 to-gold-400" />
 
             {/* Drawer Header */}
-            <div className="flex items-center justify-between border-b border-[#dfb150]/30 px-5 py-4">
+            <div className="flex items-center justify-between border-b border-gold/30 px-5 py-3.5 bg-ivory-surface/90">
               <div className="flex items-center gap-3">
-                <span className="grid size-10 place-items-center rounded-xl bg-linear-to-br from-[#4a0914] via-[#6b1d2a] to-[#2d050a] text-[#fffdfa] ring-1 ring-[#dfb150]/40">
-                  <span className="font-script text-xl font-bold text-[#ffe599]">मा</span>
+                <span className="grid size-10 place-items-center rounded-xl bg-linear-to-br from-maroon-deep via-maroon-900 to-maroon-950 text-white ring-1 ring-gold/40 shadow-sm">
+                  <span className="font-script text-xl font-bold text-gold-300">मा</span>
                 </span>
                 <div>
-                  <p className="font-display text-base font-bold leading-none text-[#4a0914]">माझी पत्रिका</p>
-                  <p className="mt-1 text-[9.5px] uppercase tracking-[0.22em] text-[#7a6e68]">Mazi Patrika • Maha OS</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-display text-base font-bold leading-none text-maroon-950">माझी पत्रिका</p>
+                    <span className="rounded-full bg-linear-to-r from-violet-600 to-indigo-500 text-white px-1.5 py-0.2 text-[8.5px] font-black uppercase tracking-wider">
+                      PRO
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[9.5px] uppercase tracking-[0.2em] font-semibold text-stone-500">MAZI PATRIKA • MAHA OS</p>
                 </div>
               </div>
               <button
+                ref={drawerCloseRef}
                 type="button"
                 onClick={handleCloseAll}
-                aria-label={isEn ? 'Close menu' : 'मेनू बंद करा'}
-                className="grid size-10 place-items-center rounded-xl border border-[#dfb150]/35 text-[#4a0914] transition hover:bg-[#dfb150]/15"
+                aria-label={isEn ? 'Close menu' : isHi ? 'मेनू बंद करें' : 'मेनू बंद करा'}
+                className="grid size-11 place-items-center rounded-xl border border-stone-200 text-stone-700 transition hover:bg-stone-100 hover:text-stone-900 active:scale-95 cursor-pointer"
               >
                 <I name="x" className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Drawer Search */}
-            <div className="px-4 pt-3 pb-1">
-              <div className="flex items-center gap-2.5 rounded-xl border border-[#dfb150]/40 bg-white px-3.5 py-2 shadow-xs">
-                <I name="search" className="h-4 w-4 text-[#8a6a2b]" />
+            {/* Live Search Input with Instant Clear */}
+            <div className="px-4 pt-3 pb-2 shrink-0 bg-ivory-surface/60 border-b border-stone-100">
+              <div className="flex items-center gap-2.5 rounded-xl border border-stone-300/80 bg-ivory-surface px-3.5 py-2 shadow-2xs focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-200/50 transition">
+                <I name="search" className="h-4 w-4 text-stone-400 shrink-0" />
                 <input
+                  type="search"
+                  aria-label={isEn ? 'Search templates, biodata, panchang' : isHi ? 'टेम्पलेट, बायोडाटा, पंचांग खोजें' : 'टेम्पलेट्स, बायोडाटा, पंचांग शोधा'}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={isEn ? 'Search templates, vendors…' : isHi ? 'टेम्पलेट, वेंडर खोजें…' : 'टेम्पलेट्स, व्हेंडर्स शोधा…'}
-                  className="w-full bg-transparent text-sm text-[#1e1917] outline-none placeholder:text-[#7a6e68]/70"
+                  placeholder={
+                    isEn
+                      ? 'Search templates, biodata, panchang…'
+                      : isHi
+                      ? 'टेम्पलेट, बायोडाटा, पंचांग खोजें…'
+                      : 'टेम्पलेट्स, बायोडाटा, पंचांग शोधा…'
+                  }
+                  className="w-full min-w-0 bg-transparent text-sm text-stone-900 outline-none placeholder:text-stone-400 font-medium"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    aria-label={isEn ? 'Clear search' : isHi ? 'शोध हटाएं' : 'शोध पुसा'}
+                    className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-md text-stone-400 hover:text-stone-600 hover:bg-stone-100 cursor-pointer"
+                  >
+                    <I name="x" className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Drawer Nav Accordion */}
-            <nav className="flex-1 overflow-y-auto px-3 py-2" aria-label={isEn ? 'Mobile navigation' : 'मोबाइल नेव्हिगेशन'}>
-              {NAV_SECTIONS.map((sec, i) => {
-                const isExpanded = expandedAccordion === sec.id;
-                const active = isSectionActive(sec.href);
+            {/* Drawer Body: Live Search Results OR Full Navigation Tree */}
+            <nav className="flex-1 overflow-y-auto px-3.5 py-3 space-y-3" aria-label={isEn ? 'Mobile navigation' : isHi ? 'मोबाइल नेविगेशन' : 'मोबाइल नेव्हिगेशन'}>
+              {searchQuery.trim() ? (
+                /* LIVE SEARCH RESULTS */
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1 text-xs font-semibold text-stone-500">
+                    <span>
+                      {isEn ? `Found ${searchResults.length} results` : isHi ? `${searchResults.length} परिणाम मिले` : `${searchResults.length} निकाल सापडले`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      aria-label={isEn ? 'Clear search' : isHi ? 'शोध हटाएं' : 'शोध पुसा'}
+                      className="min-h-11 px-2 text-purple-600 font-bold hover:underline cursor-pointer"
+                    >
+                      {isEn ? 'Clear' : isHi ? 'हटाएँ' : 'पुसा'}
+                    </button>
+                  </div>
 
-                return (
-                  <div
-                    key={sec.id}
-                    className="mb-2 overflow-hidden rounded-2xl border border-[#dfb150]/25 bg-white/70 shadow-xs"
-                    style={{ animation: `hdr-fade-up 0.35s ${50 + i * 40}ms both` }}
-                  >
-                    {/* Section Accordion Header */}
-                    <div className="flex items-center justify-between p-1">
+                  {searchResults.length === 0 ? (
+                    <div className="py-10 text-center px-4">
+                      <p className="text-sm font-semibold text-stone-600">
+                        {isEn ? 'No matches found' : isHi ? 'कोई परिणाम नहीं मिला' : 'काही सापडले नाही'}
+                      </p>
+                      <p className="mt-1 text-xs text-stone-400">
+                        {isEn
+                          ? 'Try searching for wedding, biodata, or panchang'
+                          : isHi
+                          ? 'शादी, बायोडाटा या पंचांग खोजकर देखें'
+                          : 'लग्न, बायोडाटा किंवा पंचांग शोधून पहा'}
+                      </p>
+                    </div>
+                  ) : (
+                    searchResults.map((m, i) => (
+                      <SubItemCard
+                        key={m.href + m.en + i}
+                        item={m}
+                        variant="search"
+                        onNavigate={handleCloseAll}
+                      />
+                    ))
+                  )}
+                </div>
+              ) : (
+                /* DEFAULT RICH NAVIGATION TREE */
+                <>
+                  {/* Quick Category Shortcuts Ribbon */}
+                  <div>
+                    <p className="px-1 mb-2 text-[10.5px] font-bold uppercase tracking-wider text-stone-400">
+                      {isEn ? 'Quick Shortcuts' : isHi ? 'त्वरित शॉर्टकट' : 'जलद पर्याय'}
+                    </p>
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
                       <Link
-                        href={sec.href}
+                        href="/templates?category=wedding"
                         onClick={handleCloseAll}
-                        className={`flex flex-1 items-center gap-2.5 rounded-xl px-3 py-2.5 text-[15px] font-bold transition ${
-                          active ? 'text-[#4a0914]' : 'text-[#1e1917] hover:text-[#4a0914]'
-                        }`}
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-gold/60 bg-gold-shimmer px-4 text-xs font-bold text-gold-900 whitespace-nowrap shadow-2xs active:scale-95"
                       >
-                        <span>{getLabel(sec)}</span>
-                        {sec.badge && (
-                          <span
-                            className={`rounded-full px-1.5 py-0.5 text-[9px] font-black tracking-wider ${
-                              sec.badgeVariant === 'leaf'
-                                ? 'bg-[#10b981]/15 text-[#047857]'
-                                : 'bg-[#dfb150]/20 text-[#8a6a2b]'
+                        <span>💍</span>
+                        <span>{isEn ? 'Wedding' : isHi ? 'विवाह' : 'विवाह'}</span>
+                      </Link>
+                      <Link
+                        href="/biodata"
+                        onClick={handleCloseAll}
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50/70 px-4 text-xs font-bold text-purple-900 whitespace-nowrap shadow-2xs active:scale-95"
+                      >
+                        <span>📄</span>
+                        <span>{isEn ? 'Biodata' : isHi ? 'बायोडाटा' : 'बायोडेटा'}</span>
+                      </Link>
+                      <Link
+                        href="/panchang"
+                        onClick={handleCloseAll}
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50/70 px-4 text-xs font-bold text-sky-900 whitespace-nowrap shadow-2xs active:scale-95"
+                      >
+                        <span>☀️</span>
+                        <span>{isEn ? 'Panchang' : isHi ? 'पंचांग' : 'पंचांग'}</span>
+                      </Link>
+                      <Link
+                        href="/create"
+                        onClick={handleCloseAll}
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-gold/60 bg-linear-to-r from-gold-shimmer to-haldi-soft px-4 text-xs font-bold text-gold-900 whitespace-nowrap shadow-2xs active:scale-95"
+                      >
+                        <span>✨</span>
+                        <span>{isEn ? 'AI Planner' : isHi ? 'AI प्लानर' : 'AI प्लॅनर'}</span>
+                      </Link>
+                      <Link
+                        href="/studio?mode=video-studio"
+                        onClick={handleCloseAll}
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50/70 px-4 text-xs font-bold text-rose-900 whitespace-nowrap shadow-2xs active:scale-95"
+                      >
+                        <span>🎥</span>
+                        <span>{isEn ? 'Video' : isHi ? 'वीडियो' : 'व्हिडिओ'}</span>
+                      </Link>
+                      <Link
+                        href="/vendor-os"
+                        onClick={handleCloseAll}
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50/70 px-4 text-xs font-bold text-indigo-900 whitespace-nowrap shadow-2xs active:scale-95"
+                      >
+                        <span>💼</span>
+                        <span>{isEn ? 'Business' : isHi ? 'बिजनेस' : 'बिझनेस'}</span>
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Primary Nav Sections (Accordions & Direct Links) */}
+                  <div className="space-y-2">
+                    {NAV_SECTIONS.map((sec, i) => {
+                      const hasDropdown = !!sec.columns?.length;
+                      const isExpanded = expandedAccordion === sec.id;
+                      const active = isSectionActive(sec.href);
+
+                      if (!hasDropdown) {
+                        /* Single Tap Direct Section Card */
+                        return (
+                          <Link
+                            key={sec.id}
+                            href={sec.href}
+                            onClick={handleCloseAll}
+                            aria-current={active ? 'page' : undefined}
+                            className={`flex min-h-11 items-center justify-between rounded-2xl border p-3.5 transition-all shadow-2xs active:scale-[0.99] ${
+                              active
+                                ? 'border-purple-300 bg-purple-50/80 text-purple-900 font-bold'
+                                : 'border-stone-200/80 bg-ivory-surface text-stone-800 hover:border-purple-200 hover:bg-stone-50'
+                            }`}
+                            style={{ animation: `hdr-fade-up 0.3s ${30 + i * 35}ms both` }}
+                          >
+                            <div className="flex items-center gap-3">
+                              {sec.icon && (
+                                <span className="grid size-9 place-items-center rounded-xl bg-gold-shimmer text-gold-700 border border-gold-200/60 shadow-2xs">
+                                  <I name={sec.icon} className="h-4 w-4" />
+                                </span>
+                              )}
+                              <span className="text-[14.5px] font-bold">{getLabel(sec)}</span>
+                              {sec.badge && (
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[8.5px] font-black tracking-wider ${sectionBadgeClass(sec.badgeVariant)}`}
+                                >
+                                  {badgeText(sec, isEn, isHi)}
+                                </span>
+                              )}
+                            </div>
+                            <I name="arrow" className="h-4 w-4 text-stone-400" />
+                          </Link>
+                        );
+                      }
+
+                      /* Multi-Level Section Accordion */
+                      return (
+                        <div
+                          key={sec.id}
+                          className="overflow-hidden rounded-2xl border border-stone-200/80 bg-ivory-surface shadow-2xs transition-all"
+                          style={{ animation: `hdr-fade-up 0.3s ${30 + i * 35}ms both` }}
+                        >
+                          {/* Accordion Row Header — Clicking row toggles open */}
+                          <button
+                            type="button"
+                            onClick={() => setExpandedAccordion(isExpanded ? null : sec.id)}
+                            aria-expanded={isExpanded}
+                            aria-controls={isExpanded ? `${sec.id}-accordion-panel` : undefined}
+                            className={`flex w-full min-h-11 items-center justify-between p-3.5 text-left cursor-pointer transition select-none ${
+                              isExpanded ? 'bg-purple-50/40 border-b border-stone-100' : 'hover:bg-stone-50'
                             }`}
                           >
-                            {sec.badge}
-                          </span>
-                        )}
-                      </Link>
-
-                      {((sec.columns && sec.columns.length > 0) || (sec.items && sec.items.length > 0)) && (
-                        <button
-                          type="button"
-                          onClick={() => setExpandedAccordion(isExpanded ? null : sec.id)}
-                          aria-label={isExpanded ? 'Collapse section' : 'Expand section'}
-                          className={`grid size-9 place-items-center rounded-xl text-slate-500 transition hover:bg-violet-100 ${
-                            isExpanded ? 'rotate-180 text-violet-700 bg-violet-100' : ''
-                          }`}
-                        >
-                          <I name="chevron" className="h-4 w-4 transition-transform duration-200" />
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Accordion Sub-levels */}
-                    {isExpanded && (
-                      <div className="border-t border-gray-100 bg-[#fffdfa] p-2 space-y-2">
-                        {sec.columns && sec.columns.length > 0 ? (
-                          sec.columns.map((col, cIdx) => (
-                            <div key={cIdx} className="space-y-1">
-                              <p className="px-2 pt-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                {getColumnTitle(col)}
-                              </p>
-                              {col.items.map((sub) => (
-                                <Link
-                                  key={sub.href + sub.en}
-                                  href={sub.href}
-                                  target={sub.target}
-                                  rel={sub.target === '_blank' ? 'noopener noreferrer' : undefined}
-                                  onClick={handleCloseAll}
-                                  className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-violet-50"
+                            <span className="flex items-center gap-3 min-w-0">
+                              {sec.icon && (
+                                <span className={`grid size-9 shrink-0 place-items-center rounded-xl transition-all shadow-2xs ${
+                                  isExpanded ? 'bg-purple-600 text-white' : 'bg-stone-100 text-stone-700'
+                                }`}>
+                                  <I name={sec.icon} className="h-4 w-4" />
+                                </span>
+                              )}
+                              <span className={`text-[14.5px] font-bold truncate ${
+                                isExpanded || active ? 'text-purple-900' : 'text-stone-900'
+                              }`}>
+                                {getLabel(sec)}
+                              </span>
+                              {sec.badge && (
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[8.5px] font-black tracking-wider ${sectionBadgeClass(sec.badgeVariant)}`}
                                 >
-                                  <span className={`grid size-8 shrink-0 place-items-center rounded-lg shadow-2xs ${ICON_COLOR_STYLES[sub.color || 'violet']}`}>
-                                    <I name={sub.icon} className="h-3.5 w-3.5" />
-                                  </span>
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-xs font-bold text-slate-900 truncate">{getItemLabel(sub)}</span>
-                                      {sub.badge && (
-                                        <span className="rounded-full bg-violet-50 px-1 py-0.2 text-[8px] font-bold text-violet-700 border border-violet-200/60">
-                                          {sub.badge}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <p className="text-[10.5px] text-slate-500 truncate">{getItemDesc(sub)}</p>
+                                  {badgeText(sec, isEn, isHi)}
+                                </span>
+                              )}
+                            </span>
+
+                            <span className={`grid size-8 shrink-0 place-items-center rounded-lg transition-transform duration-200 ${
+                              isExpanded ? 'rotate-180 text-purple-700 bg-purple-100' : 'text-stone-400'
+                            }`}>
+                              <I name="chevron" className="h-4 w-4" />
+                            </span>
+                          </button>
+
+                          {/* Expanded Content */}
+                          {isExpanded && (
+                            <div id={`${sec.id}-accordion-panel`} className="bg-ivory-warm p-2.5 space-y-3">
+                              {/* Direct Section Shortcut Pill */}
+                              <Link
+                                href={sec.href}
+                                onClick={handleCloseAll}
+                                className="flex min-h-11 items-center justify-between rounded-xl bg-purple-600 px-3.5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-purple-700 transition"
+                              >
+                                <span>
+                                  {isEn ? `Open All ${sec.labelEn} →` : isHi ? `सभी ${sec.labelHi} खोलें →` : `सर्व ${sec.labelMr} उघडा →`}
+                                </span>
+                                <I name="arrow" className="h-3.5 w-3.5 text-white/90" />
+                              </Link>
+
+                              {/* Column Groups */}
+                              {sec.columns?.map((col, cIdx) => (
+                                <div key={cIdx} className="space-y-1 pt-1">
+                                  <p className="px-2 pt-1 text-[11px] font-bold uppercase tracking-wider text-stone-400">
+                                    {getColumnTitle(col)}
+                                  </p>
+                                  <div className="space-y-1">
+                                    {col.items.map((sub, sIdx) => (
+                                      <SubItemCard
+                                        key={sub.href + sub.en + sIdx}
+                                        item={sub}
+                                        variant="drawer"
+                                        onNavigate={handleCloseAll}
+                                      />
+                                    ))}
                                   </div>
-                                  <I name="arrow" className="h-3 w-3 text-slate-400" />
-                                </Link>
+                                </div>
                               ))}
                             </div>
-                          ))
-                        ) : (
-                          sec.items?.map((sub) => (
-                            <Link
-                              key={sub.href + sub.en}
-                              href={sub.href}
-                              target={sub.target}
-                              rel={sub.target === '_blank' ? 'noopener noreferrer' : undefined}
-                              onClick={handleCloseAll}
-                              className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-violet-50"
-                            >
-                              <span className={`grid size-8 shrink-0 place-items-center rounded-lg shadow-2xs ${ICON_COLOR_STYLES[sub.color || 'violet']}`}>
-                                <I name={sub.icon} className="h-3.5 w-3.5" />
-                              </span>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-xs font-bold text-slate-900 truncate">{getItemLabel(sub)}</span>
-                                  {sub.badge && (
-                                    <span className="rounded-full bg-violet-50 px-1 py-0.2 text-[8px] font-bold text-violet-700 border border-violet-200/60">
-                                      {sub.badge}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-[10.5px] text-slate-500 truncate">{getItemDesc(sub)}</p>
-                              </div>
-                              <I name="arrow" className="h-3 w-3 text-slate-400" />
-                            </Link>
-                          ))
-                        )}
-                      </div>
-                    )}
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
 
-              {/* Direct Link to Events and Admin */}
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <Link
-                  href="/events"
-                  onClick={handleCloseAll}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[#dfb150]/30 bg-white/80 p-2.5 text-xs font-bold text-[#4a403c] transition hover:bg-[#dfb150]/15"
-                >
-                  <I name="calendar" className="h-3.5 w-3.5 text-[#8a6a2b]" />
-                  <span>{isEn ? 'Public Events' : 'सार्वजनिक सोहळे'}</span>
-                </Link>
-                <Link
-                  href="/console"
-                  onClick={handleCloseAll}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[#dfb150]/30 bg-white/80 p-2.5 text-xs font-bold text-[#4a403c] transition hover:bg-[#dfb150]/15"
-                >
-                  <I name="grid" className="h-3.5 w-3.5 text-[#8a6a2b]" />
-                  <span>{isEn ? 'Admin Console' : 'कन्सोल'}</span>
-                </Link>
-              </div>
+                  {/* Secondary Quick Access Links */}
+                  <div className="pt-2">
+                    <p className="px-1 mb-2 text-[10.5px] font-bold uppercase tracking-wider text-stone-400">
+                      {isEn ? 'Explore Platform' : isHi ? 'अन्य विभाग' : 'इतर विभाग'}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Link
+                        href="/events"
+                        onClick={handleCloseAll}
+                        className="flex min-h-11 items-center gap-2 rounded-xl border border-stone-200/80 bg-ivory-surface p-3 text-xs font-bold text-stone-700 transition hover:bg-stone-50 active:scale-95 shadow-2xs"
+                      >
+                        <I name="calendar" className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                        <span className="truncate">{isEn ? 'Public Events' : isHi ? 'सार्वजनिक कार्यक्रम' : 'सार्वजनिक सोहळे'}</span>
+                      </Link>
+                      <Link
+                        href="/templates"
+                        onClick={handleCloseAll}
+                        className="flex min-h-11 items-center gap-2 rounded-xl border border-stone-200/80 bg-ivory-surface p-3 text-xs font-bold text-stone-700 transition hover:bg-stone-50 active:scale-95 shadow-2xs"
+                      >
+                        <I name="crown" className="h-3.5 w-3.5 text-gold-600 shrink-0" />
+                        <span className="truncate">{isEn ? 'All Templates' : isHi ? 'सभी पत्रिका' : 'सर्व पत्रिका'}</span>
+                      </Link>
+                      <Link
+                        href="/console"
+                        onClick={handleCloseAll}
+                        className="flex min-h-11 items-center gap-2 rounded-xl border border-stone-200/80 bg-ivory-surface p-3 text-xs font-bold text-stone-700 transition hover:bg-stone-50 active:scale-95 shadow-2xs"
+                      >
+                        <I name="grid" className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                        <span className="truncate">{isEn ? 'Admin Console' : isHi ? 'एडमिन कंसोल' : 'कन्सोल'}</span>
+                      </Link>
+                      <Link
+                        href="/faq"
+                        onClick={handleCloseAll}
+                        className="flex min-h-11 items-center gap-2 rounded-xl border border-stone-200/80 bg-ivory-surface p-3 text-xs font-bold text-stone-700 transition hover:bg-stone-50 active:scale-95 shadow-2xs"
+                      >
+                        <I name="help" className="h-3.5 w-3.5 text-leaf-600 shrink-0" />
+                        <span className="truncate">{isEn ? 'Help & FAQ' : isHi ? 'सहायता व FAQ' : 'मदत केंद्र'}</span>
+                      </Link>
+                    </div>
+                  </div>
+                </>
+              )}
             </nav>
 
-            {/* Drawer Footer */}
-            <div className="shrink-0 space-y-3 border-t border-[#dfb150]/30 bg-white/80 px-5 py-4 backdrop-blur-sm">
+            {/* Sticky Bottom Action Bar with Language and CTAs */}
+            <div className="shrink-0 space-y-2.5 border-t border-stone-200 bg-ivory-surface/95 px-4 py-3 backdrop-blur-md">
               <div className="flex items-center justify-between gap-3">
-                <span className="flex items-center gap-2 text-xs font-bold text-[#7a6e68]">
-                  <I name="globe" className="h-4 w-4 text-[#8a6a2b]" />
-                  <span>{isEn ? 'Language' : isHi ? 'भाषा' : 'भाषा'}</span>
+                <span className="flex items-center gap-2 text-xs font-bold text-stone-600">
+                  <I name="globe" className="h-4 w-4 text-purple-600" />
+                  <span>{isEn ? 'Language' : isHi ? 'भाषा' : 'भाषा निवडा'}</span>
                 </span>
                 <LangToggle compact />
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-2 gap-2">
                 <Link
                   href="/vendor"
                   onClick={handleCloseAll}
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#dfb150]/45 bg-[#fffdfa] text-xs font-bold text-[#1e1917] transition hover:bg-[#f8f2e6]"
+                  className="btn-base btn-outline px-5 text-sm"
                 >
                   {t.vendorLogin}
                 </Link>
                 <Link
                   href="/create"
                   onClick={handleCloseAll}
-                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-linear-to-r from-[#4a0914] via-[#6b1d2a] to-[#4a0914] text-xs font-bold text-[#fffdfa] shadow-md ring-1 ring-[#dfb150]/40"
+                  className="btn-base btn-maroon px-5 text-sm"
                 >
-                  <I name="sparkle" className="h-3.5 w-3.5 text-[#ffd700]" />
+                  <I name="sparkle" className="h-3.5 w-3.5 text-gold-300" />
                   <span>{t.createCard}</span>
                 </Link>
               </div>
 
-              <p className="hdr-shimmer-text text-center text-[11px] font-semibold tracking-wide">
+              {/* Support Links Footer */}
+              <div className="flex items-center justify-center gap-3 text-[11px] font-medium text-stone-500 pt-0.5">
+                <Link href="/about" onClick={handleCloseAll} className="inline-flex min-h-11 items-center hover:text-stone-900 transition">
+                  {isEn ? 'About Us' : isHi ? 'हमारे बारे में' : 'आमच्याबद्दल'}
+                </Link>
+                <span>•</span>
+                <Link href="/contact" onClick={handleCloseAll} className="inline-flex min-h-11 items-center hover:text-stone-900 transition">
+                  {isEn ? 'Contact' : isHi ? 'संपर्क' : 'संपर्क'}
+                </Link>
+                <span>•</span>
+                <Link href="/faq" onClick={handleCloseAll} className="inline-flex min-h-11 items-center hover:text-stone-900 transition">
+                  {isEn ? 'FAQ' : isHi ? 'FAQ' : 'मदत केंद्र'}
+                </Link>
+              </div>
+
+              <p className="hdr-shimmer-text text-center text-[10.5px] font-semibold tracking-wide">
                 {t.mantra}
               </p>
             </div>

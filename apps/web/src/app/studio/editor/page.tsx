@@ -15,9 +15,9 @@ export default async function StudioEditorPage({
   const initialTemplateId = params?.template;
 
   return (
-    <div className="fixed inset-0 z-50 flex h-screen w-screen flex-col bg-[#0e0d26] text-white">
+    <div className="fixed inset-0 z-50 flex h-screen w-screen flex-col bg-maroon-deep text-white">
       {/* Top Bar Navigation for Dedicated Editor */}
-      <header className="flex h-12 shrink-0 items-center justify-between border-b border-white/10 bg-[#111026] px-3 sm:px-4">
+      <header className="relative z-[10000] flex h-12 shrink-0 items-center justify-between border-b border-white/10 bg-maroon-950 px-3 sm:px-4">
         <div className="flex items-center gap-3">
           <Link
             href="/studio"
@@ -34,7 +34,7 @@ export default async function StudioEditorPage({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-gradient-to-r from-[#7c3aed] to-[#6366f1] px-2.5 py-0.5 text-[10px] font-black uppercase text-white shadow-xs animate-pulse">
+          <span className="rounded-full border border-gold-500/40 bg-gold-500/15 px-2.5 py-0.5 text-[10px] font-black uppercase text-gold-300 shadow-xs animate-pulse">
             CANVA PRO FULL VIEW
           </span>
           <Link

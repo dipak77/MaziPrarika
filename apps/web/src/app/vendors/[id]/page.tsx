@@ -9,6 +9,7 @@ import {
   vendorCategoryLabel,
 } from '@mazi/marathi';
 
+import { PageBanner } from '@/components/page-banner';
 import { getStore } from '@/lib/store';
 import { devRupees, percent } from '@/lib/format';
 
@@ -127,24 +128,21 @@ export default async function VendorProfilePage({
         / {vendorCategoryLabel(vendor.category)}
       </nav>
 
-      <header className="mt-3 flex flex-wrap items-start justify-between gap-6">
-        <div className="max-w-2xl">
-          <p className="font-ui text-xs uppercase tracking-[0.16em] text-gold">{vendorCategoryLabel(vendor.category)}</p>
-          <h1 className="mt-1 font-display text-4xl font-bold text-maroon">{vendor.name}</h1>
-          <p className="mt-2 text-charcoal-soft">{vendor.about}</p>
-          <p className="mt-2 text-sm text-charcoal-soft">
-            {vendor.city}
-            {vendor.pincode ? ` • ${vendor.pincode}` : ''} • भाषा: {vendor.languages.join(', ')} • योजना: {vendor.plan}
-          </p>
-        </div>
-        <div className="surface p-5 text-center">
-          <p className="font-display text-3xl font-bold text-maroon">{toDevanagariDigits(vendor.rating.toFixed(1))}</p>
-          <p className="mt-1 text-xs text-charcoal-soft">
-            {toDevanagariDigits(vendor.reviewCount)} अभिप्राय • {toDevanagariDigits(vendor.bookingsCompleted)} बुकिंग
-          </p>
-          <p className="mt-2 font-ui text-xs text-charcoal-soft">सेंद्रिय गुण {toDevanagariDigits(trust.organicScore)}/१००</p>
-        </div>
-      </header>
+      <PageBanner
+        className="mt-3"
+        kicker={vendorCategoryLabel(vendor.category)}
+        title={vendor.name}
+        description={`${vendor.about} ${vendor.city}${vendor.pincode ? ` • ${vendor.pincode}` : ''} • भाषा: ${vendor.languages.join(', ')} • योजना: ${vendor.plan}`}
+        actions={
+          <div className="surface min-w-36 p-5 text-center">
+            <p className="font-display text-3xl font-bold text-[#1c081e]">{toDevanagariDigits(vendor.rating.toFixed(1))}</p>
+            <p className="mt-1 text-xs text-[#5c534e]">
+              {toDevanagariDigits(vendor.reviewCount)} अभिप्राय • {toDevanagariDigits(vendor.bookingsCompleted)} बुकिंग
+            </p>
+            <p className="mt-2 font-ui text-xs text-[#5c534e]">सेंद्रिय गुण {toDevanagariDigits(trust.organicScore)}/१००</p>
+          </div>
+        }
+      />
 
       <ul className="mt-5 flex flex-wrap gap-2">
         {trust.badges.length ? (

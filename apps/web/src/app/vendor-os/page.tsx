@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { PageBanner } from "@/components/page-banner";
 import { Chip, Icon, VerifiedBadge, type IconName } from "@/components/ui";
 import { getStore } from "@/lib/store";
 import { vendorDeskId } from "@/lib/vendor-desk";
@@ -29,15 +30,52 @@ const STATUS_MR: Record<string, { t: string; cls: string }> = {
 export default async function VendorOsPage() {
   const store = getStore();
   const deskVendorId = await vendorDeskId();
-  const allVendors = store.vendors.search({ limit: 10 });
-  const vendor = store.vendors.byId(deskVendorId) ?? allVendors[0] ?? {
-    id: "vnd_pune_kulkarni_studio",
-    name: "कुलकर्णी फोटोग्राफी स्टुडिओ",
-    category: "photographer",
-    city: "पुणे",
-    rating: 4.9,
-    plan: "growth" as const,
-  };
+  const vendor = store.vendors.byId(deskVendorId);
+
+  if (!vendor) {
+    return (
+      <div className="bg-ivory-200/50 py-8">
+        <div className="shell mb-6">
+          <PageBanner
+            kicker="व्हेंडर ओएस • ग्रोथ व बिझनेस व्यवस्थापन"
+            title="डॅशबोर्ड"
+            description="लीड्स, कोट्स, कॅलेंडर, पेमेंट्स आणि रिव्ह्यू — व्हेंडरसाठी संपूर्ण बिझनेस व्यवस्थापन."
+            actions={
+              <div className="flex flex-wrap items-center gap-2.5">
+                <Link href="/vendors" className="btn-base btn-outline">
+                  व्हेंडर नोंदणी पाहा
+                </Link>
+                <Link href="/studio" className="btn-base btn-maroon">
+                  पत्रिका स्टुडिओ ✨
+                </Link>
+              </div>
+            }
+          />
+        </div>
+        <div className="shell">
+          <div className="rounded-2xl border border-maroon-900/10 bg-white p-8 sm:p-10 text-center shadow-card">
+            <span className="mx-auto grid h-14 w-14 place-items-center rounded-xl bg-maroon-800/8 text-maroon-800 ring-1 ring-maroon-800/15">
+              <Icon name="chart" className="h-6 w-6" />
+            </span>
+            <h2 className="mt-4 font-marathi-display text-xl font-bold text-maroon-900">
+              अद्याप व्हेंडर डॅशबोर्ड तयार नाही
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl text-[13.5px] leading-relaxed text-ink-500">
+              तुमची व्हेंडरप्रोफाइल जोडल्यानंतर इथे लीड्स, कोट्स, कॅलेंडर, पेमेंट्स व रिव्ह्यू दिसतील.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-2.5">
+              <Link href="/vendor" className="btn-base btn-maroon">
+                व्हेंडर डेस्क उघडा
+              </Link>
+              <Link href="/vendors" className="btn-base btn-outline">
+                व्हेंडर शोधा
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const vendorLeads: Lead[] = store.marketplace.leadsForVendor(vendor.id);
   const stats = store.marketplace.responseStats(vendor.id);
@@ -110,6 +148,29 @@ export default async function VendorOsPage() {
 
   return (
     <div className="bg-ivory-200/50 py-8">
+      <div className="shell mb-6">
+        <PageBanner
+          kicker="व्हेंडर ओएस • ग्रोथ व बिझनेस व्यवस्थापन"
+          title={`${vendor.name} — डॅशबोर्ड`}
+          description="लीड्स, कोट्स, कॅलेंडर, पेमेंट्स आणि रिव्ह्यू — महाराष्ट्रातील इव्हेंट व्यावसायिकांसाठी सर्वसमावेशक बिझनेस ओएस."
+          actions={
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Link
+                href={`/vendors/${vendor.id}`}
+                className="btn-base btn-outline text-xs"
+              >
+                व्हेंडर प्रोफाइल पाहा ↗
+              </Link>
+              <Link
+                href="/studio"
+                className="btn-base btn-maroon text-xs"
+              >
+                पत्रिका स्टुडिओ ✨
+              </Link>
+            </div>
+          }
+        />
+      </div>
       <div className="shell grid gap-6 lg:grid-cols-[240px_1fr]">
         <aside className="lg:sticky lg:top-28 lg:self-start">
           <div className="overflow-hidden rounded-2xl border border-maroon-900/10 bg-white shadow-card">
@@ -149,7 +210,7 @@ export default async function VendorOsPage() {
         <div className="min-w-0 space-y-6">
           <div id="dashboard" className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="font-marathi-display text-2xl sm:text-3xl font-bold text-maroon-900">डॅशबोर्ड</h1>
+              <h2 className="font-marathi-display text-2xl sm:text-3xl font-bold text-maroon-900">डॅशबोर्ड</h2>
               <p className="mt-1 text-[13px] sm:text-[13.5px] text-ink-500">
                 शुभ सकाळ 👋 — आज {toDevanagariDigits(newCount)} नवीन चौकशा आल्या आहेत
               </p>

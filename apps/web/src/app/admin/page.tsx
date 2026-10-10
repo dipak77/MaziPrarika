@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { adPerformance, calculateRefund, COMMISSION_RATES, gatewayFeeBreakdown, priceQuote, reconcileLedger, trustBadges, type LedgerEntry, type Quote } from '@mazi/commerce';
 import { formatMarathiDate, formatMarathiDateTime, toDevanagariDigits, vendorCategoryLabel } from '@mazi/marathi';
 
+import { PageBanner } from '@/components/page-banner';
 import { getStore } from '@/lib/store';
 import { assistantLedger } from '@/lib/assistant';
 import { devNumber, devRupees, percent } from '@/lib/format';
@@ -188,23 +189,21 @@ export default async function AdminPage() {
 
   return (
     <div className="shell py-10">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="font-ui text-xs uppercase tracking-[0.16em] text-gold">Operations</p>
-          <h1 className="mt-1 font-display text-4xl font-bold text-maroon">प्रशासन — मार्केटप्लेस आरोग्य</h1>
-          <p className="mt-2 text-charcoal-soft">
-            {formatMarathiDate(`${windowStart}T00:00:00Z`)} ते {formatMarathiDate(`${today}T00:00:00Z`)} • सर्व आकडे थेट डेटाबेसमधून
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Link href="/api/health" className="rounded-full border border-gold/50 px-4 py-2 text-sm font-semibold text-charcoal">
-            हेल्थ चेक
-          </Link>
-          <Link href="/vendor" className="btn-base btn-maroon px-4 py-2 text-sm">
-            विक्रेता डेस्क
-          </Link>
-        </div>
-      </header>
+      <PageBanner
+        kicker="Operations"
+        title="प्रशासन — मार्केटप्लेस आरोग्य"
+        description={`${formatMarathiDate(`${windowStart}T00:00:00Z`)} ते ${formatMarathiDate(`${today}T00:00:00Z`)} • सर्व आकडे थेट डेटाबेसमधून`}
+        actions={
+          <>
+            <Link href="/api/health" className="btn-base btn-outline">
+              हेल्थ चेक
+            </Link>
+            <Link href="/vendor" className="btn-base btn-maroon px-4 py-2 text-sm">
+              विक्रेता डेस्क
+            </Link>
+          </>
+        }
+      />
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[

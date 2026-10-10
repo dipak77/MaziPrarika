@@ -1,23 +1,21 @@
 'use client';
 
 import Link from "next/link";
-import { GoldenHeroLanding } from "@/components/golden-hero-landing";
-import { KalashArt } from "@/components/decor/kalash";
-import { MandalaCorner } from "@/components/decor/mandala";
 import { InvitationCard } from "@/components/invitation-card";
+import { MasterTemplateCard } from "@/components/master-template-card";
+import { LAGN_TEMPLATES } from "@/lib/lagn-templates";
 import { Reveal } from "@/components/reveal";
 import {
-  Chip,
   Eyebrow,
   Icon,
   OrnamentDivider,
-  Stat,
   VerifiedBadge,
   type IconName,
 } from "@/components/ui";
 import { DEFAULT_DESIGN, IMG, TEMPLATES } from "@/lib/arch-data";
 import { useLanguage } from "@/context/language-context";
 import { uiCopy } from "@/lib/i18n";
+import { toDevanagariDigits } from "@/lib/format";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -34,13 +32,13 @@ function HomeStyles() {
       @keyframes hp-spin    { to { transform: rotate(360deg); } }
       @keyframes hp-blob    { 0%, 100% { transform: translate(0,0) scale(1); } 33% { transform: translate(30px,-24px) scale(1.06); } 66% { transform: translate(-22px,18px) scale(.96); } }
       .hp-shimmer-text {
-        background: linear-gradient(100deg, #7c3aed 30%, #a78bfa 50%, #7c3aed 70%);
+        background: linear-gradient(100deg, var(--color-gold-bright) 30%, var(--color-gold-200) 50%, var(--color-gold-bright) 70%);
         background-size: 200% 100%;
         -webkit-background-clip: text; background-clip: text; color: transparent;
         animation: hp-shimmer 4.5s linear infinite;
       }
       .hp-shimmer-text-dark {
-        background: linear-gradient(100deg, #a78bfa 30%, #ffffff 50%, #a78bfa 70%);
+        background: linear-gradient(100deg, var(--color-gold-200) 30%, var(--color-gold-shimmer) 50%, var(--color-gold-200) 70%);
         background-size: 200% 100%;
         -webkit-background-clip: text; background-clip: text; color: transparent;
         animation: hp-shimmer 4.5s linear infinite;
@@ -91,11 +89,28 @@ function useCountUp(target: number, active: boolean, dur = 1400) {
   return v;
 }
 
-/* Deterministic pseudo-random for particle placement */
-const seeded = (i: number) => {
-  const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
-  return x - Math.floor(x);
-};
+const STATIC_PARTICLES = [
+  { left: "12%", bottom: "18%", size: 4, dur: "7s", delay: "0s" },
+  { left: "24%", bottom: "42%", size: 3, dur: "8s", delay: "1.2s" },
+  { left: "38%", bottom: "25%", size: 5, dur: "6s", delay: "0.5s" },
+  { left: "55%", bottom: "48%", size: 4, dur: "9s", delay: "2.1s" },
+  { left: "70%", bottom: "15%", size: 3, dur: "7.5s", delay: "1s" },
+  { left: "82%", bottom: "35%", size: 4, dur: "6.5s", delay: "2.5s" },
+  { left: "91%", bottom: "20%", size: 5, dur: "8.5s", delay: "0.8s" },
+  { left: "16%", bottom: "50%", size: 3, dur: "7s", delay: "3s" },
+  { left: "46%", bottom: "12%", size: 4, dur: "9s", delay: "1.7s" },
+  { left: "64%", bottom: "38%", size: 3, dur: "6s", delay: "2.8s" },
+  { left: "78%", bottom: "52%", size: 5, dur: "8s", delay: "0.2s" },
+  { left: "88%", bottom: "44%", size: 4, dur: "7.2s", delay: "1.9s" },
+];
+
+const MANDALA_POINTS = Array.from({ length: 24 }, (_, i) => {
+  const a = (i / 24) * Math.PI * 2;
+  return {
+    cx: Number((100 + Math.cos(a) * 92).toFixed(2)),
+    cy: Number((100 + Math.sin(a) * 92).toFixed(2)),
+  };
+});
 
 /* ═══════════════════════════════════════════════════════════════
    PAGE
@@ -119,65 +134,75 @@ const SHOWCASE_CARDS: ShowcaseCard[] = [
     id: 'wedding-royal-purple-ganesh',
     title: 'शुभविवाह',
     subtitle: 'शाही जांभळा वेलवेट',
-    desc: 'जांभळा वेलवेट, सुवर्ण गणेश सिंहासन, मंदिर कमान, हत्ती व मोर नक्षीदार राजेशाही डिझाईन',
+    desc: 'जांभळा वेलवेट, सुवर्ण गणेश सिंहासन, मंदिर कमान, हत्ती व मोर नक्षीदार २४K गोल्ड राजेशाही डिझाईन',
     image: '/art/card_purple_ganesh.jpg',
     badge: 'रॉयल वेलवेट २४K गोल्ड',
     category: 'राजेशाही पत्रिका',
     color: '#3b0b45',
   },
   {
-    id: 'cream_floral',
+    id: 'lagn-floral-ivory',
     title: 'शुभविवाह',
-    subtitle: 'मिनिमल एलिगंट',
-    desc: 'आयव्हरी कागद व झेंडू-जाई फुलांची कमान',
+    subtitle: 'हस्तीदंत सुलेखन व पुष्पहार',
+    desc: 'आयव्हरी कॉटन कागद, झेंडू व मोगरा फुलांची कमान, सुवर्ण मुद्रा व अस्सल सुलेखन',
     image: '/art/card_cream_floral.jpg',
-    badge: 'क्लासिक',
+    badge: 'अल्ट्रा HD क्लासिक',
     category: 'फुलांची सजावट',
     color: '#854d0e',
   },
   {
-    id: 'couple_story',
-    title: 'शुभविवाह',
-    subtitle: 'स्टोरी थीम कस्टम',
-    desc: 'हस्तलिखित वधू-वर चित्र व पारंपरिक जोडपे',
+    id: 'lagn-couple-arch',
+    title: 'साखरपुडा व विवाह',
+    subtitle: 'पुष्पकमान नवदंपती फोटो',
+    desc: 'नऊवारी साडी व फेटा नवदंपती, लाकडी गुलाब कमान, मुंडावळ्या व सुवर्ण चौकट',
     image: '/art/card_couple.jpg',
-    badge: 'लोकप्रिय',
+    badge: 'अल्ट्रा HD लोकप्रिय',
     category: 'कस्टम जोडी',
     color: '#9a3412',
   },
   {
-    id: 'emerald_temple',
-    title: 'शुभविवाह',
-    subtitle: 'रॉयल राजवाडा',
-    desc: 'पाचू हिरवा व सुवर्ण महाल कमानीची रचना',
+    id: 'lagn-sakharpuda-emerald',
+    title: 'साखरपुडा व विवाह',
+    subtitle: 'इम्पेरियल पाचू हिरवा',
+    desc: 'पाचू हिरवा पोत, पैठणी पल्लू, पितळी समई, सुवर्ण कमान व गणेश पदक',
     image: '/art/card_emerald.jpg',
-    badge: 'प्रीमियम',
+    badge: 'अल्ट्रा HD प्रीमियम',
     category: 'राजेशाही',
     color: '#065f46',
   },
   {
-    id: 'peacock_special',
-    title: 'शुभविवाह',
-    subtitle: 'फेस्टिव्हल स्पेशल',
-    desc: 'सुवर्ण मोरपीस व नक्षीदार राजस्थानी बॉर्डर',
+    id: 'lagn-peacock-vivaah',
+    title: 'शुभविवाह सोहळा',
+    subtitle: 'शाही मयूर सुवर्ण मुद्रा',
+    desc: 'हॅण्डमेड डेकल-एज कॉटन पेपर, राजेशाही मयूर, सुवर्ण नक्षीकाम व अस्सल आमंत्रण',
     image: '/art/card_peacock.jpg',
-    badge: 'ट्रेंडिंग',
+    badge: 'अल्ट्रा HD ट्रेंडिंग',
     category: 'मोरपीस',
     color: '#0369a1',
+  },
+  {
+    id: 'wedding-heritage-maroon',
+    title: 'शुभविवाह',
+    subtitle: 'हेरिटेज मरून वेलवेट',
+    desc: 'शाही मरून वेलवेट, २४K सुवर्ण गणेश, मंदिर कमान व पारंपारिक नक्षीदार चौकट',
+    image: '/art/card_heritage-maroon_gold.jpg',
+    badge: 'अल्ट्रा HD राजेशाही',
+    category: 'रॉयल वेलवेट',
+    color: '#4a0404',
   },
 ];
 
 const CATEGORIES = [
-  { id: 'wedding', label: 'विवाह पत्रिका', icon: '💍', bg: 'bg-[#fff5f5] text-[#e11d48] border-[#ffe4e6]', href: '/studio?category=wedding' },
-  { id: 'haldi', label: 'हळदी समारंभ', icon: '🌿', bg: 'bg-[#f0fdf4] text-[#16a34a] border-[#dcfce7]', href: '/studio?category=haldi' },
-  { id: 'sakharpuda', label: 'साखरपुडा', icon: '💍', bg: 'bg-[#fefce8] text-[#ca8a04] border-[#fef9c3]', href: '/studio?category=sakharpuda' },
-  { id: 'munj', label: 'मुंज / उपनयन', icon: '🪔', bg: 'bg-[#fff7ed] text-[#ea580c] border-[#ffedd5]', href: '/studio?category=munj' },
-  { id: 'gruhapravesh', label: 'गृहप्रवेश', icon: '🏠', bg: 'bg-[#f0f9ff] text-[#0284c7] border-[#e0f2fe]', href: '/studio?category=gruhapravesh' },
-  { id: 'birthday', label: 'वाढदिवस', icon: '🎂', bg: 'bg-[#fff1f2] text-[#f43f5e] border-[#ffe4e6]', href: '/studio?category=birthday' },
-  { id: 'namkaran', label: 'नामकरण', icon: '👶', bg: 'bg-[#fffbeb] text-[#d97706] border-[#fef3c7]', href: '/studio?category=namkaran' },
-  { id: 'shraddha', label: 'क्रियाकर्म', icon: '🪔', bg: 'bg-[#fefce8] text-[#eab308] border-[#fef08a]', href: '/studio?category=shraddha' },
-  { id: 'business_card', label: 'बिझनेस कार्ड', icon: '💳', bg: 'bg-[#fdf2f8] text-[#db2777] border-[#fce7f3]', href: '/studio?category=business' },
-  { id: 'festival', label: 'फेस्टिव्हल कार्ड', icon: '🪷', bg: 'bg-[#fae8ff] text-[#c026d3] border-[#f5d0fe]', href: '/studio?category=festival' },
+  { id: 'wedding', label: 'विवाह पत्रिका', icon: '💍', bg: 'bg-[#fff5f5] text-[#e11d48] border-[#ffe4e6]', href: '/templates?category=wedding' },
+  { id: 'haldi', label: 'हळदी समारंभ', icon: '🌿', bg: 'bg-[#f0fdf4] text-[#16a34a] border-[#dcfce7]', href: '/templates?category=wedding' },
+  { id: 'sakharpuda', label: 'साखरपुडा', icon: '💍', bg: 'bg-[#fefce8] text-[#ca8a04] border-[#fef9c3]', href: '/templates?category=engagement' },
+  { id: 'munj', label: 'मुंज / उपनयन', icon: '🪔', bg: 'bg-[#fff7ed] text-[#ea580c] border-[#ffedd5]', href: '/templates?category=puja' },
+  { id: 'gruhapravesh', label: 'गृहप्रवेश', icon: '🏠', bg: 'bg-[#f0f9ff] text-[#0284c7] border-[#e0f2fe]', href: '/templates?category=gruhapravesh' },
+  { id: 'birthday', label: 'वाढदिवस', icon: '🎂', bg: 'bg-[#fff1f2] text-[#f43f5e] border-[#ffe4e6]', href: '/templates?category=birthday' },
+  { id: 'namkaran', label: 'नामकरण', icon: '👶', bg: 'bg-[#fffbeb] text-[#d97706] border-[#fef3c7]', href: '/templates?category=naming' },
+  { id: 'shraddha', label: 'क्रियाकर्म', icon: '🪔', bg: 'bg-[#fefce8] text-[#eab308] border-[#fef08a]', href: '/templates?category=puja' },
+  { id: 'business_card', label: 'बिझनेस कार्ड', icon: '💳', bg: 'bg-[#fdf2f8] text-[#db2777] border-[#fce7f3]', href: '/templates?category=anniversary' },
+  { id: 'festival', label: 'फेस्टिव्हल कार्ड', icon: '🪷', bg: 'bg-[#fae8ff] text-[#c026d3] border-[#f5d0fe]', href: '/templates?category=puja' },
   { id: 'biodata', label: 'बायोडेटा', icon: '📄', bg: 'bg-[#f8fafc] text-[#475569] border-[#e2e8f0]', href: '/biodata' },
   { id: 'all_events', label: 'इतर सर्व', icon: '▦', bg: 'bg-[#f1f5f9] text-[#334155] border-[#cbd5e1]', href: '/studio' },
 ];
@@ -187,37 +212,37 @@ const COLLECTION_ITEMS = [
     id: 'c1',
     label: 'पारंपरिक महाराष्ट्रीयन',
     image: '/art/card_purple_ganesh.jpg',
-    href: '/studio?style=traditional',
+    href: '/templates?category=wedding',
   },
   {
     id: 'c2',
     label: 'आधुनिक क्लासिक',
     image: '/art/card_arch.jpg',
-    href: '/studio?style=classic',
+    href: '/templates?category=engagement',
   },
   {
     id: 'c3',
     label: 'रॉयल प्रीमियम',
     image: '/art/card_emerald.jpg',
-    href: '/studio?style=royal',
+    href: '/templates?category=wedding',
   },
   {
     id: 'c4',
     label: 'मिनिमल एलिगंट',
     image: '/art/card_cream_floral.jpg',
-    href: '/studio?style=minimal',
+    href: '/templates?category=biodata',
   },
   {
     id: 'c5',
     label: 'स्टोरी थीम कस्टम',
     image: '/art/card_couple.jpg',
-    href: '/studio?style=story',
+    href: '/templates?category=anniversary',
   },
   {
     id: 'c6',
     label: 'फेस्टिव्हल स्पेशल',
     image: '/art/card_peacock.jpg',
-    href: '/studio?style=festival',
+    href: '/templates?category=puja',
   },
 ];
 
@@ -262,9 +287,10 @@ export function HomePageClient() {
   return (
     <div className="overflow-x-clip" lang={isEn ? "en" : isHi ? "hi" : "mr"}>
       <HomeStyles />
-      <GoldenHeroLanding isEn={isEn} />
+      <Hero copy={copy} isEn={isEn} isHi={isHi} />
       <CategoryQuickNav />
       <DesignCollectionBar />
+      <LagnGallery />
       <Marquee copy={copy} />
       <Pillars copy={copy} isEn={isEn} />
       <StudioShowcase copy={copy} isEn={isEn} isHi={isHi} />
@@ -293,17 +319,25 @@ interface HeroProps {
 function Hero({ copy, isEn, isHi }: HeroProps) {
   const [selectedCardIdx, setSelectedCardIdx] = useState(0);
   const [previewModalCard, setPreviewModalCard] = useState<ShowcaseCard | null>(null);
+  const [sliderPaused, setSliderPaused] = useState(false);
 
-  /* Auto-rotate cards slowly */
+  /* Auto-rotate cards smoothly with pause support */
   useEffect(() => {
+    if (sliderPaused) return;
     const id = setInterval(() => {
       setSelectedCardIdx((prev) => (prev + 1) % SHOWCASE_CARDS.length);
     }, 4500);
     return () => clearInterval(id);
-  }, []);
+  }, [sliderPaused]);
+
+  const prevIdx = (selectedCardIdx - 1 + SHOWCASE_CARDS.length) % SHOWCASE_CARDS.length;
+  const nextIdx = (selectedCardIdx + 1) % SHOWCASE_CARDS.length;
+  const activeCard = SHOWCASE_CARDS[selectedCardIdx] || SHOWCASE_CARDS[0]!;
+  const prevCard = SHOWCASE_CARDS[prevIdx] || SHOWCASE_CARDS[0]!;
+  const nextCard = SHOWCASE_CARDS[nextIdx] || SHOWCASE_CARDS[0]!;
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-[#fffbf4] via-[#fffdf9] to-[#faf3e8] border-b border-stone-200/70">
+    <section className="relative overflow-hidden bg-gradient-to-b from-[#fffaf3] via-[#fffdf9] to-[#f9f2e6] border-b border-amber-200/50">
       {/* Traditional Marigold & Mango Leaves Garlands (Toran) */}
       <ToranCornerDecoration position="left" />
       <ToranCornerDecoration position="right" />
@@ -312,52 +346,51 @@ function Hero({ copy, isEn, isHi }: HeroProps) {
       <svg
         aria-hidden="true"
         viewBox="0 0 200 200"
-        className="hp-anim pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[650px] w-[650px] text-amber-500/[0.04]"
+        className="hp-anim pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[750px] w-[750px] text-amber-500/[0.04]"
         style={{ animation: "hp-spin 80s linear infinite" }}
       >
         <circle cx="100" cy="100" r="92" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 9" />
         <circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" strokeWidth="1" />
-        {Array.from({ length: 24 }, (_, i) => {
-          const a = (i / 24) * Math.PI * 2;
-          return <circle key={i} cx={100 + Math.cos(a) * 92} cy={100 + Math.sin(a) * 92} r="2" fill="currentColor" />;
-        })}
+        {MANDALA_POINTS.map((pt, i) => (
+          <circle key={i} cx={pt.cx} cy={pt.cy} r="2" fill="currentColor" />
+        ))}
       </svg>
 
-      {/* Floating Sparkle Particles */}
+      {/* Floating Sparkle Particles (Deterministic to prevent SSR hydration mismatch) */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        {Array.from({ length: 14 }, (_, i) => (
+        {STATIC_PARTICLES.map((p, i) => (
           <span
             key={i}
             className="hp-anim absolute block rounded-full bg-amber-400/60"
             style={{
-              left: `${8 + seeded(i) * 84}%`,
-              bottom: `${seeded(i + 30) * 45}%`,
-              width: 3 + seeded(i + 70) * 3,
-              height: 3 + seeded(i + 70) * 3,
-              animation: `hp-spark ${5 + seeded(i + 15) * 5}s ${seeded(i + 40) * 5}s ease-out infinite`,
+              left: p.left,
+              bottom: p.bottom,
+              width: `${p.size}px`,
+              height: `${p.size}px`,
+              animation: `hp-spark ${p.dur} ${p.delay} ease-out infinite`,
             }}
           />
         ))}
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 pt-6 pb-8 sm:px-6 lg:pt-8 lg:pb-12">
-        <div className="grid items-center gap-8 lg:grid-cols-12">
-          {/* ── Left Column: Typography, Metrics & CTAs (6 cols) ── */}
-          <div className="lg:col-span-6 z-10 animate-fade-up">
+      <div className="relative mx-auto max-w-7xl px-4 pt-6 pb-10 sm:px-6 lg:pt-10 lg:pb-16">
+        <div className="grid items-center gap-8 lg:gap-8 xl:gap-12 lg:grid-cols-12">
+          {/* ── Left Column: Typography, Metrics & CTAs (5 cols) ── */}
+          <div className="lg:col-span-5 z-10 animate-fade-up">
             {/* Top Tagline Pill */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/80 bg-[#fdf6ec] px-4 py-1.5 text-xs sm:text-[13px] font-semibold text-amber-950 shadow-2xs">
-              <span className="text-amber-500 font-bold">✦</span>
-              <span>पुणे • १२०+ सत्यापित डिझाईन्स • लाखो आनंदी ग्राहक</span>
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/80 bg-gradient-to-r from-[#fef7ee] via-[#fffdf9] to-[#fcf2e3] px-4 py-1.5 text-xs sm:text-[13px] font-semibold text-amber-950 shadow-2xs">
+              <span className="text-amber-500 font-bold animate-pulse">✦</span>
+              <span>महाराष्ट्र • ५०+ राजेशाही डिझाईन्स • १.५+ लाख कुटुंबे</span>
             </div>
 
-            {/* Massive Marathi Heading */}
-            <h1 className="mt-4 text-[40px] xs:text-[46px] sm:text-[54px] xl:text-[60px] font-extrabold leading-[1.12] tracking-tight text-[#1c1613]">
+            {/* Massive Marathi Heading with Royal Aesthetics */}
+            <h1 className="mt-4 text-[40px] xs:text-[46px] sm:text-[52px] xl:text-[58px] font-extrabold leading-[1.1] tracking-tight text-[#1c1613]">
               <span className="block font-serif text-[#1c1613]">उत्सव ठरवला?</span>
               <span className="relative inline-block mt-1">
                 <span className="bg-gradient-to-r from-[#691882] via-[#851896] to-[#b32486] bg-clip-text text-transparent drop-shadow-xs">
                   उरलेलं सगळं आमच्यावर.
                 </span>
-                {/* Golden swoosh underline matching reference image */}
+                {/* Golden swoosh underline */}
                 <svg
                   className="absolute -bottom-2 sm:-bottom-3 left-0 w-full h-3 sm:h-4 pointer-events-none"
                   viewBox="0 0 340 18"
@@ -384,47 +417,47 @@ function Hero({ copy, isEn, isHi }: HeroProps) {
 
             {/* Description Paragraph */}
             <p className="mt-4 max-w-lg text-[14.5px] sm:text-[15.5px] leading-relaxed text-[#544b46]">
-              विवाह पत्रिका, बायोडेटा, मुहूर्त, क्रियायें, व्यवसायासाठी डिझाईन्स — सगळं एका विश्वसनीय, आधुनिक आणि मराठी मनाच्या प्लॅटफॉर्मवर. AI मदतीने काही मिनिटांत तुमची खास पत्रिका तयार करा.
+              विवाह पत्रिका, बायोडेटा, मुहूर्त, क्रियाकर्म, व सोहळा डिझाईन्स — सगळं एका विश्वसनीय, आधुनिक आणि मराठी संस्कृतीच्या प्लॅटफॉर्मवर. AI मदतीने काही मिनिटांत तुमची राजेशाही पत्रिका तयार करा.
             </p>
 
             {/* Trust Social Proof Metrics Row */}
-            <div className="mt-7 grid grid-cols-2 sm:grid-cols-4 gap-3.5 max-w-lg">
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl">🧡</span>
+            <div className="mt-7 grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-lg">
+              <div className="flex items-center gap-2 rounded-2xl border border-amber-200/60 bg-white/80 p-2.5 backdrop-blur-sm shadow-2xs">
+                <span className="text-lg">🧡</span>
                 <div>
-                  <p className="text-[14px] font-bold text-[#1c1613] leading-tight">१.५०+ लाख</p>
-                  <p className="text-[11px] text-[#78716c]">आनंदी ग्राहक</p>
+                  <p className="text-[13.5px] font-bold text-[#1c1613] leading-tight">१.५०+ लाख</p>
+                  <p className="text-[10px] text-[#78716c]">आनंदी ग्राहक</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl">⭐</span>
+              <div className="flex items-center gap-2 rounded-2xl border border-amber-200/60 bg-white/80 p-2.5 backdrop-blur-sm shadow-2xs">
+                <span className="text-lg">⭐</span>
                 <div>
-                  <p className="text-[14px] font-bold text-[#1c1613] leading-tight">४.८/५</p>
-                  <p className="text-[11px] text-[#78716c]">ग्राहक रेटिंग</p>
+                  <p className="text-[13.5px] font-bold text-[#1c1613] leading-tight">४.८/५</p>
+                  <p className="text-[10px] text-[#78716c]">ग्राहक रेटिंग</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl">🏆</span>
+              <div className="flex items-center gap-2 rounded-2xl border border-amber-200/60 bg-white/80 p-2.5 backdrop-blur-sm shadow-2xs">
+                <span className="text-lg">👑</span>
                 <div>
-                  <p className="text-[14px] font-bold text-[#1c1613] leading-tight">१२०+</p>
-                  <p className="text-[11px] text-[#78716c]">सत्यापित डिझाईन्स</p>
+                  <p className="text-[13.5px] font-bold text-[#1c1613] leading-tight">५०+ नमुने</p>
+                  <p className="text-[10px] text-[#78716c]">राजेशाही डिझाइन्स</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl">⚡</span>
+              <div className="flex items-center gap-2 rounded-2xl border border-amber-200/60 bg-white/80 p-2.5 backdrop-blur-sm shadow-2xs">
+                <span className="text-lg">⚡</span>
                 <div>
-                  <p className="text-[14px] font-bold text-[#1c1613] leading-tight">क्षणात</p>
-                  <p className="text-[11px] text-[#78716c]">डाउनलोड व शेअर</p>
+                  <p className="text-[13.5px] font-bold text-[#1c1613] leading-tight">३ मिनिटांत</p>
+                  <p className="text-[10px] text-[#78716c]">प्रिंट-रेडी HD</p>
                 </div>
               </div>
             </div>
 
             {/* CTA Action Buttons */}
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              {/* Primary Glowing Purple Pill */}
+              {/* Primary Glowing Maroon Pill */}
               <Link
                 href="/create"
-                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-[#6b1c82] via-[#7e22ce] to-[#581c87] px-6 sm:px-7 py-3.5 text-sm sm:text-[14.5px] font-bold text-white shadow-xl shadow-purple-600/30 ring-1 ring-purple-400/50 transition-all duration-300 hover:scale-105 hover:shadow-purple-600/45 whitespace-nowrap"
+                className="btn-base btn-maroon group relative overflow-hidden text-sm sm:text-[14.5px] font-bold transition-all duration-300 hover:scale-105 whitespace-nowrap"
               >
                 <span aria-hidden className="absolute inset-y-0 w-1/3 bg-white/25" style={{ animation: "hp-shine 3.2s ease-in-out infinite" }} />
                 <span className="text-yellow-300">✦</span>
@@ -432,112 +465,244 @@ function Hero({ copy, isEn, isHi }: HeroProps) {
                 <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
               </Link>
 
-              {/* Secondary White Pill: Biodata */}
+              {/* Secondary White Pill: Templates Catalog */}
               <Link
-                href="/biodata"
-                className="inline-flex items-center gap-2 rounded-full border border-stone-200/90 bg-white px-5 sm:px-6 py-3.5 text-sm sm:text-[14.5px] font-bold text-[#1c1613] shadow-xs transition hover:border-amber-400 hover:bg-amber-50/30 whitespace-nowrap"
+                href="/templates"
+                className="inline-flex items-center gap-2 rounded-full border border-amber-300/90 bg-ivory-surface px-5 py-3.5 text-sm sm:text-[14.5px] font-bold text-[#1c1613] shadow-xs transition hover:border-amber-500 hover:bg-amber-50/40 whitespace-nowrap"
               >
-                <span className="text-amber-500">✦</span>
-                <span>विवाह बायोडेटा</span>
+                <span className="text-amber-500">👑</span>
+                <span>सर्व ५०+ डिझाईन्स पाहा</span>
               </Link>
 
-              {/* Tertiary White Pill: Search */}
+              {/* Tertiary White Pill: Biodata */}
               <Link
-                href="/studio"
-                className="inline-flex items-center gap-2 rounded-full border border-stone-200/90 bg-white px-5 sm:px-6 py-3.5 text-sm sm:text-[14.5px] font-bold text-[#1c1613] shadow-xs transition hover:border-purple-300 hover:bg-purple-50/30 whitespace-nowrap"
+                href="/biodata"
+                className="inline-flex items-center gap-2 rounded-full border border-stone-200/90 bg-ivory-surface px-5 py-3.5 text-sm sm:text-[14.5px] font-bold text-[#1c1613] shadow-xs transition hover:border-maroon/40 hover:bg-maroon-light whitespace-nowrap"
               >
-                <span className="text-slate-600">🔍</span>
-                <span>डिझाईन्स शोधा</span>
+                <span>📜</span>
+                <span>विवाह बायोडेटा</span>
               </Link>
             </div>
           </div>
 
-          {/* ── Right Column: Wedding Couple Photography + Standing Cards (6 cols) ── */}
-          <div className="lg:col-span-6 relative z-10 animate-fade-up">
-            <div className="relative mx-auto w-full max-w-[620px] rounded-3xl overflow-hidden shadow-2xl border border-amber-200/50 bg-[#fffdf9]">
-              {/* Couple Backdrop Photography */}
-              <div className="relative h-80 sm:h-96 xl:h-[430px] w-full overflow-hidden">
-                <img
-                  src="/art/hero_couple.jpg"
-                  alt="मराठी वधू-वर लग्नपत्रिका"
-                  className="h-full w-full object-cover object-top filter brightness-[1.01] contrast-[1.04]"
-                />
-                {/* Gentle fade-out gradient overlays for seamless staging */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#fcf7ee] via-transparent to-black/20" />
-                <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#fffbf4]/80 to-transparent hidden sm:block" />
+          {/* ── Right Column: Grand 3D Royal Spotlight Stage & Full Space Slider (7 cols) ── */}
+          <div className="lg:col-span-7 relative z-10 animate-fade-up">
+            <div
+              className="relative mx-auto w-full flex flex-col items-center justify-center"
+              onMouseEnter={() => setSliderPaused(true)}
+              onMouseLeave={() => setSliderPaused(false)}
+            >
+              {/* Gentle Warm Gold & Festive Ambient Halo (Blends seamlessly with the warm page background) */}
+              <div aria-hidden className="pointer-events-none absolute -inset-8 -z-10 rounded-full bg-gradient-to-tr from-amber-400/20 via-orange-300/10 to-gold/15 blur-3xl" />
 
-                {/* Floating Glassmorphic AI Assistant Pill (Top-Right) */}
-                <div className="absolute top-4 sm:top-5 right-4 sm:right-5 z-20 flex items-center gap-2.5 rounded-2xl border border-purple-400/40 bg-[#21062b]/92 px-3.5 sm:px-4 py-2 sm:py-2.5 text-white shadow-2xl backdrop-blur-md max-w-[280px]">
-                  <div className="grid size-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 text-yellow-300 shadow-sm">
-                    <span className="text-xs">✦</span>
+              {/* ── 3D Card Spotlight Stage (Full Space, Generous Card Size) ── */}
+              <div className="relative w-full flex items-center justify-center min-h-[400px] sm:min-h-[460px] lg:min-h-[500px] px-2 sm:px-4">
+                {/* Left Flanking 3D Preview Card (Peeking card for depth) */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedCardIdx(prevIdx)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedCardIdx(prevIdx);
+                    }
+                  }}
+                  aria-label={`मागील डिझाईन: ${prevCard.title} — ${prevCard.subtitle}`}
+                  className="group/peek absolute left-2 sm:left-6 lg:left-8 xl:left-12 z-10 hidden md:block w-[160px] lg:w-[210px] xl:w-[240px] aspect-[3/4.2] rounded-2xl overflow-hidden border-2 border-amber-300/60 shadow-2xl opacity-40 hover:opacity-90 focus-visible:opacity-90 hover:scale-95 transition-all duration-500 cursor-pointer -rotate-6 -translate-y-2 select-none"
+                  style={{ background: prevCard.color }}
+                  title={`मागील: ${prevCard.title} — ${prevCard.subtitle}`}
+                >
+                  <img
+                    src={prevCard.image}
+                    alt={prevCard.title}
+                    className="h-full w-full object-cover object-top transition duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 group-hover/peek:opacity-40 transition" />
+                  <div className="absolute bottom-3 inset-x-3 text-left">
+                    <p className="text-xs font-bold text-amber-200 line-clamp-1">← {prevCard.title}</p>
+                    <p className="text-xs text-white/90 line-clamp-1">{prevCard.subtitle}</p>
                   </div>
-                  <div>
-                    <p className="text-[12px] sm:text-[12.5px] font-bold text-white leading-tight">
-                      AI डिझाईन असिस्टंट
+                </div>
+
+                {/* Right Flanking 3D Preview Card (Peeking card for depth) */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedCardIdx(nextIdx)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedCardIdx(nextIdx);
+                    }
+                  }}
+                  aria-label={`पुढील डिझाईन: ${nextCard.title} — ${nextCard.subtitle}`}
+                  className="group/peek absolute right-2 sm:right-6 lg:right-8 xl:right-12 z-10 hidden md:block w-[160px] lg:w-[210px] xl:w-[240px] aspect-[3/4.2] rounded-2xl overflow-hidden border-2 border-amber-300/60 shadow-2xl opacity-40 hover:opacity-90 focus-visible:opacity-90 hover:scale-95 transition-all duration-500 cursor-pointer rotate-6 -translate-y-2 select-none"
+                  style={{ background: nextCard.color }}
+                  title={`पुढील: ${nextCard.title} — ${nextCard.subtitle}`}
+                >
+                  <img
+                    src={nextCard.image}
+                    alt={nextCard.title}
+                    className="h-full w-full object-cover object-top transition duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 group-hover/peek:opacity-40 transition" />
+                  <div className="absolute bottom-3 inset-x-3 text-right">
+                    <p className="text-xs font-bold text-amber-200 line-clamp-1">{nextCard.title} →</p>
+                    <p className="text-xs text-white/90 line-clamp-1">{nextCard.subtitle}</p>
+                  </div>
+                </div>
+
+                {/* Main Active Spotlight Card (Large, Bold, Centered, Generous Space) */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setPreviewModalCard(activeCard);
+                    }
+                  }}
+                  aria-label={`प्रिव्ह्यू उघडा: ${activeCard.title} — ${activeCard.subtitle}`}
+                  className="group/card relative z-20 w-full max-w-[320px] xs:max-w-[360px] sm:max-w-[390px] lg:max-w-[415px] xl:max-w-[440px] aspect-[3/4.2] overflow-hidden rounded-2xl sm:rounded-3xl border-2 sm:border-[3px] border-amber-400 bg-neutral-900 shadow-[0_25px_60px_-15px_rgba(180,83,9,0.35),0_12px_28px_-8px_rgba(0,0,0,0.22)] transition-all duration-500 hover:scale-[1.02] hover:border-amber-300 cursor-pointer"
+                  style={{ background: activeCard.color || "#1f0426" }}
+                  onClick={() => setPreviewModalCard(activeCard)}
+                >
+                  {/* Actual High-Res Design Image */}
+                  <img
+                    src={activeCard.image}
+                    alt={activeCard.title}
+                    key={activeCard.id}
+                    className="h-full w-full object-cover object-top transition duration-700 ease-out animate-fade-in group-hover/card:scale-105"
+                    style={{ imageRendering: "-webkit-optimize-contrast" }}
+                    loading="eager"
+                    decoding="async"
+                  />
+
+                  {/* Metallic Gloss Reflection Overlay */}
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-black/75 via-transparent to-white/20 opacity-70 transition duration-300 group-hover/card:opacity-30" />
+
+                  {/* Top Badges */}
+                  <div className="absolute top-3.5 inset-x-3.5 sm:top-4 sm:inset-x-4 flex items-center justify-between gap-2 z-20">
+                    <span className="rounded-full bg-black/85 px-3 py-1 sm:px-3.5 sm:py-1.5 text-[10px] sm:text-[11.5px] font-black text-amber-300 backdrop-blur-md border border-amber-400/70 shadow-md">
+                      ✨ {activeCard.badge}
+                    </span>
+                    <span className="rounded-full bg-white/95 px-3 py-1 sm:px-3.5 sm:py-1.5 text-[10px] sm:text-[11.5px] font-bold text-neutral-900 backdrop-blur-md shadow-md border border-amber-200">
+                      {activeCard.category}
+                    </span>
+                  </div>
+
+                  {/* Hover Quick Action Buttons */}
+                  <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3.5 bg-black/60 p-4 opacity-0 transition duration-300 group-hover/card:opacity-100 group-focus-within/card:opacity-100 backdrop-blur-xs">
+                    <Link
+                      href={`/studio?template=${activeCard.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 px-6 min-h-[44px] text-sm sm:text-[14.5px] font-black text-neutral-950 shadow-2xl hover:scale-105 transition"
+                    >
+                      <span>✍️ या डिझाईनसह संपादन करा</span>
+                      <span>→</span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewModalCard(activeCard);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/25 px-5 min-h-[44px] text-xs sm:text-sm font-bold text-white shadow-lg hover:bg-white/35 transition"
+                    >
+                      <span>🔍 मोठा HD प्रिव्ह्यू</span>
+                    </button>
+                  </div>
+
+                  {/* Bottom Card Title Banner */}
+                  <div className="absolute bottom-0 inset-x-0 z-20 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 sm:p-5 text-left">
+                    <p className="font-marathi-display text-lg sm:text-xl xl:text-2xl font-bold text-amber-100 drop-shadow-md">
+                      {activeCard.title} — {activeCard.subtitle}
                     </p>
-                    <p className="text-[10px] text-purple-200/80 leading-snug mt-0.5">
-                      तुमच्या माहितीनुसार स्वतःहून सुंदर पत्रिका तयार करा
+                    <p className="mt-1 text-xs sm:text-sm text-amber-200/85 line-clamp-2">
+                      {activeCard.desc}
                     </p>
                   </div>
                 </div>
 
-                {/* Standing 5 Realistic Invitation Cards (Row at bottom of couple image) */}
-                <div className="absolute inset-x-0 bottom-2 sm:bottom-3 z-20 px-2 sm:px-4">
-                  <div className="relative flex items-end justify-center gap-1.5 sm:gap-2.5">
-                    {SHOWCASE_CARDS.map((card, idx) => {
-                      const isSelected = selectedCardIdx === idx;
-                      const isCenter = idx === 2;
-                      return (
-                        <div
-                          key={card.id}
-                          onClick={() => {
-                            setSelectedCardIdx(idx);
-                            setPreviewModalCard(card);
-                          }}
-                          className={`group relative cursor-pointer transition-all duration-300 ease-out hover:-translate-y-4 hover:z-30 shrink-0 ${
-                            isSelected || isCenter
-                              ? '-translate-y-2.5 sm:-translate-y-3 z-20 scale-105 ring-2 ring-amber-400 shadow-2xl'
-                              : 'shadow-xl hover:shadow-2xl'
+                {/* Floating Prev Button */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedCardIdx(prevIdx)}
+                  aria-label="Previous card"
+                  className="absolute left-1 sm:left-3 lg:left-5 z-30 grid size-11 sm:size-12 place-items-center rounded-full bg-white/95 text-amber-950 border border-amber-300 shadow-xl hover:bg-amber-50 hover:scale-110 active:scale-95 transition"
+                >
+                  <span className="text-xl font-bold leading-none">‹</span>
+                </button>
+
+                {/* Floating Next Button */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedCardIdx(nextIdx)}
+                  aria-label="Next card"
+                  className="absolute right-1 sm:right-3 lg:right-5 z-30 grid size-11 sm:size-12 place-items-center rounded-full bg-white/95 text-amber-950 border border-amber-300 shadow-xl hover:bg-amber-50 hover:scale-110 active:scale-95 transition"
+                >
+                  <span className="text-xl font-bold leading-none">›</span>
+                </button>
+              </div>
+
+              {/* ── Bottom Deck: Luxury Thumbnails Bar & Indicator Pill (Full Space) ── */}
+              <div className="relative z-20 mt-6 w-full max-w-xl flex flex-col items-center gap-3">
+                {/* Miniature Cards Deck */}
+                <div className="flex items-center justify-center gap-2.5 sm:gap-3 py-1 px-2 overflow-x-auto no-scrollbar w-full">
+                  {SHOWCASE_CARDS.map((card, idx) => {
+                    const isSelected = selectedCardIdx === idx;
+                    return (
+                      <button
+                        key={card.id}
+                        type="button"
+                        onClick={() => setSelectedCardIdx(idx)}
+                        className={`group/thumb relative h-16 sm:h-20 w-12 sm:w-15 shrink-0 overflow-hidden rounded-xl border-2 transition-all duration-300 ${
+                          isSelected
+                            ? "scale-105 border-amber-500 shadow-[0_0_18px_rgba(245,158,11,0.6)] ring-2 ring-amber-300"
+                            : "border-amber-200/80 bg-white/60 opacity-60 hover:opacity-100 hover:border-amber-400"
+                        }`}
+                        title={`${card.title} — ${card.subtitle}`}
+                      >
+                        <img
+                          src={card.image}
+                          alt={card.title}
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        {isSelected && (
+                          <span className="absolute bottom-0.5 inset-x-0 text-center text-xs font-black uppercase text-amber-300 bg-black/80">
+                            सक्रिय
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Active Counter & Dot Indicators */}
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <span className="rounded-full bg-white/90 px-3.5 py-1 text-xs font-bold text-amber-950 border border-amber-300/80 shadow-xs backdrop-blur-sm">
+                    👑 {toDevanagariDigits(selectedCardIdx + 1)} / {toDevanagariDigits(SHOWCASE_CARDS.length)} · {activeCard.subtitle}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {SHOWCASE_CARDS.map((_, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSelectedCardIdx(idx)}
+                        className="group/dot -mx-1.5 grid h-11 w-11 place-items-center rounded-full transition"
+                        aria-label={`Go to slide ${idx + 1}`}
+                      >
+                        <span
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            idx === selectedCardIdx
+                              ? "w-7 bg-amber-500 shadow-xs"
+                              : "w-2 bg-amber-300/60 group-hover/dot:bg-amber-400"
                           }`}
-                          style={{
-                            width: 'clamp(58px, 15vw, 94px)',
-                            aspectRatio: '3 / 4.4',
-                          }}
-                        >
-                          {/* Physical Card Edge & Embossed Look */}
-                          <div className="relative h-full w-full overflow-hidden rounded-md sm:rounded-lg bg-white shadow-[0_14px_30px_-6px_rgba(20,5,30,0.45)] ring-1 ring-black/10">
-                            <img
-                              src={card.image}
-                              alt={card.title}
-                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            />
-                            {/* Gold Foil Subtle Sheen */}
-                            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/20 opacity-70 group-hover:opacity-20 transition" />
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {/* Right Carousel Arrow Button */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedCardIdx((prev) => (prev + 1) % SHOWCASE_CARDS.length);
-                      }}
-                      aria-label="Next card"
-                      className="size-8 sm:size-9 grid place-items-center rounded-full bg-white text-slate-800 shadow-xl border border-gray-200 hover:scale-110 hover:bg-slate-50 transition active:scale-95 shrink-0 ml-1"
-                    >
-                      <span className="text-base sm:text-lg font-bold leading-none">›</span>
-                    </button>
-                  </div>
-
-                  {/* Scattered Flower Petals Decor along base of cards */}
-                  <div className="pointer-events-none mt-1 flex justify-center items-center gap-6 text-[10px] opacity-75">
-                    <span>🌸</span>
-                    <span className="text-yellow-500">🌼</span>
-                    <span>🌺</span>
-                    <span className="text-amber-500">🌼</span>
-                    <span>🌸</span>
+                        />
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -555,11 +720,11 @@ function Hero({ copy, isEn, isHi }: HeroProps) {
           onClick={() => setPreviewModalCard(null)}
         >
           <div
-            className="relative w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-amber-400/30 overflow-hidden"
+            className="relative w-full max-w-lg rounded-3xl bg-ivory-surface p-6 shadow-2xl border border-amber-400/30 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top gold ribbon */}
-            <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-amber-400 via-purple-600 to-amber-400" />
+            <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-gold via-maroon to-gold" />
 
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -576,7 +741,7 @@ function Hero({ copy, isEn, isHi }: HeroProps) {
               <button
                 type="button"
                 onClick={() => setPreviewModalCard(null)}
-                className="grid size-8 place-items-center rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200"
+                className="btn-icon bg-ivory-200 text-ink-500"
               >
                 ✕
               </button>
@@ -587,17 +752,19 @@ function Hero({ copy, isEn, isHi }: HeroProps) {
               <img
                 src={previewModalCard.image}
                 alt={previewModalCard.title}
-                className="max-h-[360px] w-auto object-contain"
+                className="max-h-[360px] w-auto object-contain shadow-md rounded-xl"
+                style={{ imageRendering: "-webkit-optimize-contrast" }}
+                decoding="async"
               />
             </div>
 
             {previewModalCard.id === 'wedding-royal-purple-ganesh' && (
-              <div className="mt-3 rounded-xl bg-purple-50/90 border border-purple-200/90 p-2.5 text-xs text-purple-950">
-                <p className="font-semibold text-purple-900 flex items-center gap-1.5">
+              <div className="mt-3 rounded-xl bg-gold-soft border border-gold/40 p-2.5 text-xs text-gold-ink">
+                <p className="font-semibold text-gold-ink flex items-center gap-1.5">
                   <span>👑</span>
                   <span>राजेशाही लग्नपत्रिका नमुना (Royal Gold Foil Invitation)</span>
                 </p>
-                <p className="mt-1 text-[11px] text-purple-800 leading-snug">
+                <p className="mt-1 text-[11px] text-gold-ink leading-snug">
                   राजकुमारी रेया सिंह (Princess Reya Singh) &amp; राजकुमार विक्रम राव (Prince Vikram Rao) · राज महाल पॅलेस, जयपूर
                 </p>
               </div>
@@ -606,29 +773,29 @@ function Hero({ copy, isEn, isHi }: HeroProps) {
             {/* Features checkmarks */}
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-stone-700">
               <div className="flex items-center gap-1.5">
-                <span className="text-emerald-600 font-bold">✓</span>
+                <span className="text-leaf-600 font-bold">✓</span>
                 <span>अस्सल मराठी फॉन्ट व मांडणी</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-emerald-600 font-bold">✓</span>
+                <span className="text-leaf-600 font-bold">✓</span>
                 <span>३०० DPI हाय-रिझोल्यूशन प्रिंट</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-emerald-600 font-bold">✓</span>
+                <span className="text-leaf-600 font-bold">✓</span>
                 <span>१-क्लिक व्हॉट्सअॅप व PDF शेअर</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-emerald-600 font-bold">✓</span>
+                <span className="text-leaf-600 font-bold">✓</span>
                 <span>AI स्मार्ट मजकूर संपादन</span>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="mt-6 flex items-center justify-end gap-2.5 sm:gap-3">
+            <div className="mt-6 flex flex-wrap items-center justify-end gap-2.5 sm:gap-3">
               <button
                 type="button"
                 onClick={() => setPreviewModalCard(null)}
-                className="rounded-full px-3.5 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-100"
+                className="btn-base btn-ghost min-h-11 px-4 text-xs"
               >
                 बंद करा
               </button>
@@ -636,13 +803,13 @@ function Hero({ copy, isEn, isHi }: HeroProps) {
                 href={previewModalCard.image}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition shadow-2xs"
+                className="btn-base btn-outline min-h-11 px-4 text-xs"
               >
                 <span>🔍 HD झूम</span>
               </a>
               <Link
                 href={`/studio?template=${previewModalCard.id}`}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-700 via-indigo-600 to-purple-800 px-4 sm:px-5 py-2 sm:py-2.5 text-xs font-bold text-white shadow-md hover:scale-105 transition"
+                className="btn-base btn-maroon min-h-11 px-4 text-xs"
               >
                 <span>✨ या डिझाइनसह पत्रिका बनवा</span>
               </Link>
@@ -659,7 +826,7 @@ function Hero({ copy, isEn, isHi }: HeroProps) {
 ═══════════════════════════════════════════════════════════════ */
 function CategoryQuickNav() {
   return (
-    <section className="border-y border-stone-200/80 bg-white py-3.5 shadow-2xs">
+    <section className="border-y border-stone-200/80 bg-ivory-surface py-3.5 shadow-2xs">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-1 sm:gap-2 overflow-x-auto px-4 sm:px-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {CATEGORIES.map((cat) => (
           <Link
@@ -672,7 +839,7 @@ function CategoryQuickNav() {
             >
               {cat.icon}
             </span>
-            <span className="text-[11px] sm:text-[12px] font-semibold text-[#2b2421] transition group-hover:text-purple-900 group-hover:font-bold whitespace-nowrap">
+            <span className="text-[11px] sm:text-[12px] font-semibold text-[#2b2421] transition group-hover:text-maroon group-hover:font-bold whitespace-nowrap">
               {cat.label}
             </span>
           </Link>
@@ -687,7 +854,7 @@ function CategoryQuickNav() {
 ═══════════════════════════════════════════════════════════════ */
 function DesignCollectionBar() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-r from-[#19041d] via-[#24062a] to-[#19041d] text-white py-3 px-4 sm:px-6 border-b border-white/10 shadow-lg">
+    <section className="relative overflow-hidden bg-gradient-to-r from-maroon-deep via-maroon-900 to-maroon-deep text-white py-3 px-4 sm:px-6 border-b border-white/10 shadow-lg">
       <div className="mx-auto flex max-w-7xl flex-col xl:flex-row items-center justify-between gap-3.5">
         {/* Left: Traditional Golden Motif + Crown + Heading */}
         <div className="flex items-center gap-3 shrink-0 w-full xl:w-auto">
@@ -713,7 +880,7 @@ function DesignCollectionBar() {
               href={item.href}
               className="group flex items-center gap-2 shrink-0 rounded-xl border border-amber-400/35 bg-[#2b0730] p-1 pr-2.5 transition hover:border-amber-400 hover:bg-[#3a0a40] hover:shadow-md hover:shadow-amber-500/20"
             >
-              <div className="size-8 sm:size-9 shrink-0 overflow-hidden rounded-lg border border-amber-400/50">
+              <div className="size-9 shrink-0 overflow-hidden rounded-lg border border-amber-400/50">
                 <img
                   src={item.image}
                   alt={item.label}
@@ -729,7 +896,7 @@ function DesignCollectionBar() {
           {/* Next Chevron Button */}
           <Link
             href="/studio"
-            className="grid size-8 sm:size-8.5 shrink-0 place-items-center rounded-xl border border-amber-400/40 bg-amber-400/15 text-amber-300 hover:bg-amber-400/30 hover:scale-105 transition shadow-xs"
+            className="grid size-11 shrink-0 place-items-center rounded-xl border border-amber-400/40 bg-amber-400/15 text-amber-300 hover:bg-amber-400/30 hover:scale-105 transition shadow-xs"
             aria-label="View all designs"
           >
             <span className="text-sm font-bold">»</span>
@@ -740,18 +907,224 @@ function DesignCollectionBar() {
   );
 }
 
-function ReadyRingMini({ value }: { value: number }) {
-  const r = 17;
-  const c = 2 * Math.PI * r;
+function LagnGallery() {
+  const [activeTab, setActiveTab] = useState<string>("all");
+  const [previewModalImg, setPreviewModalImg] = useState<{ url: string; title: string; templateId: string } | null>(null);
+
+  const filterTabs = [
+    { id: "all", label: "सर्व पत्रिका", icon: "✨", count: LAGN_TEMPLATES.length },
+    { id: "wedding", label: "विवाह पत्रिका", icon: "💍", count: LAGN_TEMPLATES.filter((t) => t.category === "wedding").length },
+    { id: "engagement", label: "साखरपुडा", icon: "✨", count: LAGN_TEMPLATES.filter((t) => t.category === "engagement").length },
+    { id: "puja", label: "पूजा व उत्सव", icon: "🪔", count: LAGN_TEMPLATES.filter((t) => t.category === "puja").length },
+    { id: "gruhapravesh", label: "वास्तुशांती व गृहप्रवेश", icon: "🏡", count: LAGN_TEMPLATES.filter((t) => t.category === "gruhapravesh").length },
+  ];
+
+  const filteredTemplates =
+    activeTab === "all"
+      ? LAGN_TEMPLATES
+      : LAGN_TEMPLATES.filter((t) => t.category === activeTab);
+
   return (
-    <div className="relative h-11 w-11">
-      <svg viewBox="0 0 44 44" className="h-full w-full -rotate-90">
-        <circle cx="22" cy="22" r={r} fill="none" stroke="#ece1c6" strokeWidth="5" />
-        <circle cx="22" cy="22" r={r} fill="none" stroke="#3e6b4f" strokeWidth="5" strokeLinecap="round"
-          strokeDasharray={c} strokeDashoffset={c - (c * value) / 100} />
-      </svg>
-      <span className="absolute inset-0 grid place-items-center text-[11px] font-extrabold text-leaf-700">{value}%</span>
-    </div>
+    <section className="border-b border-[#ead9b8]/80 bg-gradient-to-b from-[#fff8ee] via-white to-[#f4f5fa] py-10 sm:py-14">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        {/* Header */}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold-soft px-3 py-1 text-xs font-bold text-gold-ink">
+              <span>👑</span>
+              <span>महाराष्ट्र लग्न पत्रिका संग्रह २०२६</span>
+            </div>
+            <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-ink-900 sm:text-3xl lg:text-4xl">
+              फुलांची, मयूर, साखरपुडा, गणेश व पूजा पत्रिका
+            </h2>
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-charcoal-soft">
+              थेट संपादन करता येणारे २८+ अस्सल महाराष्ट्रीय नमुने — नावे, मुहूर्त, पत्ता व फोटो आपले टाका आणि काही सेकंदांत प्रिंट-रेडी पत्रिका मिळवा.
+            </p>
+          </div>
+          <Link
+            href="/studio"
+            className="btn-base btn-maroon inline-flex items-center gap-2 px-6 text-sm font-bold transition transform hover:-translate-y-0.5"
+          >
+            <span>🎨</span>
+            <span>कॅनव्हा प्रो स्टुडिओत सर्व डिझाइन्स</span>
+          </Link>
+        </div>
+
+        {/* Filter Pills */}
+        <div className="mt-6 flex flex-wrap items-center gap-2 border-b border-[#ead9b8]/60 pb-4">
+          {filterTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-xs sm:text-sm font-bold transition ${
+                activeTab === tab.id
+                  ? "bg-maroon text-gold-shimmer shadow-md shadow-maroon-900/20"
+                  : "border border-[#ead9b8] bg-ivory-surface text-charcoal-soft hover:border-maroon/50 hover:bg-maroon-light"
+              }`}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                  activeTab === tab.id ? "bg-white/20 text-white" : "bg-stone-100 text-[#78716c]"
+                }`}
+              >
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Template Cards Grid */}
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredTemplates.map((template) => {
+            const photoUrl = template.sample?.photoUrl || template.placeholders?.photoUrl;
+            return (
+              <div
+                key={template.id}
+                className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#ead9b8] bg-ivory-surface shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-gold/60"
+              >
+                {/* Visual Preview */}
+                <div className="relative h-[340px] w-full overflow-hidden bg-[#fffaf3]">
+                  {photoUrl ? (
+                    <img
+                      src={photoUrl}
+                      alt={template.nameMr}
+                      className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                      style={{ imageRendering: "-webkit-optimize-contrast" }}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="pointer-events-none origin-top-left scale-[0.62] w-[161%]">
+                      <MasterTemplateCard
+                        template={template}
+                        data={{
+                          ...template.sample,
+                          blessing: template.defaultBlessing,
+                          title: template.defaultTitle,
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Top Badge */}
+                  <div className="absolute top-3 left-3 z-10">
+                    <span className="rounded-full bg-amber-500/90 backdrop-blur-xs px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
+                      {template.badge || "NEW"}
+                    </span>
+                  </div>
+
+                  {/* Floating Action Buttons on Hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 z-20">
+                    <div className="flex flex-col gap-2">
+                      <Link
+                        href={`/studio?template=${template.id}`}
+                        className="inline-flex w-full min-h-11 items-center justify-center gap-1.5 rounded-full bg-maroon text-xs font-bold text-gold-shimmer shadow-lg hover:bg-maroon-rich transition"
+                      >
+                        <span>✏️</span>
+                        <span>स्टुडिओत थेट एडिट करा</span>
+                      </Link>
+                      {photoUrl && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreviewModalImg({
+                              url: photoUrl,
+                              title: template.nameMr,
+                              templateId: template.id,
+                            })
+                          }
+                          className="inline-flex w-full min-h-11 items-center justify-center gap-1.5 rounded-full bg-white/90 backdrop-blur-md text-xs font-bold text-charcoal hover:bg-ivory-surface transition"
+                        >
+                          <span>🔍</span>
+                          <span>पूर्ण डिझाईन पहा</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Meta Content */}
+                <div className="flex flex-1 flex-col justify-between border-t border-[#ead9b8]/80 p-3.5 bg-gradient-to-b from-white to-[#fffbf5]">
+                  <div>
+                    <h3 className="font-marathi-display text-[15px] font-bold text-ink-900 group-hover:text-maroon transition leading-snug line-clamp-1">
+                      {template.nameMr}
+                    </h3>
+                    <p className="mt-1 text-xs text-[#78716c] line-clamp-1">
+                      {template.descMr}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-2.5 text-xs">
+                    <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                      {template.defaultTitle}
+                    </span>
+                    <Link
+                      href={`/studio?template=${template.id}`}
+                      className="font-bold text-maroon hover:text-maroon-rich inline-flex items-center gap-1 group-hover:translate-x-0.5 transition"
+                    >
+                      <span>वापरा</span>
+                      <span>→</span>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Lightbox Preview Modal */}
+        {previewModalImg && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm animate-fade-in"
+            onClick={() => setPreviewModalImg(null)}
+          >
+            <div
+              className="relative max-h-[92vh] max-w-[560px] w-full overflow-hidden rounded-2xl bg-ivory-surface shadow-2xl flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b px-4 py-3 bg-stone-50">
+                <p className="font-marathi-display text-sm font-bold text-stone-900 truncate">
+                  {previewModalImg.title}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setPreviewModalImg(null)}
+                  className="btn-icon bg-ivory-200 text-ink-500"
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="overflow-auto max-h-[75vh] p-2 bg-neutral-900 flex justify-center">
+                <img
+                  src={previewModalImg.url}
+                  alt={previewModalImg.title}
+                  className="max-h-full max-w-full object-contain rounded-lg shadow-2xl"
+                  style={{ imageRendering: "-webkit-optimize-contrast" }}
+                  decoding="async"
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3 border-t p-3 bg-ivory-surface">
+                <span className="text-xs text-stone-500">
+                  १००% अस्सल महाराष्ट्रीय डिझाईन
+                </span>
+                <Link
+                  href={`/studio?template=${previewModalImg.templateId}`}
+                  className="btn-base btn-maroon px-5 text-xs font-bold"
+                >
+                  या डिझाईनमध्ये पत्रिका बनवा →
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -804,7 +1177,7 @@ function Pillars({ copy, isEn }: { copy: HomeCopy; isEn: boolean }) {
       <div className="mt-14 grid gap-px overflow-hidden rounded-2xl bg-maroon-900/10 ring-1 ring-maroon-900/10 sm:grid-cols-2 lg:grid-cols-3">
         {copy.pillars.map((p, i) => (
           <Reveal key={p.title} delay={i * 60}>
-            <Link href={p.href} className="group relative block h-full overflow-hidden bg-ivory-50 p-8 transition-all duration-300 hover:bg-white">
+            <Link href={p.href} className="group relative block h-full overflow-hidden bg-ivory-50 p-8 transition-all duration-300 hover:bg-ivory-surface">
               {/* hover corner glow */}
               <span aria-hidden className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gold-400/0 blur-2xl transition-all duration-500 group-hover:bg-gold-400/25" />
               <span className="font-display absolute top-6 right-7 text-[13px] font-semibold text-gold-600/80 transition-colors group-hover:text-gold-600">
@@ -954,7 +1327,7 @@ function StudioShowcase({ copy, isEn, isHi }: { copy: HomeCopy; isEn: boolean; i
                   {/* timeline */}
                   <div className="absolute inset-x-5 bottom-5">
                     <div className="flex h-8 gap-1 overflow-hidden rounded-lg">
-                      <span className="flex w-1/4 items-center justify-center bg-purple-500/60 text-[9px] font-bold text-white">
+                      <span className="flex w-1/4 items-center justify-center bg-gold/70 text-[9px] font-bold text-maroon-950">
                         {isEn ? "Intro" : "इंट्रो"}
                       </span>
                       <span className="flex w-2/4 items-center justify-center bg-gold-500/70 text-[9px] font-bold text-maroon-950">
@@ -1041,7 +1414,7 @@ function EventOsShowcase({ copy }: { copy: HomeCopy }) {
         </Reveal>
 
         <Reveal delay={120}>
-          <div ref={ref} className="overflow-hidden rounded-2xl border border-maroon-900/12 bg-white shadow-card">
+          <div ref={ref} className="overflow-hidden rounded-2xl border border-maroon-900/12 bg-ivory-surface shadow-card">
             <div className="flex items-center justify-between border-b border-maroon-900/10 bg-ivory-50 px-5 py-3.5">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-maroon-600/60" />
@@ -1167,7 +1540,7 @@ function Marketplace({ copy, isEn }: { copy: HomeCopy; isEn: boolean }) {
           ))}
         </div>
 
-        <Reveal delay={100} className="mt-10 grid gap-4 rounded-2xl border border-gold-500/30 bg-white p-6 sm:grid-cols-3">
+        <Reveal delay={100} className="mt-10 grid gap-4 rounded-2xl border border-gold-500/30 bg-ivory-surface p-6 sm:grid-cols-3">
           {m.trust.map((x) => (
             <div key={x.h} className="flex gap-3.5">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-maroon-800/8 text-maroon-800 ring-1 ring-maroon-800/15">
@@ -1298,7 +1671,7 @@ function Testimonials({ copy }: { copy: HomeCopy }) {
       <div className="mt-12 grid gap-6 md:grid-cols-3">
         {tm.items.map((t, i) => (
           <Reveal key={t.a} delay={i * 80}>
-            <figure className="group relative h-full rounded-2xl border border-maroon-900/10 bg-white p-7 shadow-card transition-all duration-500 hover:-translate-y-2 hover:border-gold-500/40 hover:shadow-glow">
+            <figure className="group relative h-full rounded-2xl border border-maroon-900/10 bg-ivory-surface p-7 shadow-card transition-all duration-500 hover:-translate-y-2 hover:border-gold-500/40 hover:shadow-glow">
               <div className="flex items-center justify-between">
                 <svg viewBox="0 0 24 24" className="h-7 w-7 text-gold-500" fill="currentColor" aria-hidden>
                   <path d="M10 7H5a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h3v-1c0-3-1-4-3-5l1-3c2 .5 4 2 4 5zm11 0h-5a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h3v-1c0-3-1-4-3-5l1-3c2 .5 4 2 4 5z" opacity="0.8" />
@@ -1368,7 +1741,7 @@ function Faq({ isEn, isHi }: { isEn: boolean; isHi?: boolean }) {
           const isOpen = open === i;
           return (
             <Reveal key={f.q} delay={i * 50}>
-              <div className={`overflow-hidden rounded-2xl border transition-all duration-400 ${isOpen ? "border-gold-500/60 bg-white shadow-luxe" : "border-maroon-900/10 bg-white/70 hover:border-gold-500/40"
+              <div className={`overflow-hidden rounded-2xl border transition-all duration-400 ${isOpen ? "border-gold-500/60 bg-ivory-surface shadow-luxe" : "border-maroon-900/10 bg-white/70 hover:border-gold-500/40"
                 }`}>
                 <button type="button" onClick={() => setOpen(isOpen ? -1 : i)} aria-expanded={isOpen}
                   className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left sm:px-6">
@@ -1412,15 +1785,18 @@ function CtaBand({ copy }: { copy: HomeCopy }) {
 
           {/* sparkles */}
           <div aria-hidden className="pointer-events-none absolute inset-0">
-            {Array.from({ length: 12 }, (_, i) => (
-              <span key={i} className="hp-anim absolute rounded-full bg-gold-300"
+            {STATIC_PARTICLES.slice(0, 8).map((p, i) => (
+              <span
+                key={i}
+                className="hp-anim absolute rounded-full bg-gold-300"
                 style={{
-                  left: `${8 + seeded(i + 5) * 84}%`,
-                  bottom: `${10 + seeded(i + 15) * 30}%`,
-                  width: 2.5 + seeded(i) * 3,
-                  height: 2.5 + seeded(i) * 3,
-                  animation: `hp-spark ${4 + seeded(i + 30) * 5}s ${seeded(i + 45) * 5}s ease-out infinite`,
-                }} />
+                  left: p.left,
+                  bottom: p.bottom,
+                  width: `${p.size}px`,
+                  height: `${p.size}px`,
+                  animation: `hp-spark ${p.dur} ${p.delay} ease-out infinite`,
+                }}
+              />
             ))}
           </div>
 

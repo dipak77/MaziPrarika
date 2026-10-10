@@ -225,6 +225,21 @@ function joinLines(lines: string[]): string {
 /* SVG scene                                                           */
 /* ------------------------------------------------------------------ */
 
+export interface SpecTheme {
+  bgGradient: string;
+  accentColor: string;
+  textColor: string;
+  foil: 'gold' | 'rosegold' | 'silver' | 'copper';
+  motif: string;
+  border: string;
+}
+
+export interface FoilStops {
+  bright: string;
+  deep: string;
+  soft: string;
+}
+
 export interface RenderOptions {
   /** Include bleed + crop marks (print) or crop to page (screen). */
   print?: boolean;
@@ -234,6 +249,10 @@ export interface RenderOptions {
   bindings?: Record<string, string>;
   /** Adds an invisible structure layer for editors/tests. */
   includeMetadata?: boolean;
+  /** PrintArtSpec-derived theme; when absent output is byte-identical to unthemed. */
+  theme?: SpecTheme;
+  /** FOIL_HEX-equivalent stops for the foil gradient; derived from accent when absent. */
+  foilStops?: FoilStops;
 }
 
 const escapeXml = (s: string): string =>
@@ -280,7 +299,15 @@ export function renderSvg(design: DesignDocument, options: RenderOptions = {}): 
   }
   if (options.fontBaseUrl) parts.push(fontFaces(options.fontBaseUrl));
 
-  parts.push(`<rect x="${-bleed}" y="${-bleed}" width="${round(width)}" height="${round(height)}" fill="${escapeXml(page.background)}"/>`);
+  const theme = options.theme;
+  const foil = theme ? resolveFoilStops(theme, options.foilStops) : undefined;
+  if (theme && foil) parts.push(themeDefs(theme, foil));
+
+  if (theme) {
+    parts.push(`<rect x="${-bleed}" y="${-bleed}" width="${round(width)}" height="${round(height)}" fill="url(#mazi-theme-bg)"/>`);
+  } else {
+    parts.push(`<rect x="${-bleed}" y="${-bleed}" width="${round(width)}" height="${round(height)}" fill="${escapeXml(page.background)}"/>`);
+  }
 
   for (const el of design.elements) {
     // Full-page decorative artwork is stretched into the bleed so that trimming
@@ -292,6 +319,8 @@ export function renderSvg(design: DesignDocument, options: RenderOptions = {}): 
   }
 
   if (options.print && page.cropMarks) parts.push(cropMarks(design));
+
+  if (theme && foil) parts.push(motifBand(page, theme));
 
   parts.push('</svg>');
   return parts.join('\n');
@@ -325,10 +354,13 @@ function renderElement(el: DesignElement, design: DesignDocument, bindings: Reco
       const tspans = wrapped.lines
         .map((line, i) => `<tspan x="${round(x)}" y="${round(startY + i * lineHeightMm)}">${escapeXml(line)}</tspan>`)
         .join('');
-      return `<text id="${escapeXml(el.id)}" data-role="${el.role}" font-family="${escapeXml(style.family ?? DEFAULT_FONTS.body)}" font-size="${round(style.sizePt)}pt" font-weight="${style.weight}" fill="${escapeXml(el.typography.color)}" text-anchor="${anchor}"${opacity}${transform}>${tspans}</text>`;
+      const fill = options.theme
+        ? (el.role === 'invocation' || el.role === 'headline' || el.role === 'subheadline' ? options.theme.accentColor : options.theme.textColor)
+        : el.typography.color;
+      return `<text id="${escapeXml(el.id)}" data-role="${el.role}" font-family="${escapeXml(style.family ?? DEFAULT_FONTS.body)}" font-size="${round(style.sizePt)}pt" font-weight="${style.weight}" fill="${escapeXml(fill)}" text-anchor="${anchor}"${opacity}${transform}>${tspans}</text>`;
     }
     case 'shape':
-      return renderShape(el, design, opacity, transform);
+      return renderShape(el, design, opacity, transform, options.theme);
     case 'image':
       return `<g id="${escapeXml(el.id)}" data-role="${el.role}"${opacity}${transform}><rect x="${round(el.x)}" y="${round(el.y)}" width="${round(el.width)}" height="${round(el.height)}" rx="${el.cornerRadiusMm}" fill="${escapeXml(el.frameColor ?? '#00000010')}" stroke="${el.frameColor ?? 'none'}"><title>${escapeXml(el.src)}</title></rect><text x="${round(el.x + el.width / 2)}" y="${round(el.y + el.height / 2)}" font-family="${escapeXml(DEFAULT_FONTS.ui)}" font-size="8pt" fill="#00000055" text-anchor="middle">फोटो: ${escapeXml(el.src.split('/').pop() ?? '')}</text></g>`;
     case 'qr':
@@ -338,10 +370,18 @@ function renderElement(el: DesignElement, design: DesignDocument, bindings: Reco
   }
 }
 
-function renderShape(el: Extract<DesignElement, { type: 'shape' }>, design: DesignDocument, opacity: string, transform: string): string {
+function renderShape(el: Extract<DesignElement, { type: 'shape' }>, design: DesignDocument, opacity: string, transform: string, theme?: SpecTheme): string {
   const common = `id="${escapeXml(el.id)}" data-role="${el.role}"${opacity}${transform}`;
-  const fill = el.fill ?? 'none';
-  const stroke = el.stroke ?? 'none';
+  const rawFill = el.fill ?? 'none';
+  const fill = theme && el.role === 'decoration' && el.shape === 'paisley' && rawFill !== 'none'
+    ? theme.accentColor
+    : rawFill;
+  const rawStroke = el.stroke;
+  const stroke = theme && el.role === 'decoration'
+    ? (rawStroke === undefined || rawStroke === 'none'
+      ? ((el.shape === 'motif' || el.shape === 'divider') ? theme.accentColor : (rawStroke ?? 'none'))
+      : theme.accentColor)
+    : (rawStroke ?? 'none');
   switch (el.shape) {
     case 'rect':
       return `<rect ${common} x="${round(el.x)}" y="${round(el.y)}" width="${round(el.width)}" height="${round(el.height)}" fill="${escapeXml(fill)}" stroke="${escapeXml(stroke)}" stroke-width="${el.strokeWidthMm}"/>`;
@@ -484,6 +524,103 @@ function motif(el: Extract<DesignElement, { type: 'shape' }>, design: DesignDocu
   }
 }
 
+function resolveFoilStops(theme: SpecTheme, stops?: FoilStops): FoilStops {
+  if (stops) return stops;
+  const accent = theme.accentColor;
+  return { bright: accent, deep: shadeHex(accent, 0.55), soft: accent };
+}
+
+function shadeHex(hex: string, factor: number): string {
+  const full = /^#([0-9a-fA-F]{6})$/.exec(hex.trim());
+  const short = /^#([0-9a-fA-F]{3})$/.exec(hex.trim());
+  const digits = full ? full[1]! : short ? short[1]!.split('').map((c) => c + c).join('') : null;
+  if (!digits) return hex;
+  const scaled = [0, 2, 4]
+    .map((i) => Math.max(0, Math.min(255, Math.round(parseInt(digits.slice(i, i + 2), 16) * factor))))
+    .map((v) => v.toString(16).padStart(2, '0'))
+    .join('');
+  return `#${scaled}`;
+}
+
+function themeDefs(theme: SpecTheme, foil: FoilStops): string {
+  return `<defs>${bgGradientDef(theme.bgGradient)}${foilGradientDef(foil)}</defs>`;
+}
+
+function bgGradientDef(css: string): string {
+  const stops = parseGradientStops(css);
+  const vec = gradientVector(css);
+  const xml = stops.map((s) => `<stop offset="${s.offset}" stop-color="${escapeXml(s.color)}"/>`).join('');
+  return `<linearGradient id="mazi-theme-bg" x1="${vec[0]}" y1="${vec[1]}" x2="${vec[2]}" y2="${vec[3]}">${xml}</linearGradient>`;
+}
+
+function parseGradientStops(css: string): Array<{ color: string; offset: string }> {
+  const inner = /linear-gradient\(\s*[^,()]+?,\s*(.+)\)\s*$/.exec(css.trim())?.[1];
+  const raw = inner ? inner.split(',').map((p) => p.trim()).filter(Boolean) : [];
+  const parsed = raw
+    .map((part) => {
+      const m = /(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)|[a-zA-Z]+)\s*([0-9.]+%?)?/.exec(part);
+      return m ? { color: m[1]!, offset: m[2] ?? '' } : null;
+    })
+    .filter((s): s is { color: string; offset: string } => s !== null);
+  if (!parsed.length) return [{ color: css.trim(), offset: '0%' }, { color: css.trim(), offset: '100%' }];
+  return parsed.map((stop, i) => ({
+    color: stop.color,
+    offset: stop.offset || `${round((i / Math.max(parsed.length - 1, 1)) * 100)}%`,
+  }));
+}
+
+function gradientVector(css: string): [number, number, number, number] {
+  const deg = /linear-gradient\(\s*([0-9.]+)deg/.exec(css)?.[1];
+  if (deg === undefined) return [0, 0, 0, 1];
+  const rad = (Number(deg) * Math.PI) / 180;
+  const dx = Math.sin(rad);
+  const dy = -Math.cos(rad);
+  return [round(0.5 - dx / 2), round(0.5 - dy / 2), round(0.5 + dx / 2), round(0.5 + dy / 2)];
+}
+
+function foilGradientDef(foil: FoilStops): string {
+  return `<linearGradient id="mazi-foil" x1="0" y1="0" x2="1" y2="0">`
+    + `<stop offset="0" stop-color="${escapeXml(foil.deep)}"/>`
+    + `<stop offset="0.35" stop-color="${escapeXml(foil.bright)}"/>`
+    + `<stop offset="0.65" stop-color="${escapeXml(foil.soft)}"/>`
+    + `<stop offset="1" stop-color="${escapeXml(foil.deep)}"/>`
+    + `</linearGradient>`;
+}
+
+function motifBand(page: DesignDocument['page'], theme: SpecTheme): string {
+  const w = page.widthMm;
+  const cx = round(w / 2);
+  const y = 5.6;
+  const accent = escapeXml(theme.accentColor);
+  const left = 10;
+  const rightInner = round(cx - 6.5);
+  const leftInner = round(cx + 6.5);
+  const right = round(w - 10);
+  const single = theme.border === 'minimal-line';
+  const rule = (yPos: number, width: number): string =>
+    `<line x1="${left}" y1="${yPos}" x2="${rightInner}" y2="${yPos}" stroke="url(#mazi-foil)" stroke-width="${width}"/>`
+    + `<line x1="${leftInner}" y1="${yPos}" x2="${right}" y2="${yPos}" stroke="url(#mazi-foil)" stroke-width="${width}"/>`;
+  const rules = single ? rule(y, 0.35) : rule(y, 0.45) + rule(round(y + 1.6), 0.2);
+  return `<g id="print-motif-band" data-role="decoration">${rules}`
+    + `<text x="${cx}" y="${round(y + 1.5)}" font-family="Noto Serif Devanagari, serif" font-size="4.5pt" font-weight="700" fill="${accent}" text-anchor="middle">${escapeXml(motifGlyph(theme.motif))}</text></g>`;
+}
+
+function motifGlyph(motif: string): string {
+  const m = motif.toLowerCase();
+  if (m.includes('swastik')) return '卐';
+  if (m.includes('diya') || m.includes('kalash')) return '🪔';
+  if (m.includes('lotus') || m.includes('cradle')) return '🪷';
+  if (m.includes('peacock')) return '🦚';
+  if (m.includes('toran') || m.includes('arch')) return '🌼';
+  if (m.includes('katyar')) return '⚔';
+  if (m.includes('crown')) return '♛';
+  if (m.includes('rings')) return '◎';
+  if (m.includes('star') || m.includes('balloon')) return '★';
+  if (m.includes('cake')) return '🎂';
+  if (m.includes('mandala') || m.includes('paisley') || m.includes('divider')) return '❖';
+  return 'ॐ';
+}
+
 function renderQr(el: Extract<DesignElement, { type: 'qr' }>, opacity: string, transform: string): string {
   const payload = el.payload || 'https://mazipatrika.in';
   const { modules } = qrcode.create(payload, { errorCorrectionLevel: el.errorCorrectionLevel });
@@ -564,16 +701,23 @@ const round = (n: number): number => Math.round(n * 1000) / 1000;
 /* ------------------------------------------------------------------ */
 
 /** Print-ready HTML page: @page size, embedded SVG, auto-print hook. */
-export function toPrintHtml(design: DesignDocument, opts: { fontBaseUrl?: string; autoPrint?: boolean } = {}): string {
-  const svg = renderSvg(design, { print: true, ...(opts.fontBaseUrl ? { fontBaseUrl: opts.fontBaseUrl } : {}), includeMetadata: false });
+export function toPrintHtml(design: DesignDocument, opts: { fontBaseUrl?: string; autoPrint?: boolean; theme?: SpecTheme; foilStops?: FoilStops } = {}): string {
+  const svg = renderSvg(design, {
+    print: true,
+    ...(opts.fontBaseUrl ? { fontBaseUrl: opts.fontBaseUrl } : {}),
+    ...(opts.theme ? { theme: opts.theme } : {}),
+    ...(opts.foilStops ? { foilStops: opts.foilStops } : {}),
+    includeMetadata: false,
+  });
   const { widthMm, heightMm, bleedMm } = design.page;
+  const sheetBackground = opts.theme ? opts.theme.bgGradient : design.page.background;
   return `<!doctype html>
 <html lang="mr"><head><meta charset="utf-8"/>
 <title>${escapeXml(design.name)} — माझी पत्रिका</title>
 <style>
   @page { size: ${round(widthMm + bleedMm * 2)}mm ${round(heightMm + bleedMm * 2)}mm; margin: 0; }
   html, body { margin: 0; padding: 0; background: #6b6b6b; }
-  .sheet { width: ${round(widthMm + bleedMm * 2)}mm; height: ${round(heightMm + bleedMm * 2)}mm; margin: 0 auto; background: ${design.page.background}; }
+  .sheet { width: ${round(widthMm + bleedMm * 2)}mm; height: ${round(heightMm + bleedMm * 2)}mm; margin: 0 auto; background: ${sheetBackground}; }
   .sheet svg { display: block; width: 100%; height: 100%; }
   ${opts.autoPrint ? 'body { background: #6b6b6b; }\n  .toolbar { display: none; }' : ''}
 </style></head>
@@ -583,9 +727,14 @@ ${opts.autoPrint ? '<script>window.addEventListener("load", () => window.print()
 }
 
 /** Same SVG, sized for social/story export via raster pipeline (sharp/Playwright). */
-export function toSocialSvg(design: DesignDocument, target: 'story' | 'square' | 'landscape' = 'story'): string {
+export function toSocialSvg(design: DesignDocument, target: 'story' | 'square' | 'landscape' = 'story', opts: { theme?: SpecTheme; foilStops?: FoilStops } = {}): string {
   const dims = target === 'story' ? [1080, 1920] : target === 'square' ? [1080, 1080] : [1200, 630];
-  const svg = renderSvg(design, { print: false, includeMetadata: false });
+  const svg = renderSvg(design, {
+    print: false,
+    includeMetadata: false,
+    ...(opts.theme ? { theme: opts.theme } : {}),
+    ...(opts.foilStops ? { foilStops: opts.foilStops } : {}),
+  });
   return svg.replace('<svg ', `<svg data-target="${target}" data-size="${dims[0]}x${dims[1]}" `);
 }
 

@@ -5,6 +5,7 @@ import { TEMPLATE_PRESETS } from '@mazi/design-schema';
 import { formatMarathiDate, toDevanagariDigits, vendorCategoryLabel } from '@mazi/marathi';
 import { renderSvg } from '@mazi/renderer';
 
+import { PageBanner } from '@/components/page-banner';
 import { ComposedCopyButtons, InvitationCanvas, QualityRing } from '@/components/studio/invitation-canvas';
 import { PrintOrderPanel } from '@/components/studio/print-order-panel';
 import { getStore } from '@/lib/store';
@@ -142,19 +143,12 @@ export default async function InvitationStudioPage({
         </a>
       </div>
 
-      <header className="mt-3 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold text-maroon">पत्रिका स्टुडिओ</h1>
-          <p className="mt-1 text-sm text-charcoal-soft">
-            {preset.name} • {scheme.label} • {design.preset} • {toDevanagariDigits(design.page.widthMm)}×
-            {toDevanagariDigits(design.page.heightMm)} मिमी + bleed {toDevanagariDigits(design.page.bleedMm)} मिमी
-          </p>
-          {activeDesignId ? (
-            <p className="mt-1.5 inline-flex min-h-11 items-center rounded-full border border-gold/30 bg-ivory-deep px-3 py-1 font-ui text-xs font-bold text-charcoal">
-              पाहत असलेली आवृत्ती — {designs.find((entry) => entry.id === activeDesignId)?.name ?? activeDesignId}
-            </p>
-          ) : null}
-        </div>
+      <PageBanner
+        className="mt-3"
+        kicker="Invitation studio"
+        title="पत्रिका स्टुडिओ"
+        description={`${preset.name} • ${scheme.label} • ${design.preset} • ${toDevanagariDigits(design.page.widthMm)}×${toDevanagariDigits(design.page.heightMm)} मिमी + bleed ${toDevanagariDigits(design.page.bleedMm)} मिमी${activeDesignId ? ` • आवृत्ती ${designs.find((entry) => entry.id === activeDesignId)?.name ?? activeDesignId}` : ''}`}
+        actions={
         <div className="flex flex-wrap gap-3">
           <a
             href={`/api/designs/${design.id}/svg?print=1&slug=${encodeURIComponent(slug)}&v=${design.version}`}
@@ -171,7 +165,8 @@ export default async function InvitationStudioPage({
             प्रूफ उघडा
           </a>
         </div>
-      </header>
+        }
+      />
 
       <section aria-label="छपाई खर्च सारांश" className="surface mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4">
         <div>
