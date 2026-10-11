@@ -27,11 +27,16 @@
     "icons": "node scripts/generate-icons.mjs",
     "measure": "node --experimental-sqlite --import ./scripts/register-ts.mjs scripts/measure.mjs",
     "build:static": "npm run build && node scripts/export-static.mjs",
-    "deploy:firebase": "npm run build:static && npx firebase deploy --only hosting --non-interactive"
+    "deploy:firebase": "npm run build:static && npx firebase deploy --only hosting --non-interactive",
+    "test:e2e:cake": "node --import ./scripts/register-ts.mjs tests/cake-atelier.e2e.mjs",
+    "test:e2e:cake:fonts": "npm run fonts:sync -w @mazi/cake-atelier",
+    "test:e2e:browser": "playwright test",
+    "test:e2e:browser:install": "playwright install chromium"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2",
-    "vitest": "3.2.4"
+    "vitest": "3.2.4",
+    "@playwright/test": "^1.50.1"
   }
 }

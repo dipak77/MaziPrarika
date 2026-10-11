@@ -31,6 +31,14 @@ const config: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@mazi/marathi', '@mazi/commerce', '@mazi/panchang', '@mazi/renderer'],
   },
+  /**
+   * Native and Node-only modules used by the Cake Atelier export pipeline are
+   * left to Node's own loader instead of being bundled: `@resvg/resvg-js` ships a
+   * platform binary, `fontkit` reads font files at runtime, and the package's
+   * `/server` entry point is where those live. Everything the *browser* imports
+   * from `@mazi/cake-atelier` is pure TypeScript and stays bundled.
+   */
+  serverExternalPackages: ['@resvg/resvg-js', 'fontkit'],
   images: {
     unoptimized: true,
     formats: ['image/avif', 'image/webp'],
