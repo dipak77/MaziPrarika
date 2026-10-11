@@ -9,7 +9,7 @@
  * `fonts/<family>/OFL.txt` and `FONTS.md` for attribution.
  */
 
-import metricsRaw from './font-metrics.json';
+import { FONT_METRICS } from './font-metrics.js';
 
 export type FontFamilyId =
   | 'baloo2'
@@ -73,7 +73,7 @@ interface MetricsPayload {
   faces: Record<string, MetricsFace>;
 }
 
-const METRICS = metricsRaw as unknown as MetricsPayload;
+const METRICS: MetricsPayload = FONT_METRICS;
 
 const DEFINITIONS: Omit<FontFamily, 'faces'>[] = [
   {

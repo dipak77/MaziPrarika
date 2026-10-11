@@ -343,7 +343,9 @@ export function fitTextToRegion(
   const familyId = resolution.familyId;
   if (resolution.substituted && resolution.reason) warnings.push(resolution.reason);
 
-  const weight = options.requestedWeight ?? region.weights[0] ?? 400;
+  // A region may legitimately omit `weights` (the template scaffold fills it in,
+  // but callers and stored region specs need not) — never index into it blindly.
+  const weight = options.requestedWeight ?? region.weights?.[0] ?? 400;
   const face = resolveFace(familyId, weight);
   if (face.weight !== weight) {
     warnings.push(`Weight ${weight} is not shipped for ${familyId}; ${face.weight} used instead.`);
@@ -360,7 +362,10 @@ export function fitTextToRegion(
     warnings.push(`${analysis.unsupported.length} character(s) missing from ${familyId}: ${list}. They will be substituted at export.`);
   }
 
-  const lineHeightBase = options.lineHeight ?? region.lineHeight;
+  // Regions authored by templates always carry a line height; a region supplied
+  // by a caller may not, and a missing multiplier used to produce NaN geometry
+  // (which then propagated into vertical centring). 1.2 is the typographic norm.
+  const lineHeightBase = options.lineHeight ?? region.lineHeight ?? 1.2;
   const maxSizeMm = ptToMm(region.maxSizePt);
   const minSizeMm = ptToMm(region.minSizePt);
   const requestedSizeMm = Math.min(maxSizeMm, Math.max(minSizeMm, ptToMm(options.requestedSizePt ?? region.maxSizePt)));
@@ -567,7 +572,7 @@ function baselineY(
 export function defaultTextStyle(region: TextRegionSpec, familyId?: string, weight?: number, sizePt?: number): TextStyleRequest {
   return {
     familyId: familyId ?? region.families[0] ?? 'poppins',
-    weight: weight ?? region.weights[0] ?? 400,
+    weight: weight ?? region.weights?.[0] ?? 400,
     sizePt: sizePt ?? region.maxSizePt,
     letterSpacingEm: region.letterSpacing?.default ?? 0,
     anchor: region.anchor,

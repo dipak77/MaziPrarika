@@ -24,6 +24,7 @@ Create  →  Plan  →  Discover  →  Book  →  Print  →  Manage  →  Celeb
 | **Vendor OS** | `apps/web/src/app/vendor` | SLA-first lead inbox, quote builder, working-hours calendar, earnings and commission split, ad ROAS, disputes |
 | **Money** | `packages/commerce`, `packages/store` | Own double-entry ledger (the gateway is never the source of truth), bookings state machine, idempotent payments, settlements, commission waterfall |
 | **Admin console** | `apps/web/src/app/admin` | Marketplace health: GMV, take rate, conversion funnel, ledger integrity, SLA breaches, ad performance, dispute queue |
+| **Cake Atelier Pro** | `packages/cake-atelier`, `apps/web/src/app/cake` | 60 original paper-art cake topper designs × 12 palettes × 15 print sizes; deterministic vector engine, name fitting with no silent truncation, and print-ready PNG / SVG / PDF / layered cardstock ZIP with a preflight checklist and production report |
 | **PWA** | `apps/web/public/sw.js`, `manifest.ts` | Installable, offline shell, immutable asset caching — no native apps, per the product charter |
 
 Everything above is running: **23 routes build clean**, **205 unit tests** and a **40-check end-to-end test** against the live HTTP surface pass (see [Verification](#verification)).
@@ -56,6 +57,7 @@ Then walk the demo:
 | 10 | `/panchang` | Month grid, choghadiya, 60-day muhurat windows with every factor shown |
 | 11 | `/events` | Opt-in public invitations (only what a family published) |
 | 12 | `/admin` | GMV, take rate, funnel, ledger integrity, SLA, ad ROAS, disputes |
+| 13 | `/cake` | Cake Atelier Pro: 60 paper-art topper designs, live previews, editor, print studio |
 
 ---
 
@@ -73,6 +75,7 @@ packages/
   marathi       language layer: event taxonomy, 25 vendor categories, relations, date/time formatting
   renderer      design JSON v3 → deterministic SVG → print HTML / social export; template presets
   ai-gateway    Marathi-aware intent parsing (digits, months, budget phrasing) with a cost ceiling
+  cake-atelier  cake topper engine: 60 templates, scene model, palettes, fonts, print exports
   design-schema Canonical Design JSON v3 types and validation
 scripts/                     db CLI, icon generator, ESM TypeScript resolution hooks
 infrastructure/postgres      production DDL + RLS for the managed-Postgres migration path
@@ -88,6 +91,7 @@ npm run build            # production build
 npm run typecheck        # every package + the app
 npm test                 # vitest: store, commerce, panchang, marathi, renderer, design-schema, ai-gateway
 npm run test:e2e         # end-to-end against a running server (server must be up)
+npm run test:e2e:cake    # Cake Atelier end-to-end: catalogue, preview, PNG/SVG/PDF/ZIP exports
 npm run db:migrate       # apply migrations
 npm run db:seed          # seed a marketplace into the current schema
 npm run db:reset         # drop, migrate and reseed (safe while the dev server runs)
@@ -134,9 +138,15 @@ Read next: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/DATA-MODEL.m
 ## Verification
 
 ```bash
-npm test          # 205 unit tests across 7 packages
-npm run test:e2e  # 40 checks against the running server + database
+npm test              # 363 unit + integration tests across 8 packages and tests/
+npm run test:e2e      # 40 checks against the running server + database
+npm run test:e2e:cake # 60 checks: Cake Atelier catalogue, preview, exports and guard rails
 ```
+
+Cake Atelier Pro adds its own end-to-end suite that downloads real files and reads
+the bytes back — PNG pixel dimensions from the IHDR chunk, the PDF `MediaBox`, and
+the ZIP central directory — plus a preview render of all 60 designs. See
+[`docs/cake-atelier.md`](docs/cake-atelier.md).
 
 `npm run test:e2e` is the one that matters commercially: it posts to the same Server Actions a vendor's browser calls, then reads the database to prove that a reply writes exactly one message and stamps the SLA clock; that a quote is priced by the live commission waterfall; that accepting it creates **one** booking, **one** balanced double-entry posting, **one** idempotent payment and a held calendar day; and that a double tap creates nothing extra. It discovers the action ids from the build, so a refactor cannot make it silently lie.
 

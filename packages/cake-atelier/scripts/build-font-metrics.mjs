@@ -1,5 +1,5 @@
 /**
- * Builds `src/typography/font-metrics.json` from the bundled OFL fonts.
+ * Builds `src/typography/font-metrics.ts` from the bundled OFL fonts.
  *
  * The metrics table is what makes name-fitting work in the browser without
  * shipping a shaping engine: real per-codepoint advance widths from the actual
@@ -21,7 +21,7 @@ import { openSync } from 'fontkit';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
 const fontsDir = path.join(root, 'fonts');
-const outFile = path.join(root, 'src', 'typography', 'font-metrics.json');
+const outFile = path.join(root, 'src', 'typography', 'font-metrics.ts');
 
 /** Codepoint ranges worth shipping (Latin, punctuation, currency, Devanagari). */
 const RANGES = [
@@ -119,7 +119,41 @@ const payload = {
   faces,
 };
 
+const source = `/**
+ * @mazi/cake-atelier — generated font metrics (do not edit by hand)
+ *
+ * Produced by \`npm run fonts:metrics\` in packages/cake-atelier from the OFL fonts
+ * committed in \`fonts/\`. It is a TypeScript module rather than JSON on purpose:
+ * a JSON import needs \`with { type: 'json' }\` under Node's ESM loader and breaks
+ * the tooling chain (Vite, webpack, vitest, tsc) that hosts the same source.
+ *
+ * Advance widths are 1/1000 em.
+ */
+
+export interface FontFaceMetrics {
+  family: string;
+  file: string;
+  unitsPerEm: number;
+  ascent: number;
+  descent: number;
+  lineGap: number;
+  capHeight: number;
+  xHeight: number;
+  hasDevanagari: boolean;
+  advances: [number, number][];
+}
+
+export interface FontMetricsData {
+  version: number;
+  generatedFrom: string;
+  note: string;
+  faces: Record<string, FontFaceMetrics>;
+}
+
+export const FONT_METRICS: FontMetricsData = ${JSON.stringify(payload)};
+`;
+
 mkdirSync(path.dirname(outFile), { recursive: true });
-writeFileSync(outFile, `${JSON.stringify(payload)}\n`, 'utf8');
+writeFileSync(outFile, source, 'utf8');
 const bytes = readFileSync(outFile).length;
 console.log(`\nwrote ${path.relative(root, outFile)} (${(bytes / 1024).toFixed(1)} kB, ${Object.keys(faces).length} faces)`);

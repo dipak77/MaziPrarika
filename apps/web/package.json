@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "npm run fonts:sync -w @mazi/cake-atelier && next dev",
+    "build": "npm run fonts:sync -w @mazi/cake-atelier && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit"
   },

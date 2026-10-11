@@ -10,7 +10,13 @@ import 'server-only';
 
 export * from './render/png.js';
 export * from './render/pdf.js';
+export * from './typography/fonts.js';
+export * from './typography/measure.js';
 export * from './typography/outline.js';
+
+/** `TextLine`/`TextFitResult` exist in `measure` and again through `render/svg`;
+ *  the measurement type is the authoritative one. */
+export type { TextLine, TextFitResult } from './typography/measure.js';
 export * from './export/assets.js';
 export * from './export/zip.js';
 export * from './export/flat.js';
