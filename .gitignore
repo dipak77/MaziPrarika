@@ -19,3 +19,4 @@ apps/web/.next-dev/
 .ref_arch/
 apps/web/out/
 /scratch/
+.scratch/

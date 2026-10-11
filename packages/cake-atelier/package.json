@@ -1,0 +1,27 @@
+{
+  "name": "@mazi/cake-atelier",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cake Atelier Pro — premium birthday cake paper-art designer: 60 vector templates, deterministic SVG scene engine, typography engine with real shaping, and production print exports (PNG / SVG / PDF / layered cardstock).",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./templates": "./src/templates/index.ts",
+    "./server": "./src/server.ts",
+    "./fonts/*": "./fonts/*"
+  },
+  "scripts": {
+    "fonts:metrics": "node scripts/build-font-metrics.mjs",
+    "fonts:sync": "node scripts/fonts-sync.mjs"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "fontkit": "^2.0.4",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/fontkit": "^2.0.9"
+  }
+}
